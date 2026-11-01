@@ -14,6 +14,28 @@
   <script src="./assets/hvac-core.js"></script>
   <script>
     // =========================================================
+    // 0. 스마트 QR 및 단축 앵커 리다이렉트 안전장치
+    //    #checkin, #quiz, #qna 해시 접속 시 전용 페이지로 즉시 자동 이동
+    // =========================================================
+    (function () {
+      if (window.location.hash) {
+        var h = window.location.hash.toLowerCase();
+        if (h === '#checkin' || h === '#attendance' || h === '#check-in' || h === '#reception') {
+          window.location.replace('./checkin.html');
+          return;
+        }
+        if (h === '#quiz') {
+          window.location.replace('./quiz.html');
+          return;
+        }
+        if (h === '#qna') {
+          window.location.replace('./qna.html');
+          return;
+        }
+      }
+    })();
+
+    // =========================================================
     // 관리자 설정 → 메인 페이지 동적 반영
     //  - hvac_schedule_settings : Hero / 일정표 / 강사 프로필 카드
     //  - hvac_site_content      : 장소명 / 교통편 / 교내 동선 / 참석 안내 / 푸터
