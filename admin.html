@@ -2629,30 +2629,38 @@
           <div>
             <div class="stat-label">등록된 퀴즈 문항</div>
             <div class="stat-value" id="statQuizTotalCount">6</div>
-            <div class="stat-sub">활성 출제 문항 수</div>
+            <div class="stat-sub">출제 문항 수</div>
           </div>
         </div>
         <div class="stat-card">
           <div class="stat-icon gold">🙋‍♂️</div>
           <div>
             <div class="stat-label">실시간 퀴즈 참여자</div>
-            <div class="stat-value" id="statQuizParticipantCount">0</div>
-            <div class="stat-sub">클라우드/로컬 집계 인원</div>
+            <div class="stat-value" id="statQuizParticipantCount">0명</div>
+            <div class="stat-sub">1문항 이상 제출자</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon green">🎯</div>
+          <div>
+            <div class="stat-label">전 문항 완료자</div>
+            <div class="stat-value" id="statQuizCompletedCount">0명</div>
+            <div class="stat-sub">전체 문항 풀이 완료</div>
           </div>
         </div>
         <div class="stat-card">
           <div class="stat-icon blue">🏆</div>
           <div>
-            <div class="stat-label">만점 달성자</div>
-            <div class="stat-value" id="statQuizPerfectCount">0</div>
-            <div class="stat-sub">전 문항 정답자</div>
+            <div class="stat-label">1차 만점자 (6.0점)</div>
+            <div class="stat-value" id="statQuizPerfectCount">0명</div>
+            <div class="stat-sub">패널티 없이 올킬</div>
           </div>
         </div>
         <div class="stat-card">
           <div class="stat-icon red">📊</div>
           <div>
             <div class="stat-label">참여자 평균 점수</div>
-            <div class="stat-value" id="statQuizAvgScore">0.0</div>
+            <div class="stat-value" id="statQuizAvgScore">0.0점</div>
             <div class="stat-sub">전체 제출자 기준</div>
           </div>
         </div>
@@ -2701,9 +2709,10 @@
         <div class="card-header">
           <div>
             <h3 class="card-title">📊 실시간 참석자 퀴즈 풀이 현황판</h3>
-            <p class="card-sub">참석자들이 스마트폰에서 퀴즈를 풀면 실시간으로 점수와 완료 여부가 집계됩니다.</p>
+            <p class="card-sub" id="quizSubmissionsSummaryText">참석자들이 스마트폰에서 퀴즈를 풀면 실시간으로 점수와 완료 여부가 집계됩니다.</p>
           </div>
-          <div style="display: flex; gap: 8px;">
+          <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+            <input type="text" id="quizSubmissionsSearch" class="search-input" placeholder="🔍 성명 또는 사번 검색..." style="width: 210px; padding: 7px 12px; font-size: 13px;" oninput="renderQuizSubmissionsTable()">
             <button class="btn-act" onclick="renderQuizSubmissionsTable()">🔄 새로고침</button>
             <button class="btn-act primary" onclick="exportQuizSubmissionsCsv()">📥 퀴즈 성적 CSV 다운로드</button>
           </div>
@@ -2713,13 +2722,15 @@
           <table class="admin-table">
             <thead>
               <tr>
-                <th style="width: 90px;">체크인 순번</th>
-                <th style="width: 110px;">발급 ID</th>
-                <th style="width: 130px;">성명</th>
-                <th>이메일 아이디</th>
-                <th style="width: 130px;">획득 점수</th>
-                <th style="width: 130px;">진행 상태</th>
-                <th style="width: 120px;">최근 풀이 시각</th>
+                <th style="width: 55px;">순번</th>
+                <th style="width: 105px;">체크인 ID</th>
+                <th style="width: 120px;">성명</th>
+                <th style="width: 150px;">사번 / 이메일</th>
+                <th style="width: 110px;">풀이 현황</th>
+                <th style="width: 110px;">획득 점수</th>
+                <th>시도 분석 (1차 만점 / 재시도 정답)</th>
+                <th style="width: 120px;">진행 상태</th>
+                <th style="width: 105px;">제출 시각</th>
               </tr>
             </thead>
             <tbody id="quizSubmissionsTableBody">
@@ -4713,10 +4724,17 @@
         elScheduleBadge.textContent = scheduleData.sessions.length;
       }
 
-      // 5) 퀴즈 지표
+      // 5) 퀴즈 지표 (실시간 제출 인원수 반영)
       const elQuizBadge = document.getElementById('countBadgeQuiz');
-      if (elQuizBadge && typeof quizConfigList !== 'undefined' && Array.isArray(quizConfigList)) {
-        elQuizBadge.textContent = quizConfigList.length;
+      if (elQuizBadge) {
+        try {
+          const raw = localStorage.getItem('hvac_quiz_submissions');
+          const subMap = raw ? JSON.parse(raw) : [];
+          const cnt = Array.isArray(subMap) ? subMap.length : Object.keys(subMap).length;
+          elQuizBadge.textContent = cnt;
+        } catch (e) {
+          elQuizBadge.textContent = 0;
+        }
       }
     }
 
@@ -7253,44 +7271,91 @@ ${link}
       const tbody = document.getElementById('quizSubmissionsTableBody');
       if (!tbody) return;
 
-      const list = Array.isArray(quizSubmissionsMap)
+      let list = Array.isArray(quizSubmissionsMap)
         ? quizSubmissionsMap
         : Object.keys(quizSubmissionsMap).map(k => quizSubmissionsMap[k]).filter(Boolean);
 
-      list.sort((a, b) => (Number(b.score) || 0) - (Number(a.score) || 0) || (Number(b.solved) || 0) - (Number(a.solved) || 0));
-
-      const totalQ = quizConfigList.length || 6;
-      const completedCount = list.filter(s => Number(s.solved) >= totalQ).length;
+      const totalQ = (quizConfigList && quizConfigList.length) || 6;
+      const participantCount = list.length;
+      const completedCount = list.filter(s => (Number(s.solved) >= totalQ || Number(s.answeredCount) >= totalQ)).length;
       const perfectCount = list.filter(s => Number(s.score) >= totalQ).length;
+      const totalScoreSum = list.reduce((sum, s) => sum + (Number(s.score) || 0), 0);
+      const avgScore = participantCount > 0 ? (totalScoreSum / participantCount).toFixed(1) : '0.0';
 
-      if (document.getElementById('statQuizParticipants')) document.getElementById('statQuizParticipants').textContent = list.length;
-      if (document.getElementById('statQuizCompleted')) document.getElementById('statQuizCompleted').textContent = completedCount;
-      if (document.getElementById('statQuizPerfect')) document.getElementById('statQuizPerfect').textContent = perfectCount;
+      // 상단 KPI 통계 카드 업데이트
+      const elTotal = document.getElementById('statQuizTotalCount');
+      if (elTotal) elTotal.textContent = totalQ;
+      const elPart = document.getElementById('statQuizParticipantCount');
+      if (elPart) elPart.textContent = `${participantCount}명`;
+      const elComp = document.getElementById('statQuizCompletedCount');
+      if (elComp) elComp.textContent = `${completedCount}명`;
+      const elPerf = document.getElementById('statQuizPerfectCount');
+      if (elPerf) elPerf.textContent = `${perfectCount}명`;
+      const elAvg = document.getElementById('statQuizAvgScore');
+      if (elAvg) elAvg.textContent = `${avgScore}점`;
+
+      // 탭 네비게이션 뱃지 숫자 (제출 인원수) 동기화
+      const elBadge = document.getElementById('countBadgeQuiz');
+      if (elBadge) elBadge.textContent = participantCount;
+
+      // 요약 안내 문구
+      const summaryEl = document.getElementById('quizSubmissionsSummaryText');
+      if (summaryEl) {
+        summaryEl.innerHTML = `💡 현재 총 <strong style="color: var(--gold-bright);">${participantCount}명</strong>이 퀴즈를 제출했습니다. (전 문항 완료: <strong style="color: #4ade80;">${completedCount}명</strong> / 1차 만점: <strong style="color: #60a5fa;">${perfectCount}명</strong> / 평균 점수: <strong style="color: #f87171;">${avgScore}점</strong>)`;
+      }
+
+      // 검색 필터 적용
+      const searchInput = document.getElementById('quizSubmissionsSearch');
+      const query = searchInput ? searchInput.value.trim().toLowerCase() : '';
+      if (query) {
+        list = list.filter(s => {
+          const name = (s.name || '').toLowerCase();
+          const email = (s.email || '').toLowerCase();
+          const empNo = (s.empNo || '').toLowerCase();
+          const cid = (s.checkinId || '').toLowerCase();
+          return name.includes(query) || email.includes(query) || empNo.includes(query) || cid.includes(query);
+        });
+      }
+
+      // 점수 높은 순 > 완료 문항 많은 순 정렬
+      list.sort((a, b) => (Number(b.score) || 0) - (Number(a.score) || 0) || (Number(b.solved || b.answeredCount) || 0) - (Number(a.solved || a.answeredCount) || 0));
 
       if (list.length === 0) {
         tbody.innerHTML = `
           <tr>
-            <td colspan="6" style="text-align: center; padding: 30px; color: var(--text-muted);">
-              아직 퀴즈를 제출한 참가자가 없습니다. (참가자가 퀴즈를 풀면 실시간으로 집계됩니다)
+            <td colspan="9" style="text-align: center; padding: 36px; color: var(--text-muted);">
+              ${query ? '검색어와 일치하는 퀴즈 제출자가 없습니다.' : '아직 퀴즈를 제출한 참가자가 없습니다. (스마트폰에서 퀴즈를 풀면 실시간으로 집계됩니다)'}
             </td>
           </tr>
         `;
         return;
       }
 
-      tbody.innerHTML = list.map(s => {
-        const isDone = Number(s.solved) >= totalQ;
+      tbody.innerHTML = list.map((s, idx) => {
+        const solvedNum = Number(s.solved || s.answeredCount) || 0;
+        const isDone = solvedNum >= totalQ;
+        const scoreNum = Number(s.score || 0);
+        const scoreDisplay = (scoreNum % 1 === 0 ? scoreNum.toFixed(0) : scoreNum.toFixed(1));
+        const firstTry = Number(s.firstTryCount) || 0;
+        const retried = Number(s.retryCount) || 0;
+
         return `
           <tr>
-            <td><code style="color: #10b981;">${escapeHtml(s.checkinId || '-')}</code></td>
+            <td style="color: var(--text-muted); font-size: 12px;">${idx + 1}</td>
+            <td><code style="color: #10b981; font-weight: 700;">${escapeHtml(s.checkinId || '-')}</code></td>
             <td><strong>${escapeHtml(s.name || '익명 참가자')}</strong></td>
-            <td><code>${escapeHtml(s.email || '-')}</code></td>
-            <td>${Number(s.solved) || 0} / ${Number(s.total) || totalQ} 문항</td>
-            <td><strong style="color: var(--gold-bright);">${Number(s.score) || 0}점</strong></td>
+            <td><code>${escapeHtml(s.empNo || s.email || '-')}</code></td>
+            <td><span style="font-weight: 700;">${solvedNum} / ${totalQ} 문항</span></td>
+            <td><strong style="color: var(--gold-bright); font-size: 15px;">${scoreDisplay}점</strong></td>
+            <td>
+              <span style="font-size: 12px; color: #4ade80;">🥇 1차 정답: <strong>${firstTry}</strong></span>
+              <span style="color: rgba(255,255,255,0.2); margin: 0 4px;">|</span>
+              <span style="font-size: 12px; color: #f3c448;">🥈 2차 정답: <strong>${retried}</strong></span>
+            </td>
             <td>
               <span class="status-pill ${isDone ? 'matched' : ''}">${isDone ? '🎉 전 문항 완료' : '풀이 중'}</span>
-              <span style="font-size: 11px; color: var(--text-muted); margin-left: 6px;">${escapeHtml(s.updatedAt || '')}</span>
             </td>
+            <td style="font-size: 12px; color: var(--text-muted);">${escapeHtml(s.updatedAt || '-')}</td>
           </tr>
         `;
       }).join('');
@@ -7301,9 +7366,11 @@ ${link}
       const list = Array.isArray(quizSubmissionsMap)
         ? quizSubmissionsMap
         : Object.keys(quizSubmissionsMap).map(k => quizSubmissionsMap[k]).filter(Boolean);
-      let csv = '\uFEFF참가번호,성명,이메일,풀이문항수,정답수(점수),전체문항수,최근제출시각\n';
-      list.forEach(s => {
-        csv += `"${s.checkinId || ''}","${s.name || ''}","${s.email || ''}",${Number(s.solved) || 0},${Number(s.score) || 0},${Number(s.total) || quizConfigList.length},"${s.updatedAt || ''}"\n`;
+      let csv = '﻿순번,체크인ID,성명,사번/이메일,풀이완료문항수,획득점수,1차만점문항수,재시도정답문항수,전체문항수,최근제출시각\n';
+      list.forEach((s, idx) => {
+        const solvedNum = Number(s.solved || s.answeredCount) || 0;
+        const scoreNum = Number(s.score || 0);
+        csv += `${idx + 1},"${s.checkinId || ''}","${s.name || ''}","${s.empNo || s.email || ''}",${solvedNum},${scoreNum},${Number(s.firstTryCount) || 0},${Number(s.retryCount) || 0},${quizConfigList.length || 6},"${s.updatedAt || ''}"\n`;
       });
       downloadFile(csv, `hvac_quiz_scores_${new Date().toISOString().slice(0, 10)}.csv`, 'text/csv;charset=utf-8;');
       showToast('📥 퀴즈 참가자 성적표가 CSV 파일로 다운로드되었습니다.');

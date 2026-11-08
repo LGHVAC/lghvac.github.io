@@ -390,6 +390,47 @@
       opacity: 1 !important;
     }
 
+    .quiz-option-btn.option-wrong-attempt {
+      background: rgba(239, 68, 68, 0.14) !important;
+      border-color: rgba(239, 68, 68, 0.5) !important;
+      color: #fca5a5 !important;
+      text-decoration: line-through;
+      opacity: 0.65 !important;
+      cursor: not-allowed !important;
+    }
+
+    .quiz-card.card-retrying {
+      border-color: rgba(245, 158, 11, 0.55) !important;
+      box-shadow: 0 0 18px rgba(245, 158, 11, 0.18) !important;
+    }
+
+    .quiz-status-pill.pill-first-perfect {
+      background: rgba(34, 197, 94, 0.2) !important;
+      color: #4ade80 !important;
+      border: 1px solid rgba(34, 197, 94, 0.5) !important;
+    }
+
+    .quiz-status-pill.pill-retry-correct {
+      background: rgba(243, 196, 72, 0.2) !important;
+      color: #f3c448 !important;
+      border: 1px solid rgba(243, 196, 72, 0.5) !important;
+    }
+
+    .quiz-status-pill.pill-retrying {
+      background: rgba(239, 68, 68, 0.16) !important;
+      color: #f87171 !important;
+      border: 1px solid rgba(239, 68, 68, 0.45) !important;
+    }
+
+    @keyframes shakeCard {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-6px); }
+      40%, 80% { transform: translateX(6px); }
+    }
+    .card-shake {
+      animation: shakeCard 0.4s ease;
+    }
+
     .quiz-option-btn.selected-wrong {
       background: rgba(231, 76, 60, 0.22) !important;
       border-color: #e74c3c !important;
@@ -667,6 +708,9 @@
       <p class="quiz-hero-desc">
         각 세션의 핵심 인사이트를 퀴즈로 풀고, 클로징 시 진행되는 특별 경품 럭키드로우 추첨 기회를 잡으세요!
       </p>
+      <div style="display: inline-flex; align-items: center; gap: 8px; margin-top: 10px; padding: 6px 14px; border-radius: 999px; background: rgba(243, 196, 72, 0.12); border: 1px solid rgba(243, 196, 72, 0.35); font-size: 12.5px; color: #f3c448; font-weight: 700;">
+        <span>🎯 [채점 룰] 첫 시도 1.0점 만점 | 2차 시도 0.5점 | 3차 시도 0.2점 (틀려도 재도전 가능!)</span>
+      </div>
 
       <!-- 스코어 현황 -->
       <div class="score-banner">
@@ -890,68 +934,257 @@
       return true;
     }
 
-    function applyCardState(card, chosenOpt, isInitialRestore) {
-      const correctOpt = card.getAttribute('data-correct');
+    // 정답/시도 데이터 정규화 (이전 단일 문자열 포맷 호환)
+    function normalizeQuizState(state, correctOpt) {
+      if (!state) return null;
+      if (typeof state === 'string' || typeof state === 'number') {
+        const isCorr = (String(state) === String(correctOpt));
+        return {
+          attempts: [String(state)],
+          score: isCorr ? 1.0 : 0,
+          status: isCorr ? 'correct' : 'wrong',
+          isDone: true,
+          attemptCount: 1,
+          finalOpt: String(state)
+        };
+      }
+      return state;
+    }
+
+    // 카드 UI 렌더링 (다차 시도 및 패널티 반영)
+    function applyCardState(card, state, isInitialRestore) {
+      const correctOpt = String(card.getAttribute('data-correct'));
       const options = card.querySelectorAll('.quiz-option-btn');
       const explanation = card.querySelector('.quiz-explanation');
       const statusPill = card.querySelector('.quiz-status-pill');
 
-      options.forEach(b => {
-        b.disabled = true;
-        b.classList.remove('selected-correct', 'selected-wrong');
-      });
-      card.classList.remove('answered-correct', 'answered-wrong');
+      if (!state || !state.attempts || !state.attempts.length) {
+        options.forEach(b => {
+          b.disabled = false;
+          b.classList.remove('selected-correct', 'selected-wrong', 'option-wrong-attempt');
+        });
+        card.classList.remove('answered-correct', 'answered-wrong', 'card-retrying', 'card-shake');
+        if (statusPill) {
+          statusPill.textContent = '';
+          statusPill.className = 'quiz-status-pill';
+        }
+        if (explanation) explanation.classList.remove('show');
+        return;
+      }
 
-      const chosenBtn = card.querySelector(`.quiz-option-btn[data-opt="${chosenOpt}"]`);
+      // 옵션별 상태 표시
+      options.forEach(b => {
+        const optVal = String(b.getAttribute('data-opt'));
+        b.classList.remove('selected-correct', 'selected-wrong', 'option-wrong-attempt');
+
+        if (state.attempts.includes(optVal)) {
+          if (optVal === correctOpt) {
+            b.classList.add('selected-correct');
+            b.disabled = true;
+          } else {
+            b.classList.add('option-wrong-attempt');
+            b.disabled = true;
+          }
+        } else {
+          if (state.isDone) {
+            b.disabled = true;
+            // 오답으로 종료된 경우 정답 보기를 초록색으로 공개
+            if (state.status === 'wrong' && optVal === correctOpt) {
+              b.classList.add('selected-correct');
+            }
+          } else {
+            b.disabled = false;
+          }
+        }
+      });
+
+      // 완료 상태 (정답 또는 횟수 소진)
+      if (state.isDone) {
+        card.classList.remove('card-retrying', 'card-shake');
+        if (state.status === 'correct') {
+          card.classList.add('answered-correct');
+          card.classList.remove('answered-wrong');
+          if (statusPill) {
+            if (state.attemptCount === 1) {
+              statusPill.className = 'quiz-status-pill pill-first-perfect';
+              statusPill.textContent = '🎉 1차 만점 (+1.0점)';
+            } else if (state.attemptCount === 2) {
+              statusPill.className = 'quiz-status-pill pill-retry-correct';
+              statusPill.textContent = '✓ 2차 정답 (+0.5점)';
+            } else {
+              statusPill.className = 'quiz-status-pill pill-retry-correct';
+              statusPill.textContent = `✓ ${state.attemptCount}차 정답 (+${state.score}점)`;
+            }
+          }
+        } else {
+          card.classList.remove('answered-correct');
+          card.classList.add('answered-wrong');
+          if (statusPill) {
+            statusPill.className = 'quiz-status-pill';
+            statusPill.textContent = '✕ 최종 오답 (0점)';
+          }
+        }
+        if (explanation) explanation.classList.add('show');
+      } else {
+        // 재시도 진행 중 상태
+        card.classList.add('card-retrying');
+        if (!isInitialRestore) {
+          card.classList.remove('card-shake');
+          void card.offsetWidth;
+          card.classList.add('card-shake');
+        }
+        if (statusPill) {
+          statusPill.className = 'quiz-status-pill pill-retrying';
+          const maxNext = (state.attemptCount === 1 ? '0.5' : '0.2');
+          statusPill.textContent = `⚠️ ${state.attemptCount}차 오답 (재도전 중! 최대 ${maxNext}점)`;
+        }
+        if (explanation) explanation.classList.remove('show');
+      }
+    }
+
+    // 옵션 클릭 처리 (재시도 & 패널티 점수 계산)
+    function handleOptionClick(card, quizId, chosenOpt) {
+      const correctOpt = String(card.getAttribute('data-correct'));
+      let state = normalizeQuizState(userAnswers[quizId], correctOpt);
+
+      if (state && state.isDone) return; // 이미 완료된 문항
+
+      if (!state) {
+        state = {
+          attempts: [],
+          score: 0,
+          status: 'in_progress',
+          isDone: false,
+          attemptCount: 0,
+          finalOpt: null
+        };
+      }
+
+      chosenOpt = String(chosenOpt);
+      if (state.attempts.includes(chosenOpt)) return; // 이미 시도한 보기
+
+      state.attempts.push(chosenOpt);
+      state.attemptCount = state.attempts.length;
       const isCorrect = (chosenOpt === correctOpt);
 
       if (isCorrect) {
-        if (chosenBtn) chosenBtn.classList.add('selected-correct');
-        card.classList.add('answered-correct');
-        if (statusPill) statusPill.textContent = '✓ 정답';
-        if (!isInitialRestore) showToast('🎉 정답입니다! (+1점)');
+        state.isDone = true;
+        state.status = 'correct';
+        state.finalOpt = chosenOpt;
+        if (state.attemptCount === 1) {
+          state.score = 1.0;
+          showToast('🎉 첫 시도 만점 정답입니다! (+1.0점)');
+        } else if (state.attemptCount === 2) {
+          state.score = 0.5;
+          showToast('👏 2차 시도 정답입니다! (+0.5점 획득)');
+        } else if (state.attemptCount === 3) {
+          state.score = 0.2;
+          showToast('👍 3차 시도 정답입니다! (+0.2점 획득)');
+        } else {
+          state.score = 0.1;
+          showToast('✓ 정답입니다! (+0.1점)');
+        }
       } else {
-        if (chosenBtn) chosenBtn.classList.add('selected-wrong');
-        card.classList.add('answered-wrong');
-        if (statusPill) statusPill.textContent = '✕ 오답';
-        options.forEach(b => {
-          if (b.getAttribute('data-opt') === correctOpt) b.classList.add('selected-correct');
-        });
-        if (!isInitialRestore) showToast('💡 아쉽네요! 정답 해설을 확인하세요.');
+        const totalOpts = card.querySelectorAll('.quiz-option-btn').length;
+        const remainingTries = totalOpts - state.attemptCount;
+
+        if (remainingTries <= 1) {
+          // 남은 보기가 1개 이하이면 최종 오답 처리 (정답 자동 공개)
+          state.isDone = true;
+          state.status = 'wrong';
+          state.score = 0;
+          state.finalOpt = chosenOpt;
+          showToast('😢 최종 오답입니다 (0점). 정답 해설을 확인하세요.');
+        } else {
+          state.isDone = false;
+          state.status = 'in_progress';
+          if (state.attemptCount === 1) {
+            showToast('💡 1차 오답 (-0.5점 패널티). 다른 보기를 다시 선택해 보세요! (2차 성공 시 +0.5점)');
+          } else if (state.attemptCount === 2) {
+            showToast('⚠️ 2차 오답입니다. 한 번 더 도전해 보세요! (3차 성공 시 +0.2점)');
+          }
+        }
       }
 
-      if (explanation) explanation.classList.add('show');
+      userAnswers[quizId] = state;
+      applyCardState(card, state, false);
+      updateQuizSummary();
     }
 
     function updateQuizSummary() {
       let currentScore = 0;
       let answeredCount = 0;
+      let firstTryCount = 0;
+      let retryCount = 0;
 
       document.querySelectorAll('.quiz-card').forEach(card => {
         const qid = card.getAttribute('data-quiz-id');
         const correctOpt = card.getAttribute('data-correct');
-        if (userAnswers[qid]) {
+        const st = normalizeQuizState(userAnswers[qid], correctOpt);
+
+        if (st && st.isDone) {
           answeredCount++;
-          if (userAnswers[qid] === correctOpt) currentScore++;
+          currentScore += (Number(st.score) || 0);
+          if (st.status === 'correct') {
+            if (st.attemptCount === 1) firstTryCount++;
+            else retryCount++;
+          }
         }
       });
 
-      scoreDisplay.textContent = currentScore;
-      if (quizTotalEl) quizTotalEl.textContent = `/ ${totalQuizzes}점`;
+      // 점수 반올림 (소수점 1자리)
+      currentScore = Math.round(currentScore * 10) / 10;
+      scoreDisplay.textContent = (currentScore % 1 === 0 ? currentScore.toFixed(0) : currentScore.toFixed(1));
+      if (quizTotalEl) quizTotalEl.textContent = `/ ${totalQuizzes}.0점`;
       progressFill.style.width = totalQuizzes ? `${(answeredCount / totalQuizzes) * 100}%` : '0%';
 
       try {
         localStorage.setItem('hvac_quiz_score', String(currentScore));
         localStorage.setItem('hvac_quiz_answers', JSON.stringify(userAnswers));
+
+        // 로컬 테스트 및 실시간 어드민 현황 반영을 위해 hvac_quiz_submissions도 즉시 업데이트
+        const user = (window.HVAC && window.HVAC.getUserChecked && window.HVAC.getUserChecked())
+          || JSON.parse(localStorage.getItem('hvac_user_checked') || '{}');
+        const userKey = user.email || user.empNo || user.phone || 'attendee_' + (user.seq || 'local');
+        
+        let subList = JSON.parse(localStorage.getItem('hvac_quiz_submissions') || '[]');
+        if (!Array.isArray(subList)) subList = Object.values(subList).filter(Boolean);
+        
+        const subRecord = {
+          checkinId: user.checkinId || (user.seq ? 'HVAC-' + String(user.seq).padStart(3, '0') : '-'),
+          name: user.name || '참석자',
+          email: user.email || '익명(미체크인)',
+          empNo: user.empNo || user.employeeId || '',
+          solved: answeredCount,
+          answeredCount: answeredCount,
+          total: totalQuizzes,
+          score: currentScore,
+          firstTryCount: firstTryCount,
+          retryCount: retryCount,
+          updatedAt: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+        };
+
+        const existingIdx = subList.findIndex(item => (item.email && item.email === user.email) || (item.checkinId && item.checkinId === subRecord.checkinId && item.checkinId !== '-'));
+        if (existingIdx >= 0) subList[existingIdx] = subRecord;
+        else subList.push(subRecord);
+        localStorage.setItem('hvac_quiz_submissions', JSON.stringify(subList));
+
+        // 클라우드 연동 전송
         if (window.HVAC && HVAC.cloud && answeredCount > 0) {
-          HVAC.cloud.pushQuizScore({ score: currentScore, answeredCount: answeredCount, total: totalQuizzes });
+          HVAC.cloud.pushQuizScore({
+            score: currentScore,
+            answeredCount: answeredCount,
+            firstTryCount: firstTryCount,
+            retryCount: retryCount,
+            total: totalQuizzes
+          });
         }
       } catch (e) {}
 
       const promptEl = document.getElementById('luckyDrawPrompt');
       if (!promptEl) return;
       if (totalQuizzes && answeredCount === totalQuizzes) {
-        promptEl.textContent = `모든 퀴즈를 완료했습니다! (총 ${currentScore} / ${totalQuizzes}점 획득) 지금 설문에 참여하고 럭키드로우 경품을 노려보세요!`;
+        promptEl.textContent = `모든 퀴즈를 완료했습니다! (총 ${currentScore} / ${totalQuizzes}.0점 획득, 1차 만점: ${firstTryCount}문항 / 재시도 정답: ${retryCount}문항) 클로징 럭키드로우 추첨 기회를 잡으세요!`;
       } else {
         promptEl.textContent = '만족도 설문에 참여하시고 클로징 럭키드로우 경품 추첨 기회를 놓치지 마세요!';
       }
@@ -964,15 +1197,17 @@
 
       cards.forEach(card => {
         const quizId = card.getAttribute('data-quiz-id');
-        if (userAnswers[quizId]) applyCardState(card, userAnswers[quizId], true);
+        const correctOpt = card.getAttribute('data-correct');
+        const state = normalizeQuizState(userAnswers[quizId], correctOpt);
+        if (state) {
+          userAnswers[quizId] = state;
+          applyCardState(card, state, true);
+        }
 
         card.querySelectorAll('.quiz-option-btn').forEach(btn => {
           btn.addEventListener('click', () => {
-            if (userAnswers[quizId]) return;
             const chosenOpt = btn.getAttribute('data-opt');
-            userAnswers[quizId] = chosenOpt;
-            applyCardState(card, chosenOpt, false);
-            updateQuizSummary();
+            handleOptionClick(card, quizId, chosenOpt);
           });
         });
       });
@@ -1139,14 +1374,17 @@
       } catch (e) {}
 
       document.querySelectorAll('.quiz-card').forEach(card => {
-        card.classList.remove('answered-correct', 'answered-wrong');
+        card.classList.remove('answered-correct', 'answered-wrong', 'card-retrying', 'card-shake');
         const statusPill = card.querySelector('.quiz-status-pill');
-        if (statusPill) statusPill.textContent = '';
+        if (statusPill) {
+          statusPill.textContent = '';
+          statusPill.className = 'quiz-status-pill';
+        }
         const explanation = card.querySelector('.quiz-explanation');
         if (explanation) explanation.classList.remove('show');
         card.querySelectorAll('.quiz-option-btn').forEach(b => {
           b.disabled = false;
-          b.classList.remove('selected-correct', 'selected-wrong');
+          b.classList.remove('selected-correct', 'selected-wrong', 'option-wrong-attempt');
         });
       });
 

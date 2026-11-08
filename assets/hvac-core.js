@@ -597,10 +597,14 @@
     var record = {
       email: user.email || '익명(미체크인)',
       name: user.name || '미체크인 참가자',
+      empNo: user.empNo || user.employeeId || '',
+      dept: user.dept || '',
       seq: user.seq || null,
       checkinId: user.checkinId || '-',
       score: scoreObj.score || 0,
       answeredCount: scoreObj.answeredCount || 0,
+      firstTryCount: scoreObj.firstTryCount || 0,
+      retryCount: scoreObj.retryCount || 0,
       total: scoreObj.total || 6,
       updatedAt: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
     };
