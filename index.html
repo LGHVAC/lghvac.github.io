@@ -104,7 +104,15 @@
         if (!h) return;
         const elEyebrow = document.querySelector('.eyebrow');
         if (elEyebrow && (h.eyebrow || h.scheduleDate)) {
-          elEyebrow.textContent = h.eyebrow || ('ENGINEERING INSIGHT DAY · ' + h.scheduleDate);
+          const rawEyebrow = h.eyebrow || ('ENGINEERING INSIGHT DAY · ' + h.scheduleDate);
+          if (rawEyebrow.includes('·')) {
+            const parts = rawEyebrow.split('·');
+            const mainText = parts[0].trim();
+            const dateText = parts.slice(1).join('·').trim();
+            elEyebrow.innerHTML = '<span class="eyebrow-main">' + esc(mainText) + '</span><span class="eyebrow-date">· ' + esc(dateText) + '</span>';
+          } else {
+            elEyebrow.innerHTML = '<span class="eyebrow-main">' + esc(rawEyebrow) + '</span>';
+          }
         }
         const elYear = document.querySelector('.year');
         if (elYear && h.year) elYear.textContent = h.year;
@@ -473,23 +481,42 @@
     .eyebrow {
       display: inline-flex;
       align-items: center;
-      gap: 9px;
-      padding: 8px 15px;
+      flex-wrap: wrap;
+      gap: 4px 8px;
+      padding: 8px 16px;
       border: 1px solid rgba(243, 196, 72, 0.35);
       border-radius: 999px;
       background: rgba(243, 196, 72, 0.08);
       font-size: 12px;
       font-weight: 950;
-      letter-spacing: 0.15em;
+      letter-spacing: 0.12em;
       color: #f3c448;
+      max-width: 100%;
+      line-height: 1.4;
     }
 
     .eyebrow::before {
+      display: none;
+    }
+
+    .eyebrow-main {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      white-space: nowrap;
+    }
+
+    .eyebrow-main::before {
       content: "";
       width: 7px;
       height: 7px;
       border-radius: 50%;
       background: #f3c448;
+      flex-shrink: 0;
+    }
+
+    .eyebrow-date {
+      white-space: nowrap;
     }
 
     .eyebrow-kakao {
@@ -1398,6 +1425,12 @@
       .wrap {
         width: min(100% - 26px, 1160px);
       }
+      .eyebrow {
+        font-size: 11.5px;
+        letter-spacing: 0.08em;
+        padding: 7px 14px;
+        gap: 3px 8px;
+      }
       .nav {
         min-height: 64px;
       }
@@ -1494,7 +1527,10 @@
     <section class="hero" id="home">
       <div class="wrap hero-inner">
         <div class="eyebrow-wrap">
-          <div class="eyebrow">ENGINEERING INSIGHT DAY · 2026. 11. 16(월)</div>
+          <div class="eyebrow">
+            <span class="eyebrow-main">ENGINEERING INSIGHT DAY</span>
+            <span class="eyebrow-date">· 2026. 11. 16(월)</span>
+          </div>
         </div>
 
         <div class="year">2026</div>
