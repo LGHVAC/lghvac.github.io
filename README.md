@@ -3,8 +3,8 @@
 약 200명이 참석하는 엔지니어링 세미나를 위한 공식 안내 및 스마트 인터랙션 웹사이트입니다.  
 GitHub Pages를 통해 별도의 서버 구축 비용 없이 안정적으로 무료 호스팅되며, 실시간 아젠다 공지, 연사 프로필, 장소 동선 안내, 카카오톡 오픈 톡방 소통, 스마트 QR 출석체크 및 세션별 퀴즈를 지원합니다.
 
-- **공식 웹사이트:** [https://were77kim-netizen.github.io/10th-HVAC/](https://were77kim-netizen.github.io/10th-HVAC/)
-- **저장소 주소:** [https://github.com/were77kim-netizen/10th-HVAC](https://github.com/were77kim-netizen/10th-HVAC)
+- **공식 웹사이트:** [https://lghvac.github.io/](https://lghvac.github.io/)
+- **저장소 주소:** [https://github.com/LGHVAC/lghvac.github.io](https://github.com/LGHVAC/lghvac.github.io)
 
 ---
 

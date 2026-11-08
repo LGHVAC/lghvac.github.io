@@ -71,7 +71,7 @@
       var pathDir = location.pathname.replace(/\/qr\/index\.html$/, '/').replace(/\/[^/]*\.html$/, '/').replace(/\/+$/, '');
       return location.origin + pathDir;
     }
-    return 'https://were77kim-netizen.github.io/10th-HVAC';
+    return 'https://lghvac.github.io';
   }
 
   // ---------------------------------------------------------
