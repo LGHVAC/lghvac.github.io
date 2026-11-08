@@ -1,0 +1,45 @@
+# =========================================================
+# 2026 HVAC Seminar - 개인정보 및 민감 데이터 보호 .gitignore
+# =========================================================
+
+# 1. 참석자 출석부 및 개인정보 내보내기 파일 (엑셀, CSV, TSV)
+*.csv
+*.tsv
+*.xlsx
+*.xls
+*attendance*
+*checkin*
+*roster*
+*attendee*
+*winner*
+
+# 2. 관리자 전체 백업 및 로컬 데이터 덤프 파일
+*backup*.json
+*operational_backup*.json
+*dump*.json
+*private*.json
+*secret*.json
+
+# 3. 환경 변수 및 인증 토큰/키
+.env
+.env.*
+*.key
+*.pem
+*.token
+firebase-credentials.json
+serviceAccountKey.json
+
+# 4. OS 및 개발 툴 임시 파일
+.DS_Store
+Thumbs.db
+desktop.ini
+*.log
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# 5. 임시 및 스크래치 디렉터리
+scratch/
+tmp/
+temp/
