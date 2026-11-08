@@ -58,9 +58,11 @@
         staticBios = {};
         document.querySelectorAll('#speakers .speaker-card').forEach(function (card) {
           const name = (card.querySelector('h3') || {}).textContent || '';
+          const img = card.querySelector('.speaker-photo img');
           staticBios[nameKey(name)] = {
             org: ((card.querySelector('.org') || {}).textContent || '').trim(),
-            bullets: Array.from(card.querySelectorAll('ul li')).map(function (li) { return li.textContent.trim(); })
+            bullets: Array.from(card.querySelectorAll('ul li')).map(function (li) { return li.textContent.trim(); }),
+            image: img ? img.getAttribute('src') : ''
           };
         });
       }
@@ -176,12 +178,24 @@
           const fallback = staticBios[nameKey(name)] || { org: '', bullets: [] };
           const bio = Array.isArray(s.bio) && s.bio.length ? s.bio : fallback.bullets;
           const org = speakerOrg(s) || fallback.org;
+          const image = s.photo || s.image || fallback.image;
+          const photoHtml = image
+            ? '<div class="speaker-photo"><img src="' + esc(image) + '" alt="' + esc(name) + ' 강사 사진" loading="lazy"></div>'
+            : '';
           return '<article class="speaker-card reveal visible">' +
-            '<p class="org">' + esc(org) + '</p>' +
-            '<h3>' + esc(name) + '</h3>' +
-            '<p class="speaker-topic">' + esc(s.title) + '</p>' +
-            (bio.length ? '<ul>' + bio.map(function (b) { return '<li>' + esc(b) + '</li>'; }).join('') + '</ul>' : '') +
-            buildMaterialBtn(s, false) +
+            '<div class="speaker-top">' +
+              '<div class="speaker-identity">' +
+                '<span class="speaker-label">EXPERT SPEAKER</span>' +
+                '<p class="org">' + esc(org) + '</p>' +
+                '<h3>' + esc(name) + '</h3>' +
+              '</div>' +
+              photoHtml +
+            '</div>' +
+            '<div class="speaker-detail">' +
+              '<p class="speaker-topic">' + esc(s.title) + '</p>' +
+              (bio.length ? '<ul>' + bio.map(function (b) { return '<li>' + esc(b) + '</li>'; }).join('') + '</ul>' : '') +
+              buildMaterialBtn(s, false) +
+            '</div>' +
             '</article>';
         }).join('');
         bindMaterialButtons(grid);
@@ -935,7 +949,7 @@
       transition: transform 0.22s;
     }
 
-    .speaker-card::before {
+    .speaker-card:not(:has(.speaker-label))::before {
       content: "EXPERT SPEAKER";
       display: inline-block;
       margin-bottom: 17px;
@@ -981,6 +995,146 @@
 
     .speaker-card li + li {
       margin-top: 5px;
+    }
+
+    
+    .speaker-top {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 112px;
+      gap: 18px;
+      align-items: start;
+      margin-bottom: 18px;
+    }
+
+    .speaker-identity {
+      min-width: 0;
+    }
+
+    .speaker-label {
+      display: inline-block;
+      margin-bottom: 14px;
+      padding: 5px 10px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, #094a27, #0e6e3a);
+      color: #f3c448;
+      font-size: 10px;
+      font-weight: 950;
+      letter-spacing: 0.12em;
+      white-space: nowrap;
+    }
+
+    .speaker-photo {
+      width: 112px;
+      height: 130px;
+      overflow: hidden;
+      border-radius: 13px;
+      background: linear-gradient(145deg, #e5ebe7, #d6ddd8);
+      box-shadow: 0 8px 22px rgba(0, 0, 0, 0.10);
+    }
+
+    .speaker-photo img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center top;
+    }
+
+    .speaker-detail {
+      width: 100%;
+      min-width: 0;
+    }
+
+    .venue-map-card {
+      grid-column: 1 / -1;
+      padding: 30px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: #08130c;
+    }
+
+    .venue-map-card h2 {
+      font-size: 22px;
+      margin: 10px 0 16px;
+      color: #fff;
+    }
+
+    .venue-map-image-button {
+      display: block;
+      width: 100%;
+      padding: 0;
+      overflow: hidden;
+      background: #fff;
+      border: 0;
+      border-radius: 15px;
+      cursor: zoom-in;
+    }
+
+    .venue-map-image {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    .venue-map-card p {
+      margin-top: 10px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .map-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 3000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: rgba(0, 0, 0, 0.88);
+      backdrop-filter: blur(8px);
+    }
+
+    .map-modal.open {
+      display: flex;
+    }
+
+    .map-modal-dialog {
+      max-width: 1180px;
+      max-height: 90vh;
+      overflow: auto;
+      padding: 12px;
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8);
+      position: relative;
+    }
+
+    .map-modal-dialog img {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    .map-modal-close {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      width: 44px;
+      height: 44px;
+      border: 0;
+      border-radius: 50%;
+      background: #222;
+      color: #fff;
+      font-size: 24px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+    }
+
+    .map-modal-close:hover {
+      background: #444;
     }
 
     /* =========================
@@ -1536,74 +1690,134 @@
 
         <div class="speaker-grid">
           <article class="speaker-card reveal">
-            <p class="org">서울대학교</p>
-            <h3>여명석 교수</h3>
-            <p class="speaker-topic">국내주거난방의 변천과 현황</p>
-            <ul>
-              <li>’27년 대한설비공학회장</li>
-              <li>현) 서울대학교 공과대학 건축학과 건축공학전공 교수</li>
-              <li>현) 서울대학교 탄소중립 캠퍼스 추진단 단장</li>
-              <li>현) 대한건축학회 이사</li>
-              <li>전) 서울대학교 건축학과장</li>
-            </ul>
+            <div class="speaker-top">
+              <div class="speaker-identity">
+                <span class="speaker-label">EXPERT SPEAKER</span>
+                <p class="org">서울대학교</p>
+                <h3>여명석 교수</h3>
+              </div>
+              <div class="speaker-photo">
+                <img src="./assets/yeo-myungseok.jpg" alt="여명석 교수 강사 사진" loading="lazy">
+              </div>
+            </div>
+            <div class="speaker-detail">
+              <p class="speaker-topic">국내주거난방의 변천과 현황</p>
+              <ul>
+                <li>’27년 대한설비공학회장</li>
+                <li>현) 서울대학교 공과대학 건축학과 건축공학전공 교수</li>
+                <li>현) 서울대학교 탄소중립 캠퍼스 추진단 단장</li>
+                <li>현) 대한건축학회 이사</li>
+                <li>전) 서울대학교 건축학과장</li>
+              </ul>
+            </div>
           </article>
 
           <article class="speaker-card reveal">
-            <p class="org">중앙대학교</p>
-            <h3>이성혁 교수</h3>
-            <p class="speaker-topic">고밀도 AI 서버의 액체냉각 및 데이터센터 열관리 기술</p>
-            <ul>
-              <li>현) 중앙대학교 기계공학부 교수</li>
-              <li>현) 대한기계학회 부회장</li>
-              <li>현) JMST 부편집인</li>
-              <li>전) 중앙대학교 차세대에너지안전연구소 소장</li>
-            </ul>
+            <div class="speaker-top">
+              <div class="speaker-identity">
+                <span class="speaker-label">EXPERT SPEAKER</span>
+                <p class="org">중앙대학교</p>
+                <h3>이성혁 교수</h3>
+              </div>
+              <div class="speaker-photo">
+                <img src="./assets/lee-sunghyuk.jpg" alt="이성혁 교수 강사 사진" loading="lazy">
+              </div>
+            </div>
+            <div class="speaker-detail">
+              <p class="speaker-topic">고밀도 AI 서버의 액체냉각 및 데이터센터 열관리 기술</p>
+              <ul>
+                <li>현) 중앙대학교 기계공학부 교수</li>
+                <li>현) 대한기계학회 부회장</li>
+                <li>현) JMST 부편집인</li>
+                <li>전) 중앙대학교 차세대에너지안전연구소 소장</li>
+              </ul>
+            </div>
           </article>
 
           <article class="speaker-card reveal">
-            <p class="org">단국대학교</p>
-            <h3>조홍종 교수</h3>
-            <p class="speaker-topic">국내 전력시장 현황 및 AIDC 전력공급 방안</p>
-            <ul>
-              <li>현) 한국자원경제학회 회장</li>
-              <li>현) 한국가스공사 비상임이사</li>
-              <li>현) 수요예측실무위원회 위원장</li>
-              <li>전) 전력수급기본계획 총괄분과 위원</li>
-            </ul>
+            <div class="speaker-top">
+              <div class="speaker-identity">
+                <span class="speaker-label">EXPERT SPEAKER</span>
+                <p class="org">단국대학교</p>
+                <h3>조홍종 교수</h3>
+              </div>
+              <div class="speaker-photo">
+                <img src="./assets/cho-hongjong.jpg" alt="조홍종 교수 강사 사진" loading="lazy">
+              </div>
+            </div>
+            <div class="speaker-detail">
+              <p class="speaker-topic">국내 전력시장 현황 및 AIDC 전력공급 방안</p>
+              <ul>
+                <li>현) 한국자원경제학회 회장</li>
+                <li>현) 한국가스공사 비상임이사</li>
+                <li>현) 수요예측실무위원회 위원장</li>
+                <li>전) 전력수급기본계획 총괄분과 위원</li>
+              </ul>
+            </div>
           </article>
 
           <article class="speaker-card reveal">
-            <p class="org">토지주택연구원(LHRI)</p>
-            <h3>유정현 수석연구원</h3>
-            <p class="speaker-topic">헬로우 히트펌프, 굿바이 보일러</p>
-            <ul>
-              <li>현) LH 토지주택연구원 수석연구원</li>
-              <li>제로에너지건축물과 공동주택 에너지시스템 연구</li>
-              <li>수소도시 및 에너지자립도시 연구 수행</li>
-              <li>공기열원 히트펌프 및 분산에너지 연구</li>
-            </ul>
+            <div class="speaker-top">
+              <div class="speaker-identity">
+                <span class="speaker-label">EXPERT SPEAKER</span>
+                <p class="org">토지주택연구원(LHRI)</p>
+                <h3>유정현 수석연구원</h3>
+              </div>
+              <div class="speaker-photo">
+                <img src="./assets/yoo-junghyun.jpg" alt="유정현 수석연구원 강사 사진" loading="lazy">
+              </div>
+            </div>
+            <div class="speaker-detail">
+              <p class="speaker-topic">헬로우 히트펌프, 굿바이 보일러</p>
+              <ul>
+                <li>현) LH 토지주택연구원 수석연구원</li>
+                <li>제로에너지건축물과 공동주택 에너지시스템 연구</li>
+                <li>수소도시 및 에너지자립도시 연구 수행</li>
+                <li>공기열원 히트펌프 및 분산에너지 연구</li>
+              </ul>
+            </div>
           </article>
 
           <article class="speaker-card reveal">
-            <p class="org">에너지컨설팅팀</p>
-            <h3>오영훈 팀장</h3>
-            <p class="speaker-topic">에너지컨설팅 사례 발표</p>
-            <ul>
-              <li>건물 및 플랜트 에너지 효율화 솔루션</li>
-              <li>실제 컨설팅 현장 적용 사례 및 성과 분석</li>
-            </ul>
+            <div class="speaker-top">
+              <div class="speaker-identity">
+                <span class="speaker-label">EXPERT SPEAKER</span>
+                <p class="org">에너지컨설팅팀</p>
+                <h3>오영훈 팀장</h3>
+              </div>
+              <div class="speaker-photo">
+                <img src="./assets/oh-younghoon.jpg" alt="오영훈 팀장 강사 사진" loading="lazy">
+              </div>
+            </div>
+            <div class="speaker-detail">
+              <p class="speaker-topic">에너지컨설팅 사례 발표</p>
+              <ul>
+                <li>건물 및 플랜트 에너지 효율화 솔루션</li>
+                <li>실제 컨설팅 현장 적용 사례 및 성과 분석</li>
+              </ul>
+            </div>
           </article>
 
           <article class="speaker-card reveal">
-            <p class="org">과학 커뮤니케이터</p>
-            <h3>이정모 관장</h3>
-            <p class="speaker-topic">테라포밍 또는 찬란한 멸종-그래도 우리는 지구에 살아야 한다</p>
-            <ul>
-              <li>현) 과학 커뮤니케이터 및 과학관 전문가</li>
-              <li>전) 국립과천과학관 관장</li>
-              <li>전) 서울시립과학관 관장</li>
-              <li>전) 서대문자연사박물관 관장</li>
-            </ul>
+            <div class="speaker-top">
+              <div class="speaker-identity">
+                <span class="speaker-label">EXPERT SPEAKER</span>
+                <p class="org">과학 커뮤니케이터</p>
+                <h3>이정모 관장</h3>
+              </div>
+              <div class="speaker-photo">
+                <img src="./assets/lee-jungmo.jpg" alt="이정모 관장 강사 사진" loading="lazy">
+              </div>
+            </div>
+            <div class="speaker-detail">
+              <p class="speaker-topic">테라포밍 또는 찬란한 멸종-그래도 우리는 지구에 살아야 한다</p>
+              <ul>
+                <li>현) 과학 커뮤니케이터 및 과학관 전문가</li>
+                <li>전) 국립과천과학관 관장</li>
+                <li>전) 서울시립과학관 관장</li>
+                <li>전) 서대문자연사박물관 관장</li>
+              </ul>
+            </div>
           </article>
         </div>
       </div>
@@ -1715,6 +1929,16 @@
               <li>본부관 별관 → 법학관 5층 천하 (식당), 도보 약 2~3분</li>
               <li>자가용 이용 시: 교내 지하주차장 이용 (출차 시 등록데스크에서 주차권 수령)</li>
             </ul>
+          </article>
+
+          <!-- 국민대학교 행사장 안내 약도 카드 -->
+          <article class="venue-map-card reveal">
+            <span class="badge">CAMPUS ROUTE MAP</span>
+            <h2>국민대학교 행사장 안내 약도</h2>
+            <button class="venue-map-image-button" id="openMapModal" type="button" title="약도 크게 보기">
+              <img class="venue-map-image" src="./assets/kookmin-venue-map.png" alt="국민대학교 행사장 안내 약도">
+            </button>
+            <p>🔍 약도를 누르면 크게 보실 수 있습니다.</p>
           </article>
         </div>
       </div>
@@ -1877,6 +2101,32 @@
         }
       });
     }
+  </script>
+  <!-- 국민대학교 약도 확대 모달 -->
+  <div class="map-modal" id="mapModal">
+    <button class="map-modal-close" id="closeMapModal" type="button" title="닫기">&times;</button>
+    <div class="map-modal-dialog">
+      <img src="./assets/kookmin-venue-map.png" alt="국민대학교 행사장 안내 약도 확대">
+    </div>
+  </div>
+
+  <script>
+    (function initMapModal() {
+      const openBtn = document.getElementById('openMapModal');
+      const modal = document.getElementById('mapModal');
+      const closeBtn = document.getElementById('closeMapModal');
+      if (openBtn && modal) {
+        openBtn.addEventListener('click', function () { modal.classList.add('open'); });
+      }
+      if (closeBtn && modal) {
+        closeBtn.addEventListener('click', function () { modal.classList.remove('open'); });
+      }
+      if (modal) {
+        modal.addEventListener('click', function (e) {
+          if (e.target === modal) modal.classList.remove('open');
+        });
+      }
+    })();
   </script>
 </body>
 </html>
