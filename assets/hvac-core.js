@@ -24,6 +24,8 @@
     'hvac_site_links',
     'hvac_site_content',
     'hvac_quiz_config',
+    'hvac_quiz_unlocked_sessions',
+    'hvac_quiz_scoring_policy',
     'hvac_notice_banner',
     'hvac_milestone_events'
   ];
@@ -784,7 +786,20 @@
     if (CONFIG_KEYS.indexOf(e.key) >= 0) notifyUpdated([e.key]);
   });
 
+  function buildPublishedConfig() {
+    var payload = {
+      publishedAt: new Date().toISOString(),
+      data: {}
+    };
+    CONFIG_KEYS.forEach(function (k) {
+      var v = read(k);
+      if (v !== null) payload.data[k] = v;
+    });
+    return payload;
+  }
+
   window.HVAC = {
+    buildPublishedConfig: buildPublishedConfig,
     CONFIG_KEYS: CONFIG_KEYS,
     read: read,
     esc: esc,

@@ -2684,6 +2684,98 @@
         </div>
       </div>
 
+      <!-- 0-B. ⚖️ 퀴즈 시도별 차등 배점 & 감점 패널티 설정 (NEW) -->
+      <div class="card" style="margin-bottom: 24px; border: 1px solid rgba(16, 185, 129, 0.35); background: linear-gradient(145deg, #091a13, #06120d);">
+        <div class="card-header">
+          <div>
+            <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #4ade80; border: 1px solid rgba(16, 185, 129, 0.3); font-size: 11px; padding: 3px 8px; border-radius: 999px;">SCORING &amp; PENALTY POLICY</span>
+            <h3 class="card-title" style="margin-top: 6px; color: #fff;">⚖️ 퀴즈 시도별 차등 배점 &amp; 감점 패널티 설정</h3>
+            <p class="card-sub">
+              참석자가 1차/2차/3차 시도에서 정답을 맞혔을 때 부여할 점수(배점)를 지정합니다. 틀린 경우 패널티를 부여하여 강연 몰입도를 높일 수 있습니다.
+            </p>
+          </div>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <button class="btn-act primary" onclick="saveQuizScoringPolicyFromUi()">💾 배점 정책 저장</button>
+            <button class="btn-act" onclick="resetQuizScoringPolicyDefault()">🔄 기본값 복원</button>
+          </div>
+        </div>
+
+        <!-- 빠른 프리셋 버튼 모음 -->
+        <div style="margin-top: 14px; padding: 12px 16px; border-radius: 10px; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+          <span style="font-size: 12.5px; font-weight: 700; color: var(--gold-bright);">⚡ 빠른 배점 프리셋 선택:</span>
+          <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+            <button class="btn-tbl active" id="btnPresetStandard" onclick="applyScoringPreset('standard')">⭐ 표준 감점 (1.0 ➔ 0.5 ➔ 0.2점)</button>
+            <button class="btn-tbl" id="btnPresetMild" onclick="applyScoringPreset('mild')">🌱 완화 감점 (1.0 ➔ 0.7 ➔ 0.4점)</button>
+            <button class="btn-tbl" id="btnPresetStrict" onclick="applyScoringPreset('strict')">🔥 엄격 감점 (1.0 ➔ 0.3 ➔ 0.1점)</button>
+            <button class="btn-tbl" id="btnPresetEqual" onclick="applyScoringPreset('equal')">🎁 감점 없음 (1.0 ➔ 1.0 ➔ 1.0점)</button>
+          </div>
+        </div>
+
+        <!-- 4단계 시도별 배점 입력 그리드 -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; margin-top: 16px;">
+          <!-- 1차 시도 -->
+          <div style="background: rgba(34, 197, 94, 0.08); border: 1px solid rgba(34, 197, 94, 0.3); border-radius: 12px; padding: 14px 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <span style="font-size: 13px; font-weight: 850; color: #4ade80;">🥇 1차 시도 정답</span>
+              <span style="font-size: 11px; color: #a7f3d0; background: rgba(34,197,94,0.2); padding: 2px 6px; border-radius: 4px;">첫 시도 만점</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <input type="number" id="cfgScoreTry1" class="form-control" step="0.1" min="0" max="10" value="1.0" style="font-size: 16px; font-weight: 800; text-align: center; color: #4ade80;" oninput="updateScoringPreview()">
+              <span style="font-weight: 800; color: #fff;">점</span>
+            </div>
+            <p style="font-size: 11.5px; color: var(--text-muted); margin: 6px 0 0;">틀림 없이 한 번에 맞춘 경우</p>
+          </div>
+
+          <!-- 2차 시도 -->
+          <div style="background: rgba(243, 196, 72, 0.08); border: 1px solid rgba(243, 196, 72, 0.3); border-radius: 12px; padding: 14px 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <span style="font-size: 13px; font-weight: 850; color: #f3c448;">🥈 2차 시도 정답</span>
+              <span style="font-size: 11px; color: #fde68a; background: rgba(243,196,72,0.2); padding: 2px 6px; border-radius: 4px;" id="badgePenaltyTry2">1차 오답 감점 -0.5점</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <input type="number" id="cfgScoreTry2" class="form-control" step="0.1" min="0" max="10" value="0.5" style="font-size: 16px; font-weight: 800; text-align: center; color: #f3c448;" oninput="updateScoringPreview()">
+              <span style="font-weight: 800; color: #fff;">점</span>
+            </div>
+            <p style="font-size: 11.5px; color: var(--text-muted); margin: 6px 0 0;">1번 틀리고 2번째 맞춘 경우</p>
+          </div>
+
+          <!-- 3차 시도 -->
+          <div style="background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 12px; padding: 14px 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <span style="font-size: 13px; font-weight: 850; color: #60a5fa;">🥉 3차 시도 정답</span>
+              <span style="font-size: 11px; color: #bfdbfe; background: rgba(59,130,246,0.2); padding: 2px 6px; border-radius: 4px;" id="badgePenaltyTry3">2차 오답 감점 -0.8점</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <input type="number" id="cfgScoreTry3" class="form-control" step="0.1" min="0" max="10" value="0.2" style="font-size: 16px; font-weight: 800; text-align: center; color: #60a5fa;" oninput="updateScoringPreview()">
+              <span style="font-weight: 800; color: #fff;">점</span>
+            </div>
+            <p style="font-size: 11.5px; color: var(--text-muted); margin: 6px 0 0;">2번 틀리고 3번째 맞춘 경우</p>
+          </div>
+
+          <!-- 4차 이상 / 소진 -->
+          <div style="background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.25); border-radius: 12px; padding: 14px 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <span style="font-size: 13px; font-weight: 850; color: #f87171;">✕ 4차 이상 / 소진</span>
+              <span style="font-size: 11px; color: #fca5a5; background: rgba(239,68,68,0.2); padding: 2px 6px; border-radius: 4px;">최종 오답</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <input type="number" id="cfgScoreTry4" class="form-control" step="0.1" min="0" max="10" value="0.0" style="font-size: 16px; font-weight: 800; text-align: center; color: #f87171;" oninput="updateScoringPreview()">
+              <span style="font-weight: 800; color: #fff;">점</span>
+            </div>
+            <p style="font-size: 11.5px; color: var(--text-muted); margin: 6px 0 0;">기회 소진 시 (정답/해설 공개)</p>
+          </div>
+        </div>
+
+        <!-- 실시간 안내 문구 미리보기 -->
+        <div style="margin-top: 14px; padding: 12px 16px; border-radius: 10px; background: rgba(0, 0, 0, 0.3); border: 1px dashed rgba(243, 196, 72, 0.35); display: flex; align-items: center; gap: 10px;">
+          <span style="font-size: 14px;">📢</span>
+          <div style="font-size: 12.5px; color: #fde68a;">
+            <strong>참석자 퀴즈 화면 실시간 배너 미리보기:</strong>
+            <span id="scoringRuleBannerPreview" style="margin-left: 6px; color: #fff; font-weight: 700;">🎯 [채점 룰] 첫 시도 1.0점 만점 | 2차 시도 0.5점 | 3차 시도 0.2점 (틀려도 재도전 가능!)</span>
+          </div>
+        </div>
+      </div>
+
       <!-- 1. 퀴즈 문항 편집 카드 -->
       <div class="card" style="margin-bottom: 24px;">
         <div class="card-header">
@@ -7093,6 +7185,120 @@ ${link}
       window.open('https://open.kakao.com/o/gfwiqxVi', '_blank');
     }
 
+    
+    // =========================================================
+    // 퀴즈 시도별 차등 배점 & 감점 패널티 정책 관리
+    // =========================================================
+    const DEFAULT_SCORING_POLICY = {
+      try1: 1.0,
+      try2: 0.5,
+      try3: 0.2,
+      try4: 0.0
+    };
+
+    function getQuizScoringPolicy() {
+      try {
+        const raw = localStorage.getItem('hvac_quiz_scoring_policy');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed && typeof parsed === 'object') {
+            return {
+              try1: Number(parsed.try1) >= 0 ? Number(parsed.try1) : 1.0,
+              try2: Number(parsed.try2) >= 0 ? Number(parsed.try2) : 0.5,
+              try3: Number(parsed.try3) >= 0 ? Number(parsed.try3) : 0.2,
+              try4: Number(parsed.try4) >= 0 ? Number(parsed.try4) : 0.0
+            };
+          }
+        }
+      } catch (e) {}
+      return DEFAULT_SCORING_POLICY;
+    }
+
+    function loadQuizScoringPolicyToUi() {
+      const pol = getQuizScoringPolicy();
+      const el1 = document.getElementById('cfgScoreTry1');
+      const el2 = document.getElementById('cfgScoreTry2');
+      const el3 = document.getElementById('cfgScoreTry3');
+      const el4 = document.getElementById('cfgScoreTry4');
+      if (el1) el1.value = pol.try1;
+      if (el2) el2.value = pol.try2;
+      if (el3) el3.value = pol.try3;
+      if (el4) el4.value = pol.try4;
+      updateScoringPreview();
+    }
+
+    function updateScoringPreview() {
+      const try1 = parseFloat(document.getElementById('cfgScoreTry1')?.value) || 0;
+      const try2 = parseFloat(document.getElementById('cfgScoreTry2')?.value) || 0;
+      const try3 = parseFloat(document.getElementById('cfgScoreTry3')?.value) || 0;
+      const try4 = parseFloat(document.getElementById('cfgScoreTry4')?.value) || 0;
+
+      const p2 = Math.round((try1 - try2) * 10) / 10;
+      const p3 = Math.round((try1 - try3) * 10) / 10;
+
+      const badge2 = document.getElementById('badgePenaltyTry2');
+      if (badge2) badge2.textContent = p2 > 0 ? `1차 오답 감점 -${p2}점` : (p2 === 0 ? '감점 없음' : `+${-p2}점 가점`);
+
+      const badge3 = document.getElementById('badgePenaltyTry3');
+      if (badge3) badge3.textContent = p3 > 0 ? `2차 오답 감점 -${p3}점` : (p3 === 0 ? '감점 없음' : `+${-p3}점 가점`);
+
+      const preview = document.getElementById('scoringRuleBannerPreview');
+      if (preview) {
+        preview.textContent = `🎯 [채점 룰] 첫 시도 ${try1}점 만점 | 2차 시도 ${try2}점 | 3차 시도 ${try3}점 (틀려도 재도전 가능!)`;
+      }
+
+      // 프리셋 활성 버튼 표시
+      const presets = {
+        standard: (try1 === 1.0 && try2 === 0.5 && try3 === 0.2 && try4 === 0.0),
+        mild: (try1 === 1.0 && try2 === 0.7 && try3 === 0.4 && try4 === 0.0),
+        strict: (try1 === 1.0 && try2 === 0.3 && try3 === 0.1 && try4 === 0.0),
+        equal: (try1 === 1.0 && try2 === 1.0 && try3 === 1.0 && try4 === 0.0)
+      };
+      ['standard', 'mild', 'strict', 'equal'].forEach(p => {
+        const btn = document.getElementById('btnPreset' + p.charAt(0).toUpperCase() + p.slice(1));
+        if (btn) btn.classList.toggle('active', !!presets[p]);
+      });
+    }
+
+    function applyScoringPreset(presetType) {
+      const presets = {
+        standard: { try1: 1.0, try2: 0.5, try3: 0.2, try4: 0.0 },
+        mild: { try1: 1.0, try2: 0.7, try3: 0.4, try4: 0.0 },
+        strict: { try1: 1.0, try2: 0.3, try3: 0.1, try4: 0.0 },
+        equal: { try1: 1.0, try2: 1.0, try3: 1.0, try4: 0.0 }
+      };
+      const p = presets[presetType] || presets.standard;
+      document.getElementById('cfgScoreTry1').value = p.try1;
+      document.getElementById('cfgScoreTry2').value = p.try2;
+      document.getElementById('cfgScoreTry3').value = p.try3;
+      document.getElementById('cfgScoreTry4').value = p.try4;
+      updateScoringPreview();
+      saveQuizScoringPolicyFromUi();
+    }
+
+    function saveQuizScoringPolicyFromUi() {
+      const try1 = Math.max(0, parseFloat(document.getElementById('cfgScoreTry1')?.value) || 0);
+      const try2 = Math.max(0, parseFloat(document.getElementById('cfgScoreTry2')?.value) || 0);
+      const try3 = Math.max(0, parseFloat(document.getElementById('cfgScoreTry3')?.value) || 0);
+      const try4 = Math.max(0, parseFloat(document.getElementById('cfgScoreTry4')?.value) || 0);
+
+      const policy = { try1, try2, try3, try4 };
+      try {
+        localStorage.setItem('hvac_quiz_scoring_policy', JSON.stringify(policy));
+        if (window.HVAC && window.HVAC.cloud && window.HVAC.cloud.isActive()) {
+          window.HVAC.cloud.pushConfig('hvac_quiz_scoring_policy', policy);
+        }
+        showToast(`💾 퀴즈 배점 정책이 저장되었습니다! (1차 ${try1}점 ➔ 2차 ${try2}점 ➔ 3차 ${try3}점)`);
+      } catch (e) {
+        alert('저장에 실패했습니다.');
+      }
+    }
+
+    function resetQuizScoringPolicyDefault() {
+      applyScoringPreset('standard');
+      showToast('🔄 퀴즈 배점 정책이 표준 기본값(1.0점 ➔ 0.5점 ➔ 0.2점)으로 복원되었습니다.');
+    }
+
     function initQuizAdminSystem() {
       try {
         const saved = localStorage.getItem('hvac_quiz_config');
@@ -7105,6 +7311,7 @@ ${link}
       }
       loadQuizSubmissionsFromStorage();
       renderQuizReleaseGrid();
+      loadQuizScoringPolicyToUi();
       updateAllStats();
     }
 
@@ -7498,6 +7705,7 @@ ${link}
         hvac_theme_settings: JSON.parse(localStorage.getItem('hvac_theme_settings') || 'null'),
         hvac_notice_banner: JSON.parse(localStorage.getItem('hvac_notice_banner') || 'null'),
         hvac_quiz_config: quizConfigList,
+        hvac_quiz_scoring_policy: JSON.parse(localStorage.getItem('hvac_quiz_scoring_policy') || 'null'),
         hvac_quiz_submissions: quizSubmissionsMap,
         hvac_kakao_presets: kakaoPresets,
         hvac_roster_list: getRoster(),
