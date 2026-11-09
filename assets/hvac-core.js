@@ -667,11 +667,19 @@
               .then(function (r) { return r.ok ? r.json() : null; })
               .then(function (remoteQna) {
                 if (!Array.isArray(remoteQna)) return;
-                // 로컬 공감(isLiked) 표시 유지 병합
+                // 로컬 공감(isLiked) 표시 유지 및 신규 등록 질문 보존 병합
                 var localQna = read('hvac_qna_list') || [];
                 var likedMap = {};
+                var remoteIds = {};
+                remoteQna.forEach(function (q) { if (q && q.id) remoteIds[q.id] = true; });
                 localQna.forEach(function (q) { if (q && q.isLiked) likedMap[q.id] = true; });
                 remoteQna.forEach(function (q) { if (q && likedMap[q.id]) q.isLiked = true; });
+                var nowTs = Date.now();
+                localQna.forEach(function (lq) {
+                  if (lq && lq.id && !remoteIds[lq.id] && (nowTs - lq.id < 30000)) {
+                    remoteQna.unshift(lq);
+                  }
+                });
                 writeLocalSilent('hvac_qna_list', remoteQna);
                 window.dispatchEvent(new StorageEvent('storage', { key: 'hvac_qna_list' }));
               })
@@ -795,6 +803,8 @@
       var v = read(k);
       if (v !== null) payload.data[k] = v;
     });
+    var cloudCfg = read(CLOUD_CFG_KEY);
+    if (cloudCfg) payload.data[CLOUD_CFG_KEY] = cloudCfg;
     return payload;
   }
 

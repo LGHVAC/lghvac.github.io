@@ -1,6 +1,12 @@
 {
   "version": 1,
-  "publishedAt": "",
-  "note": "관리자 페이지 > 설정 > '배포용 site-config.json 다운로드'로 생성한 파일로 교체하면 모든 참석자 기기에 설정이 반영됩니다.",
-  "data": {}
+  "publishedAt": "2026-11-09T16:08:29.663479+00:00",
+  "note": "2026 HVAC Engineering Expert Seminar - Google Firebase Realtime Database 실시간 클라우드 연동 활성화 (200명 동기화)",
+  "data": {
+    "hvac_cloud_config": {
+      "enabled": true,
+      "dbUrl": "https://lg-hvac-default-rtdb.asia-southeast1.firebasedatabase.app",
+      "roomKey": "hvac2026"
+    }
+  }
 }
