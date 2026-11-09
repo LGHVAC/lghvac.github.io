@@ -1957,6 +1957,9 @@
       <button class="tab-btn" data-tab="tabQuiz" onclick="switchTab('tabQuiz')">
         💡 퀴즈 문항 & 점수 관리 <span class="tab-count" id="countBadgeQuiz">6</span>
       </button>
+      <button class="tab-btn" data-tab="tabSurvey" onclick="switchTab('tabSurvey')">
+        📋 만족도 설문 & 응답 <span class="tab-count" id="countBadgeSurvey">0</span>
+      </button>
       <button class="tab-btn" data-tab="tabKakao" onclick="switchTab('tabKakao')">
         📢 카카오톡 공지 센터
       </button>
@@ -2357,6 +2360,10 @@
                 <label style="display: flex; align-items: center; gap: 8px; font-size: 13.5px; cursor: pointer;">
                   <input type="checkbox" id="cfgExcludeMilestones" onchange="saveDrawConfigFromUi()">
                   <span>N번째 체크인 이벤트 당첨자는 럭키드로우 중복 당첨 제외</span>
+                </label>
+                <label style="display: flex; align-items: center; gap: 8px; font-size: 13.5px; cursor: pointer;">
+                  <input type="checkbox" id="cfgRequireSurvey" onchange="saveDrawConfigFromUi()">
+                  <span>📋 만족도 설문 제출 완료자만 럭키드로우 추첨 대상으로 제한</span>
                 </label>
               </div>
             </div>
@@ -2837,6 +2844,108 @@
               </tr>
             </thead>
             <tbody id="quizSubmissionsTableBody">
+              <!-- JS 동적 렌더링 -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- -----------------------------------------------------
+         [TAB 5-B] 📋 만족도 설문(서베이) 관리 & 응답 통계
+         ----------------------------------------------------- -->
+    <section id="tabSurvey" class="tab-panel">
+      <!-- 1. 설문 통계 지표 카드 -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon" style="color: #10b981;">📋</div>
+          <div>
+            <div class="stat-label">총 설문 응답자</div>
+            <div class="stat-value" id="statSurveyTotal">0</div>
+            <div class="stat-sub">실시간 제출 완료 인원</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon gold">⭐</div>
+          <div>
+            <div class="stat-label">종합 평균 만족도</div>
+            <div class="stat-value" id="statSurveyAvgRating">0.0</div>
+            <div class="stat-sub">5.0점 만점 척도</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="color: #60a5fa;">🏢</div>
+          <div>
+            <div class="stat-label">인프라/운영 만족도</div>
+            <div class="stat-value" id="statSurveyInfraRating">0.0</div>
+            <div class="stat-sub">시설 및 진행 환경 평점</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="color: #c084fc;">🎓</div>
+          <div>
+            <div class="stat-label">세션 발표 평균 평점</div>
+            <div class="stat-value" id="statSurveyLectureRating">0.0</div>
+            <div class="stat-sub">6개 강연 세션 종합 평점</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="color: #f472b6;">💬</div>
+          <div>
+            <div class="stat-label">주관식 의견 작성 건수</div>
+            <div class="stat-value" id="statSurveyFeedbackCount">0</div>
+            <div class="stat-sub">좋았던 점 및 건의사항</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. 설문 문항별 평균 점수 분포 차트/카드 -->
+      <div class="card" style="margin-bottom: 24px;">
+        <div class="card-header">
+          <div>
+            <h3 class="card-title">📊 문항별 만족도 점수 현황</h3>
+            <p class="card-sub">세미나 인프라 및 각 강연 세션별 실시간 평균 점수(5점 만점)입니다.</p>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn-act" onclick="openSurveyConfigModal()">⚙️ 설문 문항 및 제목 편집</button>
+            <a class="btn-act" href="./survey.html" target="_blank">📋 설문 작성 화면 미리보기 ↗</a>
+          </div>
+        </div>
+        <div id="surveyQuestionStatsList" style="display: grid; gap: 12px; margin-top: 14px;">
+          <!-- JS 동적 렌더링 -->
+        </div>
+      </div>
+
+      <!-- 3. 실시간 설문 응답자 명부 및 주관식 답변 테이블 -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h3 class="card-title">📝 참석자별 설문 응답 명부</h3>
+            <p class="card-sub">참석자들이 제출한 문항별 점수와 주관식 서술형 답변을 확인하고 엑셀(CSV)로 내보낼 수 있습니다.</p>
+          </div>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+            <input type="text" id="surveySearchInput" class="search-input" placeholder="🔍 성명, 이메일, 사번 검색..." style="width: 220px; padding: 7px 12px; font-size: 13px;" oninput="renderSurveyTable()">
+            <button class="btn-act" onclick="renderSurveyTab()">🔄 새로고침</button>
+            <button class="btn-act primary" onclick="exportSurveyCsv()" style="background: #10b981; border-color: #10b981;">📥 만족도 설문 전 문항 CSV 다운로드</button>
+          </div>
+        </div>
+
+        <div class="table-container">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th style="width: 55px;">순번</th>
+                <th style="width: 100px;">체크인 ID</th>
+                <th style="width: 120px;">성명</th>
+                <th style="width: 140px;">이메일 (사번)</th>
+                <th style="width: 95px; text-align: center;">평균 평점</th>
+                <th>좋았던 점 요약 (Q8)</th>
+                <th>개선할 점 요약 (Q9)</th>
+                <th style="width: 105px;">제출 시각</th>
+                <th style="width: 100px; text-align: center;">전체 답변</th>
+              </tr>
+            </thead>
+            <tbody id="surveyResponsesTableBody">
               <!-- JS 동적 렌더링 -->
             </tbody>
           </table>
@@ -3635,6 +3744,45 @@
     </div>
   </div>
 
+  <!-- 7. 만족도 설문 참석자 상세 응답 모달 -->
+  <div class="modal-backdrop" id="modalSurveyDetail">
+    <div class="modal-box" style="max-width: 680px; max-height: 85vh; overflow-y: auto;">
+      <div class="modal-head">
+        <h3 class="modal-title" id="surveyDetailTitle">📝 설문 상세 답변</h3>
+        <button class="modal-close" onclick="closeModal('modalSurveyDetail')">&times;</button>
+      </div>
+      <div class="modal-body" id="surveyDetailBody">
+        <!-- JS 동적 렌더링 -->
+      </div>
+      <div class="modal-foot">
+        <button type="button" class="btn-act primary" onclick="closeModal('modalSurveyDetail')">확인 닫기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 8. 설문 문항 편집 모달 -->
+  <div class="modal-backdrop" id="modalSurveyConfig">
+    <div class="modal-box" style="max-width: 720px; max-height: 88vh; overflow-y: auto;">
+      <div class="modal-head">
+        <h3 class="modal-title" style="color: #f3c448;">⚙️ 만족도 설문 문항 편집 및 관리</h3>
+        <button class="modal-close" onclick="closeModal('modalSurveyConfig')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size: 13px; color: var(--text-muted); line-height: 1.5; margin-bottom: 14px;">
+          각 페이지별 문항 텍스트를 수정할 수 있습니다. 저장 시 Firebase 클라우드 DB 및 모든 참석자의 모바일 화면에 즉시 동기화됩니다.
+        </p>
+        <div id="surveyConfigFields">
+          <!-- JS 동적 렌더링 -->
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button type="button" class="btn-act" onclick="resetSurveyConfigDefault()">기본 문항으로 복원</button>
+        <button type="button" class="btn-act" onclick="closeModal('modalSurveyConfig')">닫기</button>
+        <button type="button" class="btn-act primary" onclick="saveSurveyConfigModal()">저장 및 클라우드 배포</button>
+      </div>
+    </div>
+  </div>
+
   <!-- 토스트 알림 컴포넌트 -->
   <div id="toast" class="toast"></div>
 
@@ -3944,6 +4092,7 @@
       if (tabId === 'tabDraw') renderDrawTab();
       if (tabId === 'tabSchedule') renderScheduleTab();
       if (tabId === 'tabQuiz' && typeof renderQuizTab === 'function') renderQuizTab();
+      if (tabId === 'tabSurvey' && typeof renderSurveyTab === 'function') renderSurveyTab();
     }
 
     // =========================================================
@@ -5004,6 +5153,17 @@
           elQuizBadge.textContent = 0;
         }
       }
+
+      const elSurveyBadge = document.getElementById('countBadgeSurvey');
+      if (elSurveyBadge) {
+        try {
+          const rawS = localStorage.getItem('hvac_survey_responses');
+          const sList = rawS ? JSON.parse(rawS) : [];
+          elSurveyBadge.textContent = Array.isArray(sList) ? sList.length : Object.keys(sList).length;
+        } catch (e) {
+          elSurveyBadge.textContent = 0;
+        }
+      }
     }
 
     // =========================================================
@@ -5453,6 +5613,7 @@
       tiers: DEFAULT_TIERS,
       onlyMatched: false,
       excludeMilestones: false,
+      requireSurvey: false,
       seedPrefix: '2026_HVAC_10TH_EXPERT_SEMINAR'
     };
 
@@ -5624,6 +5785,14 @@
         if (drawConfig.excludeMilestones && (att.isMilestoneWinner || isSeqMilestoneWinner(att.seq))) return false;
         // 4) 다른 등수 중복 당첨 제외
         if (alreadyWonEmails.has(cleanEmail)) return false;
+        // 5) 만족도 설문 완료자만 추첨 대상 옵션
+        if (drawConfig.requireSurvey) {
+          const isOp = (att.isOperator || isOperatorEmail(cleanEmail));
+          if (!isOp) {
+            const hasSurvey = (surveyResponsesList || []).some(s => (s.email || '').toLowerCase().replace('@lge.com', '') === cleanEmail);
+            if (!hasSurvey) return false;
+          }
+        }
         return true;
       });
     }
@@ -6031,6 +6200,8 @@
       document.getElementById('configTotalWinnersCount').textContent = totalWinners;
       document.getElementById('cfgOnlyMatched').checked = !!drawConfig.onlyMatched;
       document.getElementById('cfgExcludeMilestones').checked = !!drawConfig.excludeMilestones;
+      const elReq = document.getElementById('cfgRequireSurvey');
+      if (elReq) elReq.checked = !!drawConfig.requireSurvey;
       document.getElementById('cfgSeedPrefix').value = drawConfig.seedPrefix || '2026_HVAC_10TH_EXPERT_SEMINAR';
     }
 
@@ -6110,6 +6281,7 @@
     function saveDrawConfigFromUi(showToastFlag = false) {
       drawConfig.onlyMatched = document.getElementById('cfgOnlyMatched').checked;
       drawConfig.excludeMilestones = document.getElementById('cfgExcludeMilestones').checked;
+      drawConfig.requireSurvey = document.getElementById('cfgRequireSurvey').checked;
       drawConfig.seedPrefix = document.getElementById('cfgSeedPrefix').value.trim() || '2026_HVAC_10TH_EXPERT_SEMINAR';
 
       try {
@@ -7930,10 +8102,15 @@ ${link}
         checkinList = [];
         qnaList = [];
         quizSubmissionsMap = {};
+        surveyResponsesList = [];
         drawState = { drawnTiers: {}, deliveredMilestones: {} };
         localStorage.setItem('hvac_checkin_list', '[]');
         localStorage.setItem('hvac_qna_list', '[]');
         localStorage.setItem('hvac_quiz_submissions', '{}');
+        localStorage.setItem('hvac_survey_responses', '[]');
+        localStorage.removeItem('hvac_survey_done');
+        localStorage.removeItem('hvac_my_survey_answers');
+        localStorage.removeItem('hvac_my_survey_submission');
         localStorage.setItem('hvac_luckydraw_state', JSON.stringify(drawState));
 
         // Firebase 클라우드 DB의 테스트 데이터도 동시 초기화
@@ -7943,16 +8120,18 @@ ${link}
           fetch(base + '/checkins.json', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ seqCounter: 0, items: {} }) }).catch(() => {});
           fetch(base + '/qna/list.json', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify([]) }).catch(() => {});
           fetch(base + '/quiz/submissions.json', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) }).catch(() => {});
-          fetch(base + '/meta.json', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ checkins: Date.now(), qna: Date.now(), quiz: Date.now() }) }).catch(() => {});
+          fetch(base + '/surveys.json', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) }).catch(() => {});
+          fetch(base + '/meta.json', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ checkins: Date.now(), qna: Date.now(), quiz: Date.now(), surveys: Date.now() }) }).catch(() => {});
         }
 
         renderQnaList();
         renderMcCards();
         renderCheckinTable();
         renderQuizSubmissionsTable();
+        renderSurveyTab();
         if (activeTab === 'tabDraw') renderDrawTab();
         updateAllStats();
-        showToast('🧹 출석 · Q&A · 퀴즈 점수 · 추첨 결과가 클라우드 및 로컬 모두 깨끗하게 초기화되었습니다.');
+        showToast('🧹 출석 · Q&A · 퀴즈 · 만족도 설문 · 추첨 결과가 클라우드 및 로컬 모두 깨끗하게 초기화되었습니다.');
       }
     }
 
@@ -7976,6 +8155,8 @@ ${link}
         } catch (err) {}
       } else if (key === 'hvac_quiz_submissions') {
         renderQuizSubmissionsTable();
+      } else if (key === 'hvac_survey_responses') {
+        renderSurveyTab();
       } else if (key === 'hvac_schedule_settings') {
         initScheduleSystem();
         if (activeTab === 'tabSchedule') renderScheduleTab();
@@ -7995,6 +8176,338 @@ ${link}
     window.addEventListener('DOMContentLoaded', () => {
       checkAuth();
     });
+
+    // =========================================================
+    // [TAB 5-B] 만족도 설문(Survey) 관리 & 응답 통계 & CSV 내보내기
+    // =========================================================
+    let surveyResponsesList = [];
+
+    function loadSurveyResponsesFromStorage() {
+      try {
+        const raw = localStorage.getItem('hvac_survey_responses');
+        surveyResponsesList = raw ? JSON.parse(raw) : [];
+        if (!Array.isArray(surveyResponsesList)) surveyResponsesList = Object.values(surveyResponsesList).filter(Boolean);
+      } catch (e) {
+        surveyResponsesList = [];
+      }
+    }
+
+    function renderSurveyTab() {
+      loadSurveyResponsesFromStorage();
+      const cfg = (window.HVAC && window.HVAC.getSurveyConfig)
+        ? window.HVAC.getSurveyConfig()
+        : (window.HVAC && window.HVAC.DEFAULT_SURVEY_CONFIG) || {};
+
+      const totalResponses = surveyResponsesList.length;
+      document.getElementById('statSurveyTotal').textContent = totalResponses;
+      const badge = document.getElementById('countBadgeSurvey');
+      if (badge) badge.textContent = totalResponses;
+
+      // 1) 점수 통계 계산
+      let totalSum = 0;
+      let totalRatingCnt = 0;
+      let infraSum = 0;
+      let infraCnt = 0;
+      let lectureSum = 0;
+      let lectureCnt = 0;
+      let feedbackCount = 0;
+
+      // 문항별 통계 맵 { q0: { sum: 0, count: 0 }, ... }
+      const qStatsMap = {};
+      const ratingQuestions = [];
+
+      (cfg.pages || []).forEach(p => {
+        (p.questions || []).forEach(q => {
+          if (q.type === 'rating') {
+            ratingQuestions.push(q);
+            qStatsMap[q.id] = { label: q.label, category: q.category, sum: 0, count: 0 };
+          }
+        });
+      });
+
+      surveyResponsesList.forEach(s => {
+        const answers = s.answers || {};
+        ratingQuestions.forEach(q => {
+          const val = Number(answers[q.id]);
+          if (!isNaN(val) && val >= 1 && val <= 5) {
+            qStatsMap[q.id].sum += val;
+            qStatsMap[q.id].count += 1;
+            totalSum += val;
+            totalRatingCnt += 1;
+
+            if (q.id === 'q1' || q.category === 'infra') {
+              infraSum += val;
+              infraCnt += 1;
+            } else if (q.id !== 'q0') {
+              lectureSum += val;
+              lectureCnt += 1;
+            }
+          }
+        });
+
+        // 주관식 답변 여부 체크
+        if ((answers.q8 && answers.q8.trim()) || (answers.q9 && answers.q9.trim()) || (answers.q10 && answers.q10.trim()) || (answers.q11 && answers.q11.trim())) {
+          feedbackCount++;
+        }
+      });
+
+      const avgAll = totalRatingCnt > 0 ? (totalSum / totalRatingCnt).toFixed(2) : '0.0';
+      const avgInfra = infraCnt > 0 ? (infraSum / infraCnt).toFixed(2) : '0.0';
+      const avgLecture = lectureCnt > 0 ? (lectureSum / lectureCnt).toFixed(2) : '0.0';
+
+      document.getElementById('statSurveyAvgRating').textContent = `${avgAll} / 5.0`;
+      document.getElementById('statSurveyInfraRating').textContent = `${avgInfra}점`;
+      document.getElementById('statSurveyLectureRating').textContent = `${avgLecture}점`;
+      document.getElementById('statSurveyFeedbackCount').textContent = `${feedbackCount}건`;
+
+      // 2) 문항별 평점 막대 렌더링
+      const statsListEl = document.getElementById('surveyQuestionStatsList');
+      if (statsListEl) {
+        statsListEl.innerHTML = ratingQuestions.map(q => {
+          const st = qStatsMap[q.id];
+          const qAvg = st.count > 0 ? (st.sum / st.count).toFixed(2) : '0.0';
+          const pct = st.count > 0 ? ((st.sum / st.count) / 5) * 100 : 0;
+          return `
+            <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); border-radius: 10px; padding: 12px 14px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <span style="font-size: 13.5px; font-weight: 700; color: #fff;">${escapeHtml(q.label)}</span>
+                <span style="font-size: 14px; font-weight: 900; color: #f3c448;">${qAvg}점 <small style="color: var(--text-muted); font-size: 11px;">(${st.count}명)</small></span>
+              </div>
+              <div style="width: 100%; height: 7px; background: rgba(255,255,255,0.08); border-radius: 99px; overflow: hidden;">
+                <div style="width: ${pct}%; height: 100%; background: linear-gradient(90deg, #f3c448, #10b981); border-radius: 99px; transition: width 0.3s;"></div>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      renderSurveyTable();
+    }
+
+    function renderSurveyTable() {
+      const tbody = document.getElementById('surveyResponsesTableBody');
+      if (!tbody) return;
+      const search = (document.getElementById('surveySearchInput')?.value || '').trim().toLowerCase();
+
+      let filtered = [...surveyResponsesList];
+      if (search) {
+        filtered = filtered.filter(s =>
+          (s.name && s.name.toLowerCase().includes(search)) ||
+          (s.email && s.email.toLowerCase().includes(search)) ||
+          (s.empNo && s.empNo.toLowerCase().includes(search)) ||
+          (s.checkinId && s.checkinId.toLowerCase().includes(search))
+        );
+      }
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="9" style="text-align: center; padding: 40px; color: var(--text-muted);">
+              제출된 만족도 설문 응답이 없습니다.
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = filtered.map((s, idx) => {
+        const answers = s.answers || {};
+        const q8Short = answers.q8 ? (answers.q8.length > 25 ? answers.q8.slice(0, 25) + '...' : answers.q8) : '-';
+        const q9Short = answers.q9 ? (answers.q9.length > 25 ? answers.q9.slice(0, 25) + '...' : answers.q9) : '-';
+        const originalIdx = surveyResponsesList.indexOf(s);
+
+        return `
+          <tr>
+            <td><strong>#${idx + 1}</strong></td>
+            <td><code style="color: #10b981; font-weight: 700;">${escapeHtml(s.checkinId || '-')}</code></td>
+            <td><strong>${escapeHtml(s.name || '참석자')}</strong> ${s.position ? `<small style="color: var(--text-muted);">(${escapeHtml(s.position)})</small>` : ''}</td>
+            <td><code>${escapeHtml(s.email || '-')}${s.empNo ? ` / ${escapeHtml(s.empNo)}` : ''}</code></td>
+            <td style="text-align: center;"><strong style="color: #f3c448; font-size: 13.5px;">⭐ ${s.avgScore || '5.0'}</strong></td>
+            <td style="font-size: 12.5px; color: var(--text-muted);" title="${escapeHtml(answers.q8 || '')}">${escapeHtml(q8Short)}</td>
+            <td style="font-size: 12.5px; color: var(--text-muted);" title="${escapeHtml(answers.q9 || '')}">${escapeHtml(q9Short)}</td>
+            <td style="font-size: 12px; color: var(--text-muted);">${escapeHtml(s.submittedAt || '-')}</td>
+            <td style="text-align: center;">
+              <button class="btn-tbl" onclick="openSurveyDetailModal(${originalIdx})">🔍 상세 보기</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function openSurveyDetailModal(idx) {
+      const item = surveyResponsesList[idx];
+      if (!item) return;
+
+      const titleEl = document.getElementById('surveyDetailTitle');
+      const bodyEl = document.getElementById('surveyDetailBody');
+      const cfg = (window.HVAC && window.HVAC.getSurveyConfig)
+        ? window.HVAC.getSurveyConfig()
+        : (window.HVAC && window.HVAC.DEFAULT_SURVEY_CONFIG) || {};
+
+      titleEl.textContent = `📝 ${item.name || '참석자'} 님의 설문 응답 상세 (평균 ${item.avgScore || '5.0'}점)`;
+
+      const answers = item.answers || {};
+      let html = `
+        <div style="background: rgba(255,255,255,0.04); border-radius: 12px; padding: 12px 14px; margin-bottom: 16px; font-size: 13px; line-height: 1.6;">
+          <strong>응답자:</strong> ${escapeHtml(item.name || '-')} ${escapeHtml(item.position || '')} &nbsp;|&nbsp;
+          <strong>이메일/사번:</strong> <code>${escapeHtml(item.email || '-')}${item.empNo ? ` (${escapeHtml(item.empNo)})` : ''}</code> &nbsp;|&nbsp;
+          <strong>제출시각:</strong> ${escapeHtml(item.submittedAt || '-')}
+        </div>
+      `;
+
+      (cfg.pages || []).forEach(p => {
+        html += `<h4 style="font-size: 14px; color: var(--gold-bright); margin: 16px 0 10px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 4px;">${escapeHtml(p.pageTitle)}</h4>`;
+        (p.questions || []).forEach(q => {
+          const val = answers[q.id];
+          if (q.type === 'rating') {
+            const stars = '★'.repeat(Number(val) || 0) + '☆'.repeat(5 - (Number(val) || 0));
+            html += `
+              <div style="margin-bottom: 10px; font-size: 13px;">
+                <div style="font-weight: 700; color: #fff; margin-bottom: 3px;">${escapeHtml(q.label)}</div>
+                <div style="color: #f3c448; font-size: 15px;">${stars} <span style="font-size: 12.5px; font-weight: 800; color: #fff;">(${val || 0}점)</span></div>
+              </div>
+            `;
+          } else {
+            html += `
+              <div style="margin-bottom: 12px; font-size: 13px;">
+                <div style="font-weight: 700; color: #fff; margin-bottom: 4px;">${escapeHtml(q.label)}</div>
+                <div style="background: rgba(0,0,0,0.3); border-radius: 8px; padding: 8px 12px; color: #e5e7eb; white-space: pre-wrap; font-size: 12.5px; min-height: 32px;">
+                  ${val ? escapeHtml(val) : '<span style="color: rgba(255,255,255,0.3);">(의견 없음)</span>'}
+                </div>
+              </div>
+            `;
+          }
+        });
+      });
+
+      bodyEl.innerHTML = html;
+      openModal('modalSurveyDetail');
+    }
+
+    function exportSurveyCsv() {
+      loadSurveyResponsesFromStorage();
+      const cfg = (window.HVAC && window.HVAC.getSurveyConfig)
+        ? window.HVAC.getSurveyConfig()
+        : (window.HVAC && window.HVAC.DEFAULT_SURVEY_CONFIG) || {};
+
+      // 전 문항 헤더 동적 생성
+      const allQuestions = [];
+      (cfg.pages || []).forEach(p => {
+        (p.questions || []).forEach(q => {
+          allQuestions.push(q);
+        });
+      });
+
+      let csv = '﻿순번,체크인ID,성명,이메일,사번,직급,부서,평균평점,제출일시';
+      allQuestions.forEach(q => {
+        const cleanLabel = q.label.replace(/"/g, '""');
+        csv += `,"${cleanLabel}"`;
+      });
+      csv += '
+';
+
+      surveyResponsesList.forEach((s, idx) => {
+        const answers = s.answers || {};
+        csv += `${idx + 1},"${s.checkinId || ''}","${s.name || ''}","${s.email || ''}","${s.empNo || ''}","${s.position || ''}","${s.dept || ''}",${s.avgScore || '5.0'},"${s.submittedAt || ''}"`;
+        allQuestions.forEach(q => {
+          const val = answers[q.id] !== undefined ? String(answers[q.id]).replace(/"/g, '""') : '';
+          csv += `,"${val}"`;
+        });
+        csv += '
+';
+      });
+
+      downloadFile(csv, `hvac_survey_all_responses_${new Date().toISOString().slice(0, 10)}.csv`, 'text/csv;charset=utf-8;');
+      showToast(`📥 전체 설문 응답자(${surveyResponsesList.length}명)의 전 문항 성적표가 CSV로 다운로드되었습니다.`);
+    }
+
+    // 설문 문항 편집 모달
+    function openSurveyConfigModal() {
+      const cfg = (window.HVAC && window.HVAC.getSurveyConfig)
+        ? window.HVAC.getSurveyConfig()
+        : (window.HVAC && window.HVAC.DEFAULT_SURVEY_CONFIG) || {};
+
+      const container = document.getElementById('surveyConfigFields');
+      let html = '';
+
+      (cfg.pages || []).forEach((p, pIdx) => {
+        html += `
+          <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 14px; margin-bottom: 16px;">
+            <div style="font-size: 14px; font-weight: 800; color: #f3c448; margin-bottom: 8px;">
+              페이지 ${pIdx + 1}: ${escapeHtml(p.pageTitle)}
+            </div>
+            <div style="margin-bottom: 10px;">
+              <label style="font-size: 11.5px; color: var(--text-muted); display: block; margin-bottom: 3px;">페이지 제목</label>
+              <input type="text" class="form-control" id="cfg_pageTitle_${pIdx}" value="${escapeHtml(p.pageTitle || '')}">
+            </div>
+            <div style="margin-bottom: 12px;">
+              <label style="font-size: 11.5px; color: var(--text-muted); display: block; margin-bottom: 3px;">페이지 안내 문구</label>
+              <input type="text" class="form-control" id="cfg_pageSub_${pIdx}" value="${escapeHtml(p.pageSub || '')}">
+            </div>
+            <div style="display: grid; gap: 8px;">
+        `;
+
+        (p.questions || []).forEach((q, qIdx) => {
+          html += `
+            <div style="background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; padding: 8px 10px;">
+              <div style="display: flex; justify-content: space-between; font-size: 11.5px; color: var(--text-muted); margin-bottom: 3px;">
+                <span>문항 ID: <code>${q.id}</code> (${q.type === 'rating' ? '⭐ 5점 척도' : '✍️ 주관식 텍스트'})</span>
+                <span>${q.required ? '필수' : '선택'}</span>
+              </div>
+              <input type="text" class="form-control" id="cfg_qLabel_${pIdx}_${qIdx}" value="${escapeHtml(q.label || '')}" style="font-size: 13px;">
+            </div>
+          `;
+        });
+
+        html += `</div></div>`;
+      });
+
+      container.innerHTML = html;
+      openModal('modalSurveyConfig');
+    }
+
+    function saveSurveyConfigModal() {
+      const cfg = (window.HVAC && window.HVAC.getSurveyConfig)
+        ? JSON.parse(JSON.stringify(window.HVAC.getSurveyConfig()))
+        : JSON.parse(JSON.stringify(window.HVAC.DEFAULT_SURVEY_CONFIG));
+
+      (cfg.pages || []).forEach((p, pIdx) => {
+        const titleEl = document.getElementById(`cfg_pageTitle_${pIdx}`);
+        const subEl = document.getElementById(`cfg_pageSub_${pIdx}`);
+        if (titleEl) p.pageTitle = titleEl.value.trim();
+        if (subEl) p.pageSub = subEl.value.trim();
+
+        (p.questions || []).forEach((q, qIdx) => {
+          const lblEl = document.getElementById(`cfg_qLabel_${pIdx}_${qIdx}`);
+          if (lblEl) q.label = lblEl.value.trim();
+        });
+      });
+
+      if (window.HVAC && window.HVAC.saveSurveyConfig) {
+        window.HVAC.saveSurveyConfig(cfg);
+      } else {
+        localStorage.setItem('hvac_survey_config', JSON.stringify(cfg));
+      }
+
+      closeModal('modalSurveyConfig');
+      renderSurveyTab();
+      showToast('⚙️ 만족도 설문 문항 및 제목이 저장 및 클라우드 배포되었습니다.');
+    }
+
+    function resetSurveyConfigDefault() {
+      if (confirm('만족도 설문 문항을 기본 11개 문항으로 초기화하시겠습니까?')) {
+        const def = (window.HVAC && window.HVAC.DEFAULT_SURVEY_CONFIG) || {};
+        if (window.HVAC && window.HVAC.saveSurveyConfig) {
+          window.HVAC.saveSurveyConfig(def);
+        } else {
+          localStorage.setItem('hvac_survey_config', JSON.stringify(def));
+        }
+        closeModal('modalSurveyConfig');
+        renderSurveyTab();
+        showToast('🔄 설문 문항이 기본 세팅으로 복원되었습니다.');
+      }
+    }
+
   </script>
 </body>
 </html>

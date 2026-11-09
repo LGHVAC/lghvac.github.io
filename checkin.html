@@ -1243,6 +1243,7 @@
           <ul class="menu-list">
             <li class="menu-item" id="menuItemMissionPopup">🎯 오늘의 미션 현황</li>
             <li class="menu-item" id="menuItemMissions">✨ 오늘의 퀴즈 챌린지</li>
+            <li class="menu-item" id="menuItemSurvey">📋 만족도 설문 참여</li>
             <li class="menu-item" id="menuItemQna">✍️ 실시간 세션 Q&A</li>
             <li class="menu-item" id="menuItemTimetable">📅 행사 시간표 보기</li>
             <li class="menu-item" id="menuItemMap">🗺️ 행사장 안내 약도</li>
@@ -1413,11 +1414,11 @@
         <span class="m-badge" id="missionBadge2">미완료</span>
       </div>
 
-      <div class="m-item">
+      <div class="m-item" id="missionItem3" style="cursor: pointer;" onclick="window.location.href='./survey.html'">
         <div class="m-num">03</div>
         <div class="m-info">
           <small>FEEDBACK & LUCKY DRAW</small>
-          <strong>만족도 설문 제출하기</strong>
+          <strong>만족도 설문 제출하기 (터치하여 이동 ➔)</strong>
         </div>
         <span class="m-badge" id="missionBadge3">미완료</span>
       </div>
@@ -2489,6 +2490,14 @@
       menuPopover.classList.remove('show');
       window.location.href = './quiz.html';
     });
+
+    const menuItemSurvey = document.getElementById('menuItemSurvey');
+    if (menuItemSurvey) {
+      menuItemSurvey.addEventListener('click', () => {
+        menuPopover.classList.remove('show');
+        window.location.href = './survey.html';
+      });
+    }
 
     document.getElementById('menuItemQna').addEventListener('click', () => {
       menuPopover.classList.remove('show');

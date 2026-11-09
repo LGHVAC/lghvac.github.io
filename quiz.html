@@ -855,8 +855,8 @@
       <p id="luckyDrawPrompt">
         만족도 설문에 참여하시고 클로징 럭키드로우 경품 추첨 기회를 놓치지 마세요!
       </p>
-      <a class="btn-submit-draw" id="btnSurveySubmit" target="_blank" rel="noopener noreferrer" href="https://forms.cloud.microsoft/Pages/ResponsePage.aspx?id=5M1pUCpkwEWAlNDC3sEL42ywEzOY3PNJr4qBXM_4T5dURDlOS1VaUFpXTVRPUTkzSFZXUDlBQlk1Vy4u">
-        만족도 설문 & 경품 응모하기 →
+      <a class="btn-submit-draw" id="btnSurveySubmit" href="./survey.html">
+        만족도 설문 참여 & 경품 응모하기 (30초) ➔
       </a>
     </section>
 
@@ -1437,13 +1437,18 @@
       showToast('🔄 퀴즈가 초기화되었습니다. 다시 도전해 보세요!');
     });
 
-    // 만족도 설문 클릭 시 미션 완료 상태 기록
+    // 만족도 설문 상태 연동
     const btnSurveySubmit = document.getElementById('btnSurveySubmit');
-    if (btnSurveySubmit) {
-      btnSurveySubmit.addEventListener('click', function () {
-        try { localStorage.setItem('hvac_survey_done', 'true'); } catch (e) {}
-      });
+    function syncSurveyBtnState() {
+      const isDone = localStorage.getItem('hvac_survey_done') === 'true';
+      if (btnSurveySubmit && isDone) {
+        btnSurveySubmit.textContent = '✅ 만족도 설문 제출 완료 (응모 완료)';
+        btnSurveySubmit.style.background = '#10b981';
+        btnSurveySubmit.style.color = '#ffffff';
+        btnSurveySubmit.style.boxShadow = '0 0 20px rgba(16, 185, 129, 0.4)';
+      }
     }
+    syncSurveyBtnState();
 
     // 관리자 설정 변경 또는 배포 설정(site-config.json) 반영 시 갱신
     if (window.HVAC) {

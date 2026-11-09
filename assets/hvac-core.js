@@ -27,7 +27,8 @@
     'hvac_quiz_unlocked_sessions',
     'hvac_quiz_scoring_policy',
     'hvac_notice_banner',
-    'hvac_milestone_events'
+    'hvac_milestone_events',
+    'hvac_survey_config'
   ];
   var APPLIED_MARKER = 'hvac_config_applied_at';
   var CLOUD_CFG_KEY = 'hvac_cloud_config';
@@ -432,7 +433,7 @@
     return c.dbUrl + '/' + c.roomKey + '/' + subpath.replace(/^\/+/, '') + '.json';
   }
 
-  var lastSeenMeta = { config: 0, checkins: 0, qna: 0, quiz: 0 };
+  var lastSeenMeta = { config: 0, checkins: 0, qna: 0, quiz: 0, surveys: 0 };
   var isSyncingCloud = false;
 
   function touchCloudMeta(section) {
@@ -543,6 +544,174 @@
     { seq: 77, prize: '스타벅스 커피 쿠폰 (행운의 77번째)' },
     { seq: 100, prize: '스타벅스 커피 쿠폰 (센추리 100번째)' }
   ];
+
+
+  // =========================================================
+  // 만족도 설문(Survey) 기본 설정 및 클라우드 연동 엔진
+  // =========================================================
+  var DEFAULT_SURVEY_CONFIG = {
+    title: "제10회 HVAC 엔지니어링 전문가 세미나 만족도 설문",
+    subtitle: "참석해 주신 여러분의 소중한 피드백은 차기 세미나 기획 및 기술 프로그램 개선에 큰 힘이 됩니다.",
+    pages: [
+      {
+        pageId: "partA1",
+        pageTitle: "A. 교육과정에 대한 만족도",
+        pageSub: "전반적인 세미나와 운영 인프라에 대한 만족도를 평가해 주세요.",
+        questions: [
+          {
+            id: "q0",
+            category: "general",
+            type: "rating",
+            max: 5,
+            required: true,
+            label: "0. 전반적인 세미나 구성과 진행에 만족하십니까?"
+          },
+          {
+            id: "q1",
+            category: "infra",
+            type: "rating",
+            max: 5,
+            required: true,
+            label: "1. 세미나 운영 및 시설 등 인프라에 만족하십니까?"
+          }
+        ]
+      },
+      {
+        pageId: "partA2",
+        pageTitle: "[ 과정별 만족도 ]",
+        pageSub: "오늘 진행된 각 세션 발표 내용의 유익성과 완성도를 평가해 주세요.",
+        questions: [
+          {
+            id: "q2",
+            category: "session",
+            type: "rating",
+            max: 5,
+            required: true,
+            label: "2. 국내주거난방의 변천과 현황 - 여명석 교수"
+          },
+          {
+            id: "q3",
+            category: "session",
+            type: "rating",
+            max: 5,
+            required: true,
+            label: "3. 고밀도 AI 서버의 액체냉각 및 데이터센터 열관리 기술 - 이성혁 교수"
+          },
+          {
+            id: "q4",
+            category: "session",
+            type: "rating",
+            max: 5,
+            required: true,
+            label: "4. 국내 전력시장 현황 및 AIDC 전력공급 방안 - 조홍종 교수"
+          },
+          {
+            id: "q5",
+            category: "session",
+            type: "rating",
+            max: 5,
+            required: true,
+            label: "5. 헬로우 히트펌프, 굿바이 보일러 - 유정현 수석 연구원"
+          },
+          {
+            id: "q6",
+            category: "session",
+            type: "rating",
+            max: 5,
+            required: true,
+            label: "6. 에너지컨설팅 사례 발표 - 오영훈 팀장"
+          },
+          {
+            id: "q7",
+            category: "session",
+            type: "rating",
+            max: 5,
+            required: true,
+            label: "7. 테라포밍 또는 찬란한 멸종 - 그래도 우리는 지구에 살아야 한다 - 이정모 관장"
+          }
+        ]
+      },
+      {
+        pageId: "partB",
+        pageTitle: "B. 교육과정에 대한 자유의견/건의사항",
+        pageSub: "향후 세미나 발전을 위한 소중한 의견을 자유롭게 남겨주세요.",
+        questions: [
+          {
+            id: "q8",
+            category: "feedback",
+            type: "text",
+            required: false,
+            label: "8. 교육과정에서 좋았던 점",
+            placeholder: "답변을 입력하세요."
+          },
+          {
+            id: "q9",
+            category: "feedback",
+            type: "text",
+            required: false,
+            label: "9. 교육과정에서 개선할 점",
+            placeholder: "답변을 입력하세요."
+          },
+          {
+            id: "q10",
+            category: "feedback",
+            type: "text",
+            required: false,
+            label: "10. 향후 듣고 싶은 주제 (기술 특강)",
+            placeholder: "답변을 입력하세요."
+          },
+          {
+            id: "q11",
+            category: "feedback",
+            type: "text",
+            required: false,
+            label: "11. 향후 듣고 싶은 주제 (인문/ 경제 특강)",
+            placeholder: "답변을 입력하세요."
+          }
+        ]
+      }
+    ]
+  };
+
+  function getSurveyConfig() {
+    var saved = read('hvac_survey_config');
+    if (saved && saved.pages && saved.pages.length) return saved;
+    return DEFAULT_SURVEY_CONFIG;
+  }
+
+  function saveSurveyConfig(newCfg) {
+    if (!newCfg || typeof newCfg !== 'object') return;
+    writeLocalSilent('hvac_survey_config', newCfg);
+    var c = getCloudConfig();
+    if (c && window.fetch) {
+      fetch(cloudPath('config/hvac_survey_config'), {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newCfg)
+      }).then(function () {
+        touchCloudMeta('config');
+      }).catch(function () {});
+    }
+    notifyUpdated(['hvac_survey_config']);
+  }
+
+  function pushSurveyResponseToCloud(surveyData) {
+    var c = getCloudConfig();
+    if (!c || !window.fetch || !surveyData) return Promise.resolve(false);
+    var emailKey = String(surveyData.email || 'anon_' + Date.now()).toLowerCase().replace('@lge.com', '').replace(/[.#$\[\]\/]/g, '_');
+    var url = cloudPath('surveys/' + emailKey);
+    return fetch(url, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(surveyData)
+    }).then(function (r) {
+      if (r.ok) {
+        touchCloudMeta('surveys');
+        return true;
+      }
+      return false;
+    }).catch(function () { return false; });
+  }
 
   // 참석자 체크인: ETag 기반 원자적 순번(1~200+) 발급 및 클라우드 등록 (단일 세션 & 운영진 이월 지원)
   function cloudCheckin(attendee) {
@@ -889,6 +1058,21 @@
           );
         }
 
+        // 5) 만족도 설문(survey) 응답 변경 감지 (admin 전용)
+        if (pId === 'admin' && (forceAll || (meta.surveys && meta.surveys > lastSeenMeta.surveys))) {
+          lastSeenMeta.surveys = meta.surveys || Date.now();
+          tasks.push(
+            fetch(cloudPath('surveys'), { cache: 'no-store' })
+              .then(function (r) { return r.ok ? r.json() : null; })
+              .then(function (survMap) {
+                if (!survMap || typeof survMap !== 'object') return;
+                var list = Object.values(survMap).filter(Boolean);
+                writeLocalSilent('hvac_survey_responses', list);
+                window.dispatchEvent(new StorageEvent('storage', { key: 'hvac_survey_responses' }));
+              })
+          );
+        }
+
         return Promise.all(tasks).then(function () {
           isSyncingCloud = false;
           return true;
@@ -994,6 +1178,9 @@
     isOperatorEmail: isOperatorEmail,
     getOperatorList: getOperatorList,
     saveOperatorList: saveOperatorList,
+    getSurveyConfig: getSurveyConfig,
+    saveSurveyConfig: saveSurveyConfig,
+    DEFAULT_SURVEY_CONFIG: DEFAULT_SURVEY_CONFIG,
     cloud: {
       getConfig: getCloudConfig,
       poll: pollCloudChanges,
@@ -1002,6 +1189,7 @@
       pushQnaList: pushQnaListToCloud,
       checkin: cloudCheckin,
       pushQuizScore: pushQuizScoreToCloud,
+      pushSurvey: pushSurveyResponseToCloud,
       restart: startCloudLoop
     },
     onConfigUpdated: function (fn) {
