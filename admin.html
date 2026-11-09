@@ -2123,17 +2123,25 @@
         <div class="stat-card">
           <div class="stat-icon">🟢</div>
           <div>
-            <div class="stat-label">정상 매칭 인원</div>
+            <div class="stat-label">사전 등록 매칭</div>
             <div class="stat-value" id="statMatchedCheckin">0</div>
-            <div class="stat-sub">사전 등록 명부 일치</div>
+            <div class="stat-sub">사전 신청 명부 일치</div>
           </div>
         </div>
         <div class="stat-card">
-          <div class="stat-icon gold">⚠️</div>
+          <div class="stat-icon gold">🟡</div>
           <div>
-            <div class="stat-label">불일치/이상 의심</div>
-            <div class="stat-value" id="statMismatchCheckin">0</div>
-            <div class="stat-sub">이름/ID 오타 또는 미등록</div>
+            <div class="stat-label">현장 추가 등록</div>
+            <div class="stat-value" id="statWalkinCheckin">0</div>
+            <div class="stat-sub">Walk-in 현장 참석자</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="color: #c084fc;">🟣</div>
+          <div>
+            <div class="stat-label">세미나 운영진</div>
+            <div class="stat-value" id="statOperatorCheckin">0</div>
+            <div class="stat-sub">스태프 및 관리자</div>
           </div>
         </div>
         <div class="stat-card">
@@ -2149,7 +2157,7 @@
           <div>
             <div class="stat-label">순번 이벤트 당첨</div>
             <div class="stat-value" id="statMilestoneCheckin">0</div>
-            <div class="stat-sub">10·50·77·100번째</div>
+            <div class="stat-sub">1·7·10·77·100번째</div>
           </div>
         </div>
       </div>
@@ -2166,17 +2174,20 @@
           >
           <select id="checkinFilterSelect" class="filter-select" onchange="renderCheckinTable()">
             <option value="all">전체 인원 보기</option>
-            <option value="milestone">🎁 N번째 순번 당첨자만 보기</option>
-            <option value="mismatch">⚠️ 이상/불일치 인원만 보기</option>
-            <option value="matched">🟢 정상 매칭 인원만 보기</option>
+            <option value="operator">🟣 세미나 운영진 보기</option>
+            <option value="matched">🟢 사전 등록 인원만 보기</option>
+            <option value="walkin">🟡 현장 추가 등록(Walk-in)만 보기</option>
+            <option value="milestone">🎁 순번 이벤트 당첨자만 보기</option>
+            <option value="mismatch">⚠️ 이상/불일치 의심 보기</option>
             <option value="blocked">🚫 강퇴/차단 인원만 보기</option>
           </select>
         </div>
 
         <div class="toolbar-right">
           <button class="btn-act primary" onclick="openAddCheckinModal()">+ 수동 출석자 추가</button>
-          <button class="btn-act" onclick="openRosterModal()">📋 사전 등록 명부 관리</button>
-          <button class="btn-act" onclick="exportCheckinCsv()">📥 출석부 CSV 다운로드</button>
+          <button class="btn-act" onclick="openRosterModal()">📋 사전 등록 명부</button>
+          <button class="btn-act" onclick="openOperatorModal()" style="border-color: #a855f7; color: #c084fc;">🛡️ 운영진 명단 관리</button>
+          <button class="btn-act" onclick="exportCheckinCsv()">📥 출석부 CSV</button>
           <button class="btn-act danger" onclick="purgeMismatchedUsers()">⚠️ 이상 인원 일괄 정리</button>
         </div>
       </div>
@@ -3385,14 +3396,42 @@
       </div>
       <div class="modal-body">
         <p style="font-size: 13px; color: var(--text-muted); line-height: 1.5;">
-          출석 체크 시 자동 매칭을 진행할 사전 등록 명부입니다. 한 줄에 <strong>이메일ID, 이름</strong> 형식으로 입력하세요.
+          출석 체크 시 자동 매칭할 사전 등록자 목록(약 200명)입니다.<br>
+          한 줄에 <strong>이메일ID, 이름, 사번, 직급</strong> 형식으로 콤마(,) 또는 탭으로 구분하여 붙여넣으세요.
         </p>
-        <textarea id="rosterTextInput" class="form-control" rows="10" style="font-family: monospace; font-size: 13px;"></textarea>
+        <textarea id="rosterTextInput" class="form-control" rows="10" placeholder="first.kim, 김철수, 123456, 책임&#10;second.park, 박영희, 654321, 선임" style="font-family: monospace; font-size: 13px;"></textarea>
       </div>
       <div class="modal-foot">
         <button type="button" class="btn-act" onclick="resetDefaultRoster()">기본 명부로 복원</button>
         <button type="button" class="btn-act" onclick="closeModal('modalRoster')">닫기</button>
-        <button type="button" class="btn-act primary" onclick="saveRosterList()">명부 저장</button>
+        <button type="button" class="btn-act primary" onclick="saveRosterList()">명부 저장 및 동기화</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5-B. 세미나 운영진(Operator) 관리 모달 -->
+  <div class="modal-backdrop" id="modalOperatorList">
+    <div class="modal-box" style="max-width: 640px;">
+      <div class="modal-head">
+        <h3 class="modal-title" style="color: #c084fc;">🛡️ 세미나 운영진 명단 관리 (Operator List)</h3>
+        <button class="modal-close" onclick="closeModal('modalOperatorList')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div style="background: rgba(168, 85, 247, 0.1); border: 1px solid rgba(168, 85, 247, 0.3); border-radius: 8px; padding: 12px; margin-bottom: 12px; font-size: 12.5px; line-height: 1.5; color: #e9d5ff;">
+          <strong>※ 운영진 출석 & 경품 정책:</strong><br>
+          • <strong>체크인</strong>: 운영진 배지(🟣)가 부여되며 출석 현황에 별도 집계됩니다.<br>
+          • <strong>순번 커피쿠폰 당첨</strong>: 운영진 순번 당첨 시 <strong>일반 참석자에게 자동 이월(seq+1)</strong>됩니다.<br>
+          • <strong>클로징 럭키드로우</strong>: 행사 종료 시 진행되는 본 추첨에는 <strong>운영진도 모두 정상 포함</strong>됩니다.
+        </div>
+        <p style="font-size: 13px; color: var(--text-muted); line-height: 1.5;">
+          한 줄에 <strong>이메일ID, 이름, 직급/역할</strong> 형식으로 입력하세요.
+        </p>
+        <textarea id="operatorTextInput" class="form-control" rows="8" placeholder="youngsoo.lee, 이영수, 운영총괄&#10;hvac.admin, 관리자, 시스템담당" style="font-family: monospace; font-size: 13px;"></textarea>
+      </div>
+      <div class="modal-foot">
+        <button type="button" class="btn-act" onclick="resetDefaultOperators()">기본 운영진 복원</button>
+        <button type="button" class="btn-act" onclick="closeModal('modalOperatorList')">닫기</button>
+        <button type="button" class="btn-act primary" onclick="saveOperatorListModal()" style="background: #a855f7; border-color: #a855f7;">운영진 저장 및 동기화</button>
       </div>
     </div>
   </div>
@@ -4235,6 +4274,27 @@
     // =========================================================
     // 6. [TAB 3] 출석 체크 인원 모니터링 & 이상 인원 관리
     // =========================================================
+    // 운영진 명단 헬퍼
+    const DEFAULT_OPERATORS = (window.HVAC && window.HVAC.DEFAULT_OPERATORS) || [
+      { email: 'youngsoo.lee', name: '이영수', role: 'admin', position: '운영총괄' }
+    ];
+
+    function getOperatorList() {
+      if (window.HVAC && window.HVAC.getOperatorList) return window.HVAC.getOperatorList();
+      try {
+        const raw = localStorage.getItem('hvac_operator_list');
+        if (raw) return JSON.parse(raw);
+      } catch (e) {}
+      return DEFAULT_OPERATORS;
+    }
+
+    function isOperatorEmail(email) {
+      if (!email) return false;
+      if (window.HVAC && window.HVAC.isOperatorEmail) return window.HVAC.isOperatorEmail(email);
+      const clean = String(email).trim().toLowerCase().replace('@lge.com', '');
+      return getOperatorList().some(o => String(o.email || '').trim().toLowerCase().replace('@lge.com', '') === clean);
+    }
+
     function getAttendeeValidation(att) {
       const roster = getRoster();
       const cleanEmail = (att.email || '').toLowerCase().replace('@lge.com', '').trim();
@@ -4245,29 +4305,43 @@
         return { status: 'blocked', label: '차단/강퇴', text: '운영자에 의해 차단됨', isProblem: true };
       }
 
-      // 2) 사전 등록 명부 검색
-      const foundInRoster = roster.find(r => r.email.toLowerCase() === cleanEmail);
+      // 2) 운영진 여부 (운영진은 정상 분류)
+      if (att.isOperator || isOperatorEmail(cleanEmail) || att.type === 'operator') {
+        const pos = att.position || '운영 스태프';
+        return { status: 'operator', label: '세미나 운영진', text: pos, isProblem: false };
+      }
+
+      // 3) 사전 등록 명부 검색
+      const foundInRoster = roster.find(r => (r.email || '').toLowerCase().replace('@lge.com', '').trim() === cleanEmail);
 
       if (foundInRoster) {
-        if (foundInRoster.name === cleanName) {
-          return { status: 'matched', label: '정상 매칭', text: '사전 명부 일치', isProblem: false };
+        const rosterName = (foundInRoster.name || '').trim();
+        const isMatched = cleanName.startsWith(rosterName) || rosterName.startsWith(cleanName);
+        if (isMatched) {
+          const detail = [foundInRoster.position || att.position, foundInRoster.dept || att.dept].filter(Boolean).join(' / ') || '사전 명부 일치';
+          return { status: 'matched', label: '사전 등록', text: detail, isProblem: false };
         } else {
           return {
             status: 'mismatch',
             label: '이름 불일치',
-            text: `명부상 이름(${foundInRoster.name})과 다름`,
+            text: `명부상 이름(${rosterName})과 다름`,
             isProblem: true
           };
         }
       }
 
-      // 3) 이메일 형식 체크 (LGE 사번/이메일 규칙: 영문.이름)
-      const isLgePattern = /^[a-z0-9]+\.[a-z0-9]+$/i.test(cleanEmail);
+      // 4) 현장 추가 등록 (Walk-in)
+      if (att.type === 'walkin') {
+        return { status: 'walkin', label: '현장 추가 등록', text: 'Walk-in 현장 참석자', isProblem: false };
+      }
+
+      // 5) 이메일 형식 체크 (LGE 사번/이메일 규칙)
+      const isLgePattern = /^[a-z0-9._-]+$/i.test(cleanEmail);
       if (!isLgePattern) {
         return { status: 'unregistered', label: '형식 이상', text: '비표준 이메일 아이디', isProblem: true };
       }
 
-      return { status: 'unregistered', label: '미등록 인원', text: '사전 등록 명부 없음', isProblem: true };
+      return { status: 'walkin', label: '현장 추가 등록', text: '사전 명부 미등록 (현장 등록)', isProblem: false };
     }
 
     function renderCheckinTable() {
@@ -4290,10 +4364,14 @@
         filtered = filtered.filter(item => item.validation.isProblem && item.validation.status !== 'blocked');
       } else if (filter === 'matched') {
         filtered = filtered.filter(item => item.validation.status === 'matched');
+      } else if (filter === 'walkin') {
+        filtered = filtered.filter(item => item.validation.status === 'walkin');
+      } else if (filter === 'operator') {
+        filtered = filtered.filter(item => item.validation.status === 'operator' || item.isOperator);
       } else if (filter === 'blocked') {
         filtered = filtered.filter(item => item.validation.status === 'blocked');
       } else if (filter === 'milestone') {
-        filtered = filtered.filter(item => item.isMilestoneWinner || isSeqMilestoneWinner(item.seq));
+        filtered = filtered.filter(item => (item.isMilestoneWinner || isSeqMilestoneWinner(item.seq)) && !item.isOperator && !isOperatorEmail(item.email));
       }
 
       if (filtered.length === 0) {
@@ -4311,8 +4389,37 @@
         const val = item.validation;
         const seqVal = item.seq || (idx + 1);
         const checkinIdVal = item.checkinId || ('HVAC-' + String(seqVal).padStart(3, '0'));
-        const isMilestone = item.isMilestoneWinner || isSeqMilestoneWinner(seqVal);
-        const prizeName = item.milestonePrize || (getMilestoneBySeq(seqVal)?.prize || '');
+        const isOp = val.status === 'operator' || item.isOperator || isOperatorEmail(item.email);
+        const isMilestone = (item.isMilestoneWinner || (isSeqMilestoneWinner(seqVal) && !isOp));
+        const prizeName = item.milestonePrize || (getMilestoneBySeq(seqVal)?.prize || '스타벅스 커피 쿠폰');
+
+        let statusBadgeHtml = '';
+        if (val.status === 'operator' || isOp) {
+          statusBadgeHtml = '<span class="status-pill" style="background: rgba(168,85,247,0.2); color: #c084fc; border: 1px solid rgba(168,85,247,0.4);">🟣 세미나 운영진</span>';
+        } else if (val.status === 'matched') {
+          statusBadgeHtml = '<span class="status-pill matched">🟢 사전 등록</span>';
+        } else if (val.status === 'walkin') {
+          statusBadgeHtml = '<span class="status-pill" style="background: rgba(245,158,11,0.2); color: #f59e0b; border: 1px solid rgba(245,158,11,0.4);">🟡 현장 추가 등록</span>';
+        } else if (val.status === 'blocked') {
+          statusBadgeHtml = '<span class="status-pill blocked">🚫 차단/강퇴</span>';
+        } else {
+          statusBadgeHtml = '<span class="status-pill" style="background: rgba(239,68,68,0.2); color: #f87171; border: 1px solid rgba(239,68,68,0.4);">⚠️ 불일치 의심</span>';
+        }
+
+        let milestoneColHtml = '<span style="color: rgba(255, 255, 255, 0.25); font-size: 12px;">-</span>';
+        if (isOp && isSeqMilestoneWinner(seqVal)) {
+          milestoneColHtml = `
+            <span class="status-pill" style="color: #c084fc; border-color: rgba(168,85,247,0.4); background: rgba(168,85,247,0.12); font-size: 11px; padding: 2px 7px; line-height: 1.35; display: inline-block;">
+              운영진 당첨 제외<br>
+              <small style="color: rgba(255,255,255,0.7);">(#${seqVal + 1} 일반 참석자 이월)</small>
+            </span>`;
+        } else if (isMilestone) {
+          milestoneColHtml = `
+            <span class="status-pill matched" style="color: #f3c448; border-color: rgba(243,196,72,0.45); background: rgba(243,196,72,0.12); font-size: 11px; padding: 3px 8px; line-height: 1.35; display: inline-block;">
+              🎁 <strong>${seqVal}번째 당첨</strong><br>
+              <small style="color: rgba(255,255,255,0.75);">${escapeHtml(prizeName)}</small>
+            </span>`;
+        }
 
         return `
           <tr class="${val.isProblem ? (val.status === 'blocked' ? 'row-blocked' : 'row-mismatch') : ''}">
@@ -4321,10 +4428,7 @@
               <code style="font-size: 11px; color: #10b981;">${checkinIdVal}</code>
             </td>
             <td>
-              <span class="status-pill ${val.status}">
-                ${val.status === 'matched' ? '🟢' : (val.status === 'blocked' ? '🚫' : '⚠️')}
-                ${val.label}
-              </span>
+              ${statusBadgeHtml}
             </td>
             <td><strong>${escapeHtml(item.name)}</strong></td>
             <td><code>${escapeHtml(item.email)}</code></td>
@@ -4332,14 +4436,7 @@
               ${val.text}
             </td>
             <td>
-              ${isMilestone ? `
-                <span class="status-pill matched" style="color: #f3c448; border-color: rgba(243,196,72,0.45); background: rgba(243,196,72,0.12); font-size: 11px; padding: 3px 8px; line-height: 1.35; display: inline-block;">
-                  🎁 <strong>${seqVal}번째 당첨</strong><br>
-                  <small style="color: rgba(255,255,255,0.75);">${escapeHtml(prizeName)}</small>
-                </span>
-              ` : `
-                <span style="color: rgba(255, 255, 255, 0.25); font-size: 12px;">-</span>
-              `}
+              ${milestoneColHtml}
             </td>
             <td style="font-size: 12px; color: var(--text-muted);">${item.checkinTime || '-'}</td>
             <td style="text-align: center;">
@@ -4476,10 +4573,15 @@
       }
     }
 
-    // 사전 등록 명부 관리 모달
+    // 사전 등록 명부 관리 모달 (이메일, 이름, 사번, 직급 4개 필드 유연 파싱 지원)
     function openRosterModal() {
       const roster = getRoster();
-      const lines = roster.map(r => `${r.email}, ${r.name}`).join('\n');
+      const lines = roster.map(r => {
+        const parts = [r.email, r.name];
+        if (r.empNo) parts.push(r.empNo);
+        if (r.position || r.title) parts.push(r.position || r.title);
+        return parts.join(', ');
+      }).join('\n');
       document.getElementById('rosterTextInput').value = lines;
       openModal('modalRoster');
     }
@@ -4489,22 +4591,88 @@
       const lines = text.split('\n');
       const list = [];
       lines.forEach(line => {
-        const parts = line.split(',');
+        const trimmed = line.trim();
+        if (!trimmed) return;
+        const parts = trimmed.split(/[,\t]+/).map(p => p.trim());
         if (parts.length >= 2) {
-          const email = parts[0].trim();
-          const name = parts[1].trim();
-          if (email && name) list.push({ email, name });
+          let email = '', name = '', empNo = '', position = '';
+          // 유연한 열 순서 지원: 첫 열이 영문/이메일이면 email-first, 아니면 name-first
+          if (parts[0].includes('@') || /^[a-z0-9._-]+$/i.test(parts[0])) {
+            email = parts[0].toLowerCase().replace('@lge.com', '');
+            name = parts[1];
+            empNo = parts[2] || '';
+            position = parts[3] || '';
+          } else {
+            name = parts[0];
+            email = parts[1].toLowerCase().replace('@lge.com', '');
+            empNo = parts[2] || '';
+            position = parts[3] || '';
+          }
+          if (email && name) list.push({ email, name, empNo, position });
         }
       });
       localStorage.setItem('hvac_roster_list', JSON.stringify(list));
+      if (window.HVAC && HVAC.cloud && HVAC.cloud.getConfig()) {
+        try {
+          fetch(HVAC.cloud.cloudPath('roster'), {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(list)
+          });
+        } catch (e) {}
+      }
       closeModal('modalRoster');
       renderCheckinTable();
-      showToast('📋 사전 등록 명부가 갱신되었습니다.');
+      showToast(`📋 사전 등록 명부(${list.length}명)가 갱신 및 동기화되었습니다.`);
     }
 
     function resetDefaultRoster() {
       if (confirm('기본 사전 등록 명부로 초기화하시겠습니까?')) {
         document.getElementById('rosterTextInput').value = DEFAULT_ROSTER.map(r => `${r.email}, ${r.name}`).join('\n');
+      }
+    }
+
+    // 세미나 운영진(Operator) 관리 모달 핸들러
+    function openOperatorModal() {
+      const ops = getOperatorList();
+      const lines = ops.map(o => `${o.email}, ${o.name}, ${o.position || o.role || '운영진'}`).join('\n');
+      document.getElementById('operatorTextInput').value = lines;
+      openModal('modalOperatorList');
+    }
+
+    function saveOperatorListModal() {
+      const text = document.getElementById('operatorTextInput').value;
+      const lines = text.split('\n');
+      const list = [];
+      lines.forEach(line => {
+        const trimmed = line.trim();
+        if (!trimmed) return;
+        const parts = trimmed.split(/[,\t]+/).map(p => p.trim());
+        if (parts.length >= 2) {
+          const email = parts[0].toLowerCase().replace('@lge.com', '');
+          const name = parts[1];
+          const position = parts[2] || '운영진';
+          if (email && name) list.push({ email, name, position, role: 'operator' });
+        }
+      });
+      if (list.length === 0) {
+        list.push({ email: 'youngsoo.lee', name: '이영수', position: '운영총괄', role: 'admin' });
+      }
+      if (window.HVAC && window.HVAC.saveOperatorList) {
+        window.HVAC.saveOperatorList(list);
+      } else {
+        localStorage.setItem('hvac_operator_list', JSON.stringify(list));
+      }
+      closeModal('modalOperatorList');
+      renderCheckinTable();
+      updateAllStats();
+      showToast(`🛡️ 세미나 운영진 명단(${list.length}명)이 저장 및 동기화되었습니다.`);
+    }
+
+    function resetDefaultOperators() {
+      if (confirm('기본 운영진 명단으로 초기화하시겠습니까?')) {
+        const def = (window.HVAC && window.HVAC.DEFAULT_OPERATORS) || DEFAULT_OPERATORS;
+        document.getElementById('operatorTextInput').value = def.map(o => `${o.email}, ${o.name}, ${o.position || '운영총괄'}`).join('\n');
       }
     }
 
@@ -4786,19 +4954,27 @@
       document.getElementById('countBadgeQna').textContent = totalQ;
       document.getElementById('countBadgeMc').textContent = starredQ;
 
-      // 2) 출석부 지표
+      // 2) 출석부 지표 (사전등록/현장추가/운영진 세분화)
       const totalC = checkinList.length;
       let matchedC = 0;
+      let walkinC = 0;
+      let operatorC = 0;
       let mismatchC = 0;
 
       checkinList.forEach(att => {
         const val = getAttendeeValidation(att);
         if (val.status === 'matched') matchedC++;
+        else if (val.status === 'walkin') walkinC++;
+        else if (val.status === 'operator' || att.isOperator) operatorC++;
         else if (val.isProblem && val.status !== 'blocked') mismatchC++;
       });
 
       document.getElementById('statTotalCheckin').textContent = totalC;
       document.getElementById('statMatchedCheckin').textContent = matchedC;
+      const elWalkin = document.getElementById('statWalkinCheckin');
+      if (elWalkin) elWalkin.textContent = walkinC;
+      const elOp = document.getElementById('statOperatorCheckin');
+      if (elOp) elOp.textContent = operatorC;
       document.getElementById('statMismatchCheckin').textContent = mismatchC;
       document.getElementById('statBlockedCheckin').textContent = blockedUsers.length;
       document.getElementById('countBadgeCheckin').textContent = totalC;
@@ -5258,10 +5434,11 @@
     // 11. [TAB 6] 🎁 럭키드로우 & 출석 순번 이벤트 시스템
     // =========================================================
     const DEFAULT_MILESTONES = [
-      { seq: 10, prize: '스타벅스 e-Gift 카드 (1만원권)' },
-      { seq: 50, prize: 'LG 프리미엄 써모 텀블러' },
-      { seq: 77, prize: '신세계 모바일 상품권 (3만원권)' },
-      { seq: 100, prize: 'LG 퓨리케어 미니 공기청정기' }
+      { seq: 1, prize: '스타벅스 커피 쿠폰 (1호 체크인)' },
+      { seq: 7, prize: '스타벅스 커피 쿠폰 (럭키 7)' },
+      { seq: 10, prize: '스타벅스 커피 쿠폰 (10번째 체크인)' },
+      { seq: 77, prize: '스타벅스 커피 쿠폰 (행운의 77번째)' },
+      { seq: 100, prize: '스타벅스 커피 쿠폰 (센추리 100번째)' }
     ];
 
     const DEFAULT_TIERS = [
@@ -5436,10 +5613,12 @@
         const cleanEmail = att.email.toLowerCase().replace('@lge.com', '');
         // 1) 강퇴/차단 계정 제외
         if (blocked.some(b => b.toLowerCase().replace('@lge.com', '') === cleanEmail)) return false;
-        // 2) 정상 매칭 필터
+        // 2) 정상 매칭/등록 확인 (운영진 및 현장 등록자도 정상 참석자이므로 포함)
         if (drawConfig.onlyMatched) {
           const val = getAttendeeValidation(att);
-          if (val.status !== 'matched') return false;
+          const isOp = (val.status === 'operator' || att.isOperator || isOperatorEmail(cleanEmail));
+          // 운영진은 최우선 포함, 일반 참석자는 이상/차단 없는 경우 포함
+          if (!isOp && val.isProblem) return false;
         }
         // 3) N번째 순번 당첨자 제외 옵션
         if (drawConfig.excludeMilestones && (att.isMilestoneWinner || isSeqMilestoneWinner(att.seq))) return false;

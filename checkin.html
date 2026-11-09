@@ -1158,12 +1158,15 @@
               type="text"
               id="inputEmail"
               class="app-input"
-              placeholder="메일주소 @ 앞부분만 입력"
+              placeholder="아이디만 입력 (@lge.com 제외)"
               autocomplete="off"
               inputmode="email"
               autofocus
             >
           </div>
+          <small style="display: block; margin-top: 8px; font-size: 12px; color: rgba(255, 255, 255, 0.65); letter-spacing: -0.01em;">
+            ※ @lge.com 을 제외한 사내 이메일 앞자리 아이디만 입력해 주세요.
+          </small>
         </div>
       </div>
 
@@ -1196,10 +1199,13 @@
               type="text"
               id="inputName"
               class="app-input"
-              placeholder="사용할 이름 (한글)"
+              placeholder="성명 (한글 또는 영문)"
               autocomplete="name"
             >
           </div>
+          <small style="display: block; margin-top: 8px; font-size: 12px; color: rgba(255, 255, 255, 0.65); letter-spacing: -0.01em;">
+            ※ 한글 성명(2~3자) 또는 영문 성명을 입력해 주세요.
+          </small>
         </div>
       </div>
 
@@ -1303,8 +1309,11 @@
   ========================================================= -->
   <div class="modal-backdrop" id="modalConfirm">
     <div class="confirm-card">
-      <h3>체크인할까요?</h3>
-      <p class="sub">아래 정보로 체크인합니다. 이름을 바꾸려면 수정을 누르세요.</p>
+      <div id="modalTypeBadge" style="display: inline-block; font-size: 11.5px; font-weight: 800; padding: 3px 10px; border-radius: 99px; margin-bottom: 8px; background: rgba(16,185,129,0.2); color: #10b981; border: 1px solid rgba(16,185,129,0.4);">
+        🟢 사전 등록 확인
+      </div>
+      <h3 id="modalConfirmTitle">체크인할까요?</h3>
+      <p class="sub" id="modalConfirmSub">아래 정보로 체크인합니다. 이름을 바꾸려면 수정을 누르세요.</p>
 
       <div class="field-box">
         <div class="lbl">이메일 아이디</div>
@@ -1315,7 +1324,7 @@
       </div>
 
       <div class="field-box">
-        <div class="lbl">이름</div>
+        <div class="lbl">성명 및 직급</div>
         <div class="val-row">
           <div class="val" id="modalValName">홍길동</div>
           <div class="badge-lock" style="color: rgba(255,255,255,0.65);">변경 가능</div>
@@ -1326,6 +1335,21 @@
         <button class="btn-modal-cancel" id="btnModalEdit" type="button">수정</button>
         <button class="btn-modal-confirm" id="btnModalConfirm" type="button">확인</button>
       </div>
+    </div>
+  </div>
+
+  <!-- 세션 강제 종료 (다른 기기 접속 감지) 모달 -->
+  <div class="modal-backdrop" id="modalSessionTerminated">
+    <div class="confirm-card" style="text-align: center; border: 1px solid rgba(239, 68, 68, 0.4); box-shadow: 0 0 40px rgba(239, 68, 68, 0.3);">
+      <div style="font-size: 42px; margin-bottom: 6px;">🔒</div>
+      <h3 style="color: #f87171;">다른 기기 접속 감지</h3>
+      <p class="sub" style="margin-bottom: 16px; line-height: 1.5;">
+        다른 기기에서 동일한 계정으로 새로 로그인되어<br>
+        <strong>1인 1기기 세션 보안 정책</strong>에 따라 현재 기기의 연결이 종료되었습니다.
+      </p>
+      <button class="btn-modal-confirm" onclick="location.reload()" type="button" style="width: 100%; height: 48px; background: #ef4444; border-color: #ef4444;">
+        확인 (재로그인 화면으로 이동)
+      </button>
     </div>
   </div>
 
@@ -1879,9 +1903,13 @@
       showScreen('intro');
     });
 
-    // 1단계 이메일 입력 검증 (2글자 이상 입력 시 '다음' 버튼 활성화)
+    // 1단계 이메일 입력 검증 (@lge.com 입력 시 자동 제거 & 2글자 이상 시 활성화)
     inputEmail.addEventListener('input', () => {
-      const val = inputEmail.value.trim();
+      let val = inputEmail.value.trim();
+      if (val.includes('@')) {
+        val = val.split('@')[0].trim();
+        inputEmail.value = val;
+      }
       if (val.length >= 2) {
         btnGoStep2.classList.remove('btn-disabled');
         btnGoStep2.removeAttribute('disabled');
@@ -1907,7 +1935,7 @@
       showScreen('step1');
     });
 
-    // 2단계 이름 입력 검증 (한글 이름 2자 이상 입력 시 '체크인' 버튼 활성화)
+    // 2단계 이름 입력 검증 (한글 또는 영문 2자 이상 입력 시 '체크인' 버튼 활성화)
     inputName.addEventListener('input', () => {
       const val = inputName.value.trim();
       if (val.length >= 2) {
@@ -1925,10 +1953,71 @@
       }
     });
 
-    // '체크인할까요?' 확인 팝업 열기 (스크린샷 2 동일)
+    // '체크인할까요?' 확인 팝업 열기 (사전 신청자 vs 현장 추가 등록자 vs 운영진 분기)
+    let currentCheckinMeta = { type: 'walkin', position: '', dept: '', empNo: '', isOperator: false };
+
     btnOpenConfirmModal.addEventListener('click', () => {
-      modalValEmail.textContent = inputEmail.value.trim();
-      modalValName.textContent = inputName.value.trim();
+      const rawEmail = inputEmail.value.trim();
+      const cleanEmail = rawEmail.toLowerCase().replace('@lge.com', '');
+      const rawName = inputName.value.trim();
+
+      modalValEmail.textContent = cleanEmail;
+
+      // 마스터 Roster 및 운영진 확인
+      const roster = (window.HVAC && window.HVAC.read && window.HVAC.read('hvac_roster_list'))
+        || JSON.parse(localStorage.getItem('hvac_roster_list') || '[]');
+      const matchedRoster = roster.find(r => String(r.email || '').toLowerCase().replace('@lge.com', '').trim() === cleanEmail);
+
+      const isOp = (window.HVAC && window.HVAC.isOperatorEmail)
+        ? window.HVAC.isOperatorEmail(cleanEmail)
+        : (cleanEmail === 'youngsoo.lee' || cleanEmail === 'hvac.admin');
+
+      const badgeEl = document.getElementById('modalTypeBadge');
+      const titleEl = document.getElementById('modalConfirmTitle');
+      const subEl = document.getElementById('modalConfirmSub');
+      const btnConfirmEl = document.getElementById('btnModalConfirm');
+
+      if (isOp) {
+        currentCheckinMeta = { type: 'operator', position: '운영진', dept: '운영팀', empNo: '', isOperator: true };
+        if (badgeEl) {
+          badgeEl.style.background = 'rgba(168, 85, 247, 0.2)';
+          badgeEl.style.color = '#c084fc';
+          badgeEl.style.borderColor = 'rgba(168, 85, 247, 0.4)';
+          badgeEl.textContent = '🟣 세미나 운영진';
+        }
+        if (titleEl) titleEl.textContent = '운영진 출석 체크';
+        if (subEl) subEl.textContent = '세미나 운영 스태프로 확인되었습니다. 출석 체크인을 완료합니다.';
+        if (btnConfirmEl) btnConfirmEl.textContent = '운영진 체크인 완료';
+        modalValName.textContent = `${rawName} (운영팀)`;
+      } else if (matchedRoster) {
+        const pos = matchedRoster.position || matchedRoster.title || '';
+        const dept = matchedRoster.dept || '';
+        const empNo = matchedRoster.empNo || '';
+        currentCheckinMeta = { type: 'pre_registered', position: pos, dept: dept, empNo: empNo, isOperator: false };
+        if (badgeEl) {
+          badgeEl.style.background = 'rgba(16, 185, 129, 0.2)';
+          badgeEl.style.color = '#10b981';
+          badgeEl.style.borderColor = 'rgba(16, 185, 129, 0.4)';
+          badgeEl.textContent = '🟢 사전 등록 확인';
+        }
+        if (titleEl) titleEl.textContent = '사전 등록 체크인';
+        if (subEl) subEl.textContent = '사전 신청 명단과 일치합니다. 아래 정보로 입장 번호표를 발급합니다.';
+        if (btnConfirmEl) btnConfirmEl.textContent = '체크인 완료 (입장)';
+        modalValName.textContent = pos ? `${rawName} ${pos}` : rawName;
+      } else {
+        currentCheckinMeta = { type: 'walkin', position: '', dept: '', empNo: '', isOperator: false };
+        if (badgeEl) {
+          badgeEl.style.background = 'rgba(245, 158, 11, 0.2)';
+          badgeEl.style.color = '#f59e0b';
+          badgeEl.style.borderColor = 'rgba(245, 158, 11, 0.4)';
+          badgeEl.textContent = '🟡 현장 추가 등록 (Walk-in)';
+        }
+        if (titleEl) titleEl.textContent = '💡 현장 추가 등록 안내';
+        if (subEl) subEl.innerHTML = '사전 신청 명단에 등록되지 않은 이메일입니다.<br><strong style="color: #f59e0b;">현장 참석자(Walk-in)</strong>로 추가 등록하여 세미나에 입장하시겠습니까?';
+        if (btnConfirmEl) btnConfirmEl.textContent = '현장 등록으로 입장하기';
+        modalValName.textContent = rawName;
+      }
+
       modalConfirm.classList.add('show');
     });
 
@@ -1980,12 +2069,17 @@
 
       let checkinData = null;
 
-      // 1) 클라우드 DB 연결 시: 원자적 트랜잭션 순번(No. 001~200+) 발급 및 실시간 등록
+      // 1) 클라우드 DB 연결 시: 원자적 트랜잭션 순번(No. 001~200+) 발급 및 실시간 등록 (직급/유형/운영진 메타 반영)
       if (window.HVAC && HVAC.cloud && HVAC.cloud.getConfig()) {
         try {
           checkinData = await HVAC.cloud.checkin({
-            email,
-            name,
+            email: cleanEmail,
+            name: name,
+            type: currentCheckinMeta.type,
+            position: currentCheckinMeta.position,
+            dept: currentCheckinMeta.dept,
+            empNo: currentCheckinMeta.empNo,
+            isOperator: currentCheckinMeta.isOperator,
             checkinTime: timeStr,
             date: now.toISOString().slice(0, 10)
           });
@@ -2008,10 +2102,11 @@
         }
 
         const defaultMilestones = [
-          { seq: 10, prize: '스타벅스 e-Gift 카드 (1만원권)' },
-          { seq: 50, prize: 'LG 프리미엄 써모 텀블러' },
-          { seq: 77, prize: '신세계 모바일 상품권 (3만원권)' },
-          { seq: 100, prize: 'LG 퓨리케어 미니 공기청정기' }
+          { seq: 1, prize: '스타벅스 커피 쿠폰 (1호 체크인)' },
+          { seq: 7, prize: '스타벅스 커피 쿠폰 (럭키 7)' },
+          { seq: 10, prize: '스타벅스 커피 쿠폰 (10번째 체크인)' },
+          { seq: 77, prize: '스타벅스 커피 쿠폰 (행운의 77번째)' },
+          { seq: 100, prize: '스타벅스 커피 쿠폰 (센추리 100번째)' }
         ];
         let milestones = defaultMilestones;
         try {
@@ -2020,16 +2115,26 @@
           else localStorage.setItem('hvac_milestone_events', JSON.stringify(defaultMilestones));
         } catch (e) {}
 
+        const isOp = currentCheckinMeta.isOperator || ((window.HVAC && window.HVAC.isOperatorEmail) ? window.HVAC.isOperatorEmail(cleanEmail) : false);
         const matchedMilestone = milestones.find(m => parseInt(m.seq, 10) === seq);
+        // 운영진은 마일스톤 당첨 제외!
+        const isWinner = (!isOp && !!matchedMilestone);
+
         checkinData = {
-          email,
+          email: cleanEmail,
           name,
           seq,
           checkinId,
+          type: currentCheckinMeta.type || (isOp ? 'operator' : 'walkin'),
+          position: currentCheckinMeta.position || '',
+          dept: currentCheckinMeta.dept || '',
+          empNo: currentCheckinMeta.empNo || '',
+          isOperator: isOp,
+          sessionToken: 'tok_' + ((window.HVAC && window.HVAC.getDeviceId) ? window.HVAC.getDeviceId() : 'dev_local') + '_' + Date.now(),
           checkinTime: timeStr,
           date: now.toISOString().slice(0, 10),
-          isMilestoneWinner: !!matchedMilestone,
-          milestonePrize: matchedMilestone ? matchedMilestone.prize : ''
+          isMilestoneWinner: isWinner,
+          milestonePrize: isWinner ? matchedMilestone.prize : ''
         };
       }
 
@@ -2615,6 +2720,12 @@
         if (keys.includes('hvac_site_content')) applyCheckinSiteContent();
       });
     }
+
+    // 다른 기기 접속 감지 시 현재 기기 자동 로그아웃 (1인 1기기 세션 보안)
+    window.addEventListener('hvac:session-terminated', (e) => {
+      const modal = document.getElementById('modalSessionTerminated');
+      if (modal) modal.classList.add('show');
+    });
   </script>
 </body>
 </html>

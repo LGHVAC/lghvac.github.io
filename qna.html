@@ -683,10 +683,10 @@
 
       <div class="ask-row-bottom">
         <div class="ask-meta-input">
-          <input type="text" class="input-author" id="askAuthor" placeholder="작성자 이름" />
-          <label class="checkbox-anon">
-            <input type="checkbox" id="checkAnon" />
-            <span>익명</span>
+          <input type="text" class="input-author" id="askAuthor" placeholder="성명 및 직급 (예: 홍길동 책임)" />
+          <label class="checkbox-anon" id="labelAnon" style="opacity: 0.55; cursor: not-allowed; user-select: none;" title="2026 HVAC 세미나는 실명제로 운영됩니다">
+            <input type="checkbox" id="checkAnon" disabled />
+            <span>🔒 익명 (비활성화)</span>
           </label>
         </div>
         <button class="btn-submit-q" id="btnSubmitQ" type="button">질문 등록</button>
@@ -846,13 +846,14 @@
     loadQuestionsFromStorage();
     syncSessionOptionsFromAdmin();
 
-    // 체크인된 이름이 있으면 작성자 필드 자동 채우기
+    // 체크인된 이름과 직급이 있으면 작성자 필드 자동 채우기 (예: 홍길동 책임)
     try {
       const user = localStorage.getItem('hvac_user_checked');
       if (user) {
         const parsed = JSON.parse(user);
         if (parsed && parsed.name) {
-          document.getElementById('askAuthor').value = parsed.name;
+          const pos = (parsed.position || parsed.title || '').trim();
+          document.getElementById('askAuthor').value = pos ? `${parsed.name} ${pos}` : parsed.name;
         }
       }
     } catch (e) {}
@@ -988,18 +989,17 @@
       });
     });
 
-    // 익명 체크박스
+    // 익명 체크박스 (2026 세미나 실명제 안내 팝업)
     const checkAnon = document.getElementById('checkAnon');
     const inputAuthor = document.getElementById('askAuthor');
-    checkAnon.addEventListener('change', () => {
-      if (checkAnon.checked) {
-        inputAuthor.disabled = true;
-        inputAuthor.style.opacity = '0.5';
-      } else {
-        inputAuthor.disabled = false;
-        inputAuthor.style.opacity = '1';
-      }
-    });
+    const labelAnon = document.getElementById('labelAnon');
+
+    if (labelAnon) {
+      labelAnon.addEventListener('click', (e) => {
+        e.preventDefault();
+        showToast('📢 이번 2026 HVAC 세미나에서는 원활한 기술 교류 및 Q&A를 위해 실명제(이름/직급)로 운영됩니다.');
+      });
+    }
 
     // 질문 등록 버튼
     document.getElementById('btnSubmitQ').addEventListener('click', () => {
@@ -1013,8 +1013,10 @@
         return;
       }
 
-      if (checkAnon.checked || !author) {
-        author = '익명 참가자';
+      if (!author || author === '익명' || author === '익명 참가자') {
+        showToast('⚠️ 성명(실명/직급)을 입력해 주세요. (이번 세미나는 실명제로 운영됩니다)');
+        document.getElementById('askAuthor').focus();
+        return;
       }
 
       const now = new Date();

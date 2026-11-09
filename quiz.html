@@ -1206,7 +1206,7 @@
         else subList.push(subRecord);
         localStorage.setItem('hvac_quiz_submissions', JSON.stringify(subList));
 
-        // 클라우드 연동 전송
+        // 클라우드 연동 전송 (중복 제출 / 타 기기 동시 제출 잠금 검증)
         if (window.HVAC && HVAC.cloud && answeredCount > 0) {
           HVAC.cloud.pushQuizScore({
             score: currentScore,
@@ -1214,7 +1214,12 @@
             firstTryCount: firstTryCount,
             retryCount: retryCount,
             total: totalQuizzes
-          });
+          }).then(function (res) {
+            if (res && res.locked && res.duplicate) {
+              showToast('⚠️ 다른 기기에서 이미 제출 완료되었습니다.');
+              alert('⚠️ 이미 다른 기기에서 제출이 완료된 퀴즈입니다.\n1인 1기기 정책에 따라 최초 제출 기기의 점수가 인정됩니다.');
+            }
+          }).catch(function () {});
         }
       } catch (e) {}
 
@@ -1461,6 +1466,12 @@
         }
       });
     }
+
+    // 다른 기기 로그인 감지 시 세션 종료 안내
+    window.addEventListener('hvac:session-terminated', function () {
+      alert('🔒 다른 기기에서 동일 계정으로 새로 로그인되어\n1인 1기기 보안 정책에 따라 현재 기기의 연결이 종료되었습니다.');
+      window.location.href = './checkin.html';
+    });
   </script>
 </body>
 </html>

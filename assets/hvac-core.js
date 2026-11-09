@@ -473,15 +473,82 @@
     }).catch(function () { return false; });
   }
 
-  // 참석자 체크인: ETag 기반 원자적 순번(1~200+) 발급 및 클라우드 등록
+  // ---------------------------------------------------------
+  // 6-1) 기기 식별 & 세션 토큰 & 운영진 식별 헬퍼
+  // ---------------------------------------------------------
+  function getDeviceId() {
+    var did = '';
+    try { did = localStorage.getItem('hvac_device_id') || ''; } catch (e) {}
+    if (!did) {
+      did = 'dev_' + Math.random().toString(36).slice(2, 10) + '_' + Date.now().toString(36);
+      try { localStorage.setItem('hvac_device_id', did); } catch (e) {}
+    }
+    return did;
+  }
+
+  function getDeviceType() {
+    var ua = (navigator.userAgent || '').toLowerCase();
+    if (/iphone|ipad|ipod/.test(ua)) return '📱 iPhone';
+    if (/android/.test(ua)) return '📱 Android';
+    if (/windows/.test(ua)) return '💻 Windows PC';
+    if (/macintosh|mac os/.test(ua)) return '💻 Mac';
+    return '📱 Mobile';
+  }
+
+  var DEFAULT_OPERATORS = [
+    { email: 'hvac.admin', name: '세미나운영진', role: 'admin', position: '운영팀' },
+    { email: 'youngsoo.lee', name: '이영수', role: 'admin', position: '운영총괄' }
+  ];
+
+  function getOperatorList() {
+    var list = read('hvac_operator_list');
+    if (Array.isArray(list) && list.length) return list;
+    return DEFAULT_OPERATORS;
+  }
+
+  function saveOperatorList(newList) {
+    if (Array.isArray(newList)) {
+      writeLocalSilent('hvac_operator_list', newList);
+      var c = getCloudConfig();
+      if (c && window.fetch) {
+        fetch(cloudPath('operators'), {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newList)
+        }).then(function () { touchCloudMeta('config'); }).catch(function () {});
+      }
+    }
+  }
+
+  function isOperatorEmail(email) {
+    if (!email) return false;
+    var clean = String(email).trim().toLowerCase().replace('@lge.com', '');
+    var ops = getOperatorList();
+    return ops.some(function (o) {
+      var opClean = String(o.email || '').trim().toLowerCase().replace('@lge.com', '');
+      return opClean === clean;
+    });
+  }
+
+  var DEFAULT_MILESTONES = [
+    { seq: 1, prize: '스타벅스 커피 쿠폰 (1호 체크인)' },
+    { seq: 7, prize: '스타벅스 커피 쿠폰 (럭키 7)' },
+    { seq: 10, prize: '스타벅스 커피 쿠폰 (10번째 체크인)' },
+    { seq: 77, prize: '스타벅스 커피 쿠폰 (행운의 77번째)' },
+    { seq: 100, prize: '스타벅스 커피 쿠폰 (센추리 100번째)' }
+  ];
+
+  // 참석자 체크인: ETag 기반 원자적 순번(1~200+) 발급 및 클라우드 등록 (단일 세션 & 운영진 이월 지원)
   function cloudCheckin(attendee) {
     var c = getCloudConfig();
     if (!c || !window.fetch) return Promise.resolve(null);
 
     var cleanEmail = String(attendee.email || '').toLowerCase().replace('@lge.com', '').replace(/[.#$\[\]\/]/g, '_');
     var existingUrl = cloudPath('checkins/items/' + cleanEmail);
+    var isOp = isOperatorEmail(cleanEmail) || !!attendee.isOperator;
+    var newSessionToken = 'tok_' + getDeviceId() + '_' + Date.now();
 
-    // 1) 이미 체크인한 사용자인지 먼저 확인 (재접속 시 기존 순번 유지)
+    // 1) 이미 체크인한 사용자인지 먼저 확인 (재접속 시 기존 순번 유지 & 활성 세션 토큰 갱신)
     return fetch(existingUrl, { cache: 'no-store' })
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (existing) {
@@ -489,6 +556,12 @@
           var updated = Object.assign({}, existing, attendee, {
             seq: existing.seq,
             checkinId: existing.checkinId || ('HVAC-' + String(existing.seq).padStart(3, '0')),
+            isOperator: isOp,
+            type: isOp ? 'operator' : (existing.type || 'walkin'),
+            sessionToken: newSessionToken,
+            activeDeviceId: getDeviceId(),
+            activeDeviceType: getDeviceType(),
+            lastActiveAt: Date.now(),
             isMilestoneWinner: !!existing.isMilestoneWinner,
             milestonePrize: existing.milestonePrize || ''
           });
@@ -527,27 +600,84 @@
         }
 
         return allocateSeq(0).then(function (seq) {
-          var milestones = read('hvac_milestone_events') || [
-            { seq: 10, prize: '스타벅스 e-Gift 카드 (1만원권)' },
-            { seq: 50, prize: 'LG 프리미엄 써모 텀블러' },
-            { seq: 77, prize: '신세계 모바일 상품권 (3만원권)' },
-            { seq: 100, prize: 'LG 퓨리케어 미니 공기청정기' }
-          ];
-          var matched = milestones.find(function (m) { return parseInt(m.seq, 10) === seq; });
-          var record = Object.assign({}, attendee, {
-            seq: seq,
-            checkinId: 'HVAC-' + String(seq).padStart(3, '0'),
-            isMilestoneWinner: !!matched,
-            milestonePrize: matched ? matched.prize : ''
-          });
-          return fetch(existingUrl, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(record)
-          }).then(function () {
-            touchCloudMeta('checkins');
-            return record;
-          });
+          var milestones = read('hvac_milestone_events') || DEFAULT_MILESTONES;
+          var deferredUrl = cloudPath('checkins/deferredMilestones');
+
+          return fetch(deferredUrl, { cache: 'no-store' })
+            .then(function (r) { return r.ok ? r.json() : {}; })
+            .catch(function () { return {}; })
+            .then(function (defMap) {
+              defMap = defMap || {};
+              var matched = milestones.find(function (m) { return parseInt(m.seq, 10) === seq; });
+              var matchedPrize = matched ? matched.prize : (defMap[seq] || '');
+
+              var isWinner = false;
+              var finalPrize = '';
+
+              if (matchedPrize) {
+                if (isOp) {
+                  // 운영진은 당첨 제외! 다음 일반 참석자(seq + 1)에게 이월
+                  isWinner = false;
+                  finalPrize = '';
+                  defMap[seq + 1] = matchedPrize;
+                  if (defMap[seq]) delete defMap[seq];
+                  fetch(deferredUrl, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(defMap)
+                  }).catch(function () {});
+                } else {
+                  // 일반 참석자 정정 당첨!
+                  isWinner = true;
+                  finalPrize = matchedPrize;
+                  if (defMap[seq]) {
+                    delete defMap[seq];
+                    fetch(deferredUrl, {
+                      method: 'PUT',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify(defMap)
+                    }).catch(function () {});
+                  }
+                }
+              }
+
+              // 사전 등록 명부 검색
+              var roster = read('hvac_roster_list') || [];
+              var rosterMatch = roster.find(function (r) {
+                return String(r.email || '').toLowerCase().replace('@lge.com', '').trim() === cleanEmail;
+              });
+
+              var checkinType = isOp ? 'operator' : (rosterMatch ? 'pre_registered' : (attendee.type || 'walkin'));
+              var position = attendee.position || (rosterMatch ? (rosterMatch.position || rosterMatch.title || '') : '');
+              var dept = attendee.dept || (rosterMatch ? (rosterMatch.dept || '') : '');
+              var empNo = attendee.empNo || (rosterMatch ? (rosterMatch.empNo || '') : '');
+
+              var record = Object.assign({}, attendee, {
+                seq: seq,
+                checkinId: 'HVAC-' + String(seq).padStart(3, '0'),
+                cleanEmail: cleanEmail,
+                isOperator: isOp,
+                type: checkinType,
+                position: position,
+                dept: dept,
+                empNo: empNo,
+                sessionToken: newSessionToken,
+                activeDeviceId: getDeviceId(),
+                activeDeviceType: getDeviceType(),
+                lastActiveAt: Date.now(),
+                isMilestoneWinner: isWinner,
+                milestonePrize: finalPrize
+              });
+
+              return fetch(existingUrl, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(record)
+              }).then(function () {
+                touchCloudMeta('checkins');
+                return record;
+              });
+            });
         });
       })
       .catch(function () { return null; });
@@ -590,34 +720,49 @@
     }).catch(function () { return false; });
   }
 
-  // 퀴즈 점수 클라우드 전송 (참석자 퀴즈 풀이 시)
+  // 퀴즈 점수 클라우드 전송 (다중 기기 동시 제출 잠금 & 최초 제출자 First-Write-Wins 보장)
   function pushQuizScoreToCloud(scoreObj) {
     var c = getCloudConfig();
-    if (!c || !window.fetch || !scoreObj) return Promise.resolve(false);
+    if (!c || !window.fetch || !scoreObj) return Promise.resolve({ success: false });
     var user = read('hvac_user_checked') || {};
     var key = String(user.email || scoreObj.deviceId || 'anon_' + Date.now()).toLowerCase().replace('@lge.com', '').replace(/[.#$\[\]\/]/g, '_');
-    var record = {
-      email: user.email || '익명(미체크인)',
-      name: user.name || '미체크인 참가자',
-      empNo: user.empNo || user.employeeId || '',
-      dept: user.dept || '',
-      seq: user.seq || null,
-      checkinId: user.checkinId || '-',
-      score: scoreObj.score || 0,
-      answeredCount: scoreObj.answeredCount || 0,
-      firstTryCount: scoreObj.firstTryCount || 0,
-      retryCount: scoreObj.retryCount || 0,
-      total: scoreObj.total || 6,
-      updatedAt: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
-    };
-    return fetch(cloudPath('quiz/submissions/' + key), {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(record)
-    }).then(function (r) {
-      if (r.ok) return touchCloudMeta('quiz').then(function () { return true; });
-      return false;
-    }).catch(function () { return false; });
+    var subUrl = cloudPath('quiz/submissions/' + key);
+
+    return fetch(subUrl, { cache: 'no-store' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (existing) {
+        var myDeviceId = getDeviceId();
+        // 2대 이상 기기에서 거의 동시 제출 시 2번째 제출 무시 (최초 1차 제출 성적 유지)
+        if (existing && existing.isLocked && existing.deviceId && existing.deviceId !== myDeviceId) {
+          return { duplicate: true, locked: true, originalScore: existing.score };
+        }
+        var record = {
+          email: user.email || '익명(미체크인)',
+          name: user.name || '미체크인 참가자',
+          position: user.position || user.title || '',
+          empNo: user.empNo || user.employeeId || '',
+          dept: user.dept || '',
+          seq: user.seq || null,
+          checkinId: user.checkinId || '-',
+          score: scoreObj.score || 0,
+          answeredCount: scoreObj.answeredCount || 0,
+          firstTryCount: scoreObj.firstTryCount || 0,
+          retryCount: scoreObj.retryCount || 0,
+          total: scoreObj.total || 6,
+          deviceId: myDeviceId,
+          isLocked: (scoreObj.answeredCount >= (scoreObj.total || 6)),
+          updatedAt: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
+        };
+        return fetch(subUrl, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(record)
+        }).then(function (r) {
+          if (r.ok) return touchCloudMeta('quiz').then(function () { return { success: true, record: record }; });
+          return { success: false };
+        });
+      })
+      .catch(function () { return { success: false }; });
   }
 
   // 클라우드 -> 로컬 변경사항 폴링 (meta 타임스탬프 비교 후 변경된 섹션만 다운로드)
@@ -699,6 +844,22 @@
                   arr.sort(function (a, b) { return (b.seq || 0) - (a.seq || 0); });
                   writeLocalSilent('hvac_checkin_list', arr);
                   window.dispatchEvent(new StorageEvent('storage', { key: 'hvac_checkin_list' }));
+
+                  // 단일 기기 세션 검증: 다른 기기에서 새로 로그인한 경우 현재 기기 자동 로그아웃
+                  var myUser = read('hvac_user_checked');
+                  if (myUser && myUser.email) {
+                    var myClean = String(myUser.email).toLowerCase().replace('@lge.com', '').replace(/[.#$\[\]\/]/g, '_');
+                    var serverUser = chkData.items[myClean];
+                    if (serverUser && serverUser.sessionToken && myUser.sessionToken && serverUser.sessionToken !== myUser.sessionToken) {
+                      writeLocalSilent('hvac_user_checked', null);
+                      window.dispatchEvent(new CustomEvent('hvac:session-terminated', {
+                        detail: {
+                          deviceType: serverUser.activeDeviceType || '다른 기기',
+                          terminatedAt: serverUser.lastActiveAt || Date.now()
+                        }
+                      }));
+                    }
+                  }
                 }
                 if (Array.isArray(chkData.blocked)) {
                   writeLocalSilent('hvac_blocked_users', chkData.blocked);
@@ -822,6 +983,11 @@
     openMaterialViewer: openMaterialViewer,
     toEmbedPreviewUrl: toEmbedPreviewUrl,
     syncPublished: syncPublished,
+    getDeviceId: getDeviceId,
+    getDeviceType: getDeviceType,
+    isOperatorEmail: isOperatorEmail,
+    getOperatorList: getOperatorList,
+    saveOperatorList: saveOperatorList,
     cloud: {
       getConfig: getCloudConfig,
       poll: pollCloudChanges,
