@@ -2588,6 +2588,7 @@
             </p>
           </div>
           <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <button class="btn-act" style="background: rgba(243, 196, 72, 0.16); color: #f3c448; border: 1px solid rgba(243, 196, 72, 0.45); font-weight: 850;" onclick="openBatchShiftModal()">⚡ 일정 순연/지연 조정</button>
             <button class="btn-act primary" onclick="openAddSessionModal()">+ 새 세션 추가</button>
             <button class="btn-act" onclick="saveAllSessionsToStorage(true)">💾 전체 세션 저장</button>
             <button class="btn-act" onclick="resetScheduleToDefault()">🔄 기본 세션 복원</button>
@@ -2914,6 +2915,7 @@
             <p class="card-sub">세미나 인프라 및 각 강연 세션별 실시간 평균 점수(5점 만점)입니다.</p>
           </div>
           <div style="display: flex; gap: 8px;">
+            <button class="btn-act" style="background: rgba(16, 133, 72, 0.18); color: #22c55e; border: 1px solid rgba(34, 197, 94, 0.4); font-weight: 850;" onclick="syncSurveyQuestionsFromSchedule(true)">🔄 일정표에서 강연 제목/강사명 동기화</button>
             <button class="btn-act" onclick="openSurveyConfigModal()">⚙️ 설문 문항 및 제목 편집</button>
             <a class="btn-act" href="./survey.html" target="_blank">📋 설문 작성 화면 미리보기 ↗</a>
           </div>
@@ -2982,6 +2984,7 @@
             <div style="display: flex; gap: 6px;">
               <button class="btn-tbl" onclick="addNewKakaoPreset()">+ 프리셋 추가</button>
               <button class="btn-tbl" onclick="saveCurrentToKakaoPreset()">💾 현재 멘트 저장</button>
+              <button class="btn-tbl" style="background: rgba(254, 229, 0, 0.2); color: #fee500; font-weight: 800; border: 1px solid rgba(254, 229, 0, 0.4);" onclick="syncKakaoPresetsWithSchedule(true)">🔄 최신 세션 일정으로 문구 동기화</button>
               <button class="btn-tbl" onclick="resetKakaoPresetsToDefault()">🔄 기본 복원</button>
             </div>
           </div>
@@ -3040,6 +3043,20 @@
               </button>
               <button class="btn-act" onclick="copyMsgOnly()">
                 📋 텍스트 복사
+              </button>
+            </div>
+            <!-- 실시간 인앱 퀴즈 알림 배너 원클릭 발송기 -->
+            <div style="margin-top: 16px; background: rgba(243, 196, 72, 0.1); border: 1px solid rgba(243, 196, 72, 0.35); border-radius: 10px; padding: 12px 14px; display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;">
+              <div>
+                <div style="font-weight: 850; font-size: 13px; color: #f3c448; display: flex; align-items: center; gap: 6px;">
+                  <span>🔔</span> <span>체크인 참석자 실시간 퀴즈 알림 배너 팝업</span>
+                </div>
+                <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 3px; line-height: 1.4;">
+                  카카오톡 외부 링크 대신, 현재 모바일 앱 화면(체크인/Q&amp;A 등) 상단에 퀴즈 알림 배너를 즉시 띄웁니다.
+                </div>
+              </div>
+              <button type="button" class="btn-tbl" style="background: var(--gold-primary); color: #040906; font-weight: 900; padding: 7px 14px;" onclick="triggerInAppQuizBanner()">
+                🚀 실시간 퀴즈 배너 발송
               </button>
             </div>
           </div>
@@ -3790,6 +3807,74 @@
     </div>
   </div>
 
+  <!-- 9. 세션 일정 일괄 순연 / 지연 조정 모달 -->
+  <div class="modal-backdrop" id="modalBatchShiftSchedule">
+    <div class="modal-box" style="max-width: 620px;">
+      <div class="modal-head">
+        <h3 class="modal-title" style="color: #f3c448;">⚡ 세션 일정 순연 / 지연 일괄 조정</h3>
+        <button class="modal-close" onclick="closeModal('modalBatchShiftSchedule')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size: 13px; color: var(--text-muted); line-height: 1.5; margin-bottom: 16px;">
+          앞 강의가 지연되거나 현장 상황으로 일정이 변동될 때, 특정 세션부터 이후 모든 세션의 시간표를 원클릭으로 일괄 순연하거나 휴식/점심 시간에서 단축 흡수할 수 있습니다.
+        </p>
+
+        <div class="form-group" style="margin-bottom: 14px;">
+          <label style="font-size: 13px; font-weight: 700; color: #fff; margin-bottom: 6px; display: block;">1) 순연 시작 기준 세션</label>
+          <select id="shiftStartSessionIdx" class="form-control" style="font-size: 13px;" onchange="updateShiftPreview()">
+            <!-- JS 동적 생성 -->
+          </select>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 14px;">
+          <label style="font-size: 13px; font-weight: 700; color: #fff; margin-bottom: 6px; display: block;">2) 조정 시간 (분)</label>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px;">
+            <button type="button" class="btn-tbl shift-preset-btn" onclick="setShiftDelta(5)">+5분</button>
+            <button type="button" class="btn-tbl shift-preset-btn" onclick="setShiftDelta(10)">+10분</button>
+            <button type="button" class="btn-tbl shift-preset-btn active" style="background: rgba(243,196,72,0.2); color:#f3c448;" onclick="setShiftDelta(15)">+15분 지연</button>
+            <button type="button" class="btn-tbl shift-preset-btn" onclick="setShiftDelta(20)">+20분</button>
+            <button type="button" class="btn-tbl shift-preset-btn" onclick="setShiftDelta(30)">+30분</button>
+            <button type="button" class="btn-tbl shift-preset-btn" onclick="setShiftDelta(-10)">-10분 단축</button>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <input type="number" id="shiftDeltaMinutes" class="form-control" value="15" style="width: 120px;" oninput="updateShiftPreview()">
+            <span style="font-size: 13px; color: var(--text-muted);">분 (양수: 지연/순연, 음수: 단축/앞당김)</span>
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 16px;">
+          <label style="font-size: 13px; font-weight: 700; color: #fff; margin-bottom: 6px; display: block;">3) 순연 적용 방식</label>
+          <div style="display: flex; flex-direction: column; gap: 8px; font-size: 13px;">
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+              <input type="radio" name="shiftMode" value="all" checked onchange="updateShiftPreview()">
+              <span><strong>전체 일정 순연:</strong> 기준 세션부터 마지막 클로징까지 모든 세션을 동일하게 순연</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+              <input type="radio" name="shiftMode" value="absorb_meal" onchange="updateShiftPreview()">
+              <span><strong>점심시간에서 흡수:</strong> 오전 세션만 순연하고, 점심시간을 단축하여 오후 세션 시작(14:00) 유지</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+              <input type="radio" name="shiftMode" value="absorb_next_break" onchange="updateShiftPreview()">
+              <span><strong>직후 휴식(Break)에서 흡수:</strong> 기준 세션 시간만 늘리고 바로 다음 휴식시간을 단축하여 이후 세션 유지</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- 실시간 시뮬레이션 미리보기 -->
+        <div style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 12px 14px; max-height: 180px; overflow-y: auto;">
+          <div style="font-size: 11.5px; font-weight: 800; color: #ffd900; margin-bottom: 6px;">📋 변경 시간표 시뮬레이션 미리보기</div>
+          <div id="shiftSimulationPreview" style="font-size: 12px; color: var(--text-muted); line-height: 1.6; font-family: monospace;">
+            <!-- JS 동적 생성 -->
+          </div>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button type="button" class="btn-act" onclick="closeModal('modalBatchShiftSchedule')">취소</button>
+        <button type="button" class="btn-act primary" onclick="applyBatchShiftSchedule()">⚡ 순연 일정 적용 및 전체 동기화</button>
+      </div>
+    </div>
+  </div>
+
   <!-- 토스트 알림 컴포넌트 -->
   <div id="toast" class="toast"></div>
 
@@ -4103,6 +4188,7 @@
       if (tabId === 'tabSchedule') renderScheduleTab();
       if (tabId === 'tabQuiz' && typeof renderQuizTab === 'function') renderQuizTab();
       if (tabId === 'tabSurvey' && typeof renderSurveyTab === 'function') renderSurveyTab();
+      if (tabId === 'tabKakao' && typeof renderKakaoTab === 'function') renderKakaoTab();
     }
 
     // =========================================================
@@ -4835,15 +4921,39 @@
       }
     }
 
+// =========================================================
+    // 7. [TAB 6] 카카오톡 채널 세션 공지 멘트 전송 센터 (동적 일정 연동)
     // =========================================================
-    // 7. [TAB 6] 카카오톡 채널 세션 공지 멘트 전송 센터
-    // =========================================================
-    const DEFAULT_KAKAO_PRESETS = [
-      {
-        id: 'p1',
-        title: '📢 [개회 및 세미나 시작]',
-        time: '09:00',
-        content: `[2026 HVAC Engineering Expert Seminar 개회 안내]
+    function buildDynamicKakaoPresets(sched) {
+      if (!sched) sched = scheduleData || DEFAULT_SCHEDULE_DATA;
+      const sessions = (sched && sched.sessions) || [];
+      const sOpen = sessions.find(s => s.id === 's2' || (s.sublabel || '').includes('Opening')) || { time: '09:00 ~ 09:20' };
+      const s1 = sessions.find(s => s.id === 's3') || { time: '09:20 ~ 10:10', title: '국내주거난방의 변천과 현황', speaker: '여명석 교수 (서울대학교)', sublabel: 'Keynote 1' };
+      const b1 = sessions.find(s => s.id === 's4') || { time: '10:10 ~ 10:30', minute: '20' };
+      const s2 = sessions.find(s => s.id === 's5') || { time: '10:30 ~ 11:20', title: '고밀도 AI 서버의 액체냉각 및 데이터센터 열관리 기술', speaker: '이성혁 교수 (중앙대학교)', sublabel: 'Keynote 2' };
+      const s3 = sessions.find(s => s.id === 's7') || { time: '11:40 ~ 12:30', title: '국내 전력시장 현황 및 AIDC 전력공급 방안', speaker: '조홍종 교수 (단국대학교)' };
+      const sMeal = sessions.find(s => s.id === 's8' || s.type === 'meal') || { time: '12:30 ~ 14:00', minute: '90' };
+      const s4 = sessions.find(s => s.id === 's9') || { time: '14:00 ~ 14:50', title: '헬로우 히트펌프, 굿바이 보일러', speaker: '유정현 수석 (LHRI)', sublabel: 'Insight 1' };
+      const s5 = sessions.find(s => s.id === 's11') || { time: '15:10 ~ 15:40', title: '에너지컨설팅 사례 발표', speaker: '오영훈 팀장 (에너지컨설팅팀)', sublabel: 'Insight 2' };
+      const s6 = sessions.find(s => s.id === 's13') || { time: '16:00 ~ 17:40', title: '테라포밍 또는 찬란한 멸종-그래도 우리는 지구에 살아야 한다', speaker: '이정모 관장 (과학커뮤니케이터)', sublabel: 'Special' };
+      const sClose = sessions.find(s => s.id === 's14' || (s.sublabel || '').includes('Closing')) || { time: '17:40 ~ 18:00' };
+
+      const getStartTime = (t, def) => (t && t.includes('~')) ? t.split('~')[0].trim() : (t || def);
+      const getEndTime = (t, def) => (t && t.includes('~')) ? t.split('~')[1].trim() : (t || def);
+
+      const openStart = getStartTime(sOpen.time, '09:00');
+      const s1End = getEndTime(s1.time, '10:10');
+      const s2Start = getStartTime(s2.time, '10:30');
+      const mealStart = getStartTime(sMeal.time, '12:30');
+      const pmStart = getStartTime(s4.time, '14:00');
+      const closeStart = getStartTime(sClose.time, '17:40');
+
+      return [
+        {
+          id: 'p1',
+          title: '📢 [개회 및 세미나 시작]',
+          time: openStart,
+          content: `[2026 HVAC Engineering Expert Seminar 개회 안내]
 
 반갑습니다, 참가자 여러분!
 2026 HVAC 전문가 세미나가 곧 시작됩니다.
@@ -4853,79 +4963,81 @@
 💬 실시간 질의응답: {{SITE_BASE_URL}}/qna.html
 
 현장 도착 후 모바일 체크인을 완료하시고 명찰을 수령해 주시기 바랍니다.`
-      },
-      {
-        id: 'p2',
-        title: '💡 [Keynote 1 종료 & 퀴즈 1 안내]',
-        time: '10:10',
-        content: `[Keynote 1 종료 및 20분 휴식 안내]
+        },
+        {
+          id: 'p2',
+          title: `💡 [${s1.sublabel || 'Keynote 1'} 종료 & 퀴즈 안내]`,
+          time: s1End,
+          content: `[${s1.sublabel || 'Keynote 1'} 종료 및 ${b1.minute || '20'}분 휴식 안내]
 
-서울대학교 여명석 교수님의 '국내주거난방의 변천과 현황' 강연이 종료되었습니다.
+${s1.speaker}님의 '${s1.title}' 강연이 종료되었습니다.
 
 💡 방금 들으신 핵심 내용 퀴즈를 풀고 클로징 럭키드로우 경품에 도전하세요!
-👉 퀴즈 풀기: {{SITE_BASE_URL}}/quiz.html
+👉 세션 1 퀴즈 풀기: {{SITE_BASE_URL}}/quiz.html?session=1
+(체크인 화면 상단 알림 배너로도 실시간 참여가 가능합니다)
 
-20분간의 휴식 후 10:30부터 중앙대학교 이성혁 교수님의 Keynote 2 (고밀도 AI 서버 액체냉각) 세션이 이어집니다.`
-      },
-      {
-        id: 'p3',
-        title: '🍽️ [오전 세션 종료 & 기념촬영/점심 안내]',
-        time: '12:30',
-        content: `[오전 세션 종료 및 기념촬영 · 점심 식사 안내]
+${b1.minute || '20'}분간의 휴식 후 ${s2Start}부터 ${s2.speaker}님의 ${s2.sublabel || 'Keynote 2'} (${s2.title}) 세션이 이어집니다.`
+        },
+        {
+          id: 'p3',
+          title: '🍽️ [오전 세션 종료 & 기념촬영/점심 안내]',
+          time: mealStart,
+          content: `[오전 세션 종료 및 기념촬영 · 점심 식사 안내]
 
-단국대학교 조홍종 교수님의 '국내 전력시장 현황 및 AIDC 전력공급 방안' 세션까지 오전 강연이 모두 종료되었습니다.
+${s3.speaker}님의 '${s3.title}' 세션까지 오전 강연이 모두 종료되었습니다.
 
 📸 단체 기념촬영 및 점심 안내:
 - 기념촬영: 행사장 앞 단상 집결 후 단체 촬영
 - 식사장소: 법학관 5층 천하 식당 (도보 2~3분)
-- 식사시간: 12:30 ~ 14:00 (90분)
+- 식사시간: ${sMeal.time || '12:30 ~ 14:00'}${sMeal.minute ? ` (${sMeal.minute}분)` : ''}
 
-오후 14:00부터 토지주택연구원(LHRI) 유정현 수석님의 '헬로우 히트펌프, 굿바이 보일러' 세션이 시작되오니 5분 전까지 착석 부탁드립니다.`
-      },
-      {
-        id: 'p4',
-        title: '⚡ [오후 세션 시작 안내]',
-        time: '13:55',
-        content: `[오후 세션 시작 5분 전 안내]
+오후 ${pmStart}부터 ${s4.speaker}님의 '${s4.title}' 세션이 시작되오니 5분 전까지 착석 부탁드립니다.`
+        },
+        {
+          id: 'p4',
+          title: '⚡ [오후 세션 시작 안내]',
+          time: pmStart,
+          content: `[오후 세션 시작 5분 전 안내]
 
 참가자 여러분, 즐거운 점심 식사 되셨습니까?
-잠시 후 14:00부터 오후 세션이 재개됩니다.
+잠시 후 ${pmStart}부터 오후 세션이 재개됩니다.
 
-⚡ Insight 1: 토지주택연구원(LHRI) 유정현 수석연구원
-'헬로우 히트펌프, 굿바이 보일러'
-⚡ Insight 2 (15:10~): 에너지컨설팅팀 오영훈 팀장 '에너지컨설팅 사례 발표'
-⚡ Special (16:00~): 이정모 관장 '테라포밍 또는 찬란한 멸종-그래도 우리는 지구에 살아야 한다'
+⚡ ${s4.sublabel || 'Insight 1'}: ${s4.speaker} '${s4.title}'
+⚡ ${s5.sublabel || 'Insight 2'} (${getStartTime(s5.time, '15:10')}~): ${s5.speaker} '${s5.title}'
+⚡ ${s6.sublabel || 'Special'} (${getStartTime(s6.time, '16:00')}~): ${s6.speaker} '${s6.title}'
 
 강연 중 궁금하신 사항은 실시간 Q&A에 남겨주시면 세션 종료 후 질의응답 시간에 답변드립니다!
 💬 질문 등록: {{SITE_BASE_URL}}/qna.html`
-      },
-      {
-        id: 'p5',
-        title: '🏆 [퀴즈 마감 15분 전 최종 리마인드]',
-        time: '17:25',
-        content: `[🚨 세션 퀴즈 마감 15분 전 안내]
+        },
+        {
+          id: 'p5',
+          title: '🏆 [퀴즈 마감 15분 전 최종 리마인드]',
+          time: '17:25',
+          content: `[🚨 세션 퀴즈 마감 15분 전 안내]
 
 클로징 시 진행되는 특별 경품 럭키드로우 추첨 응모가 곧 마감됩니다!
 아직 세션 퀴즈를 풀지 못하신 분들은 지금 바로 도전하세요.
 
 🎁 경품: 1등~5등 특별 경품 현장 추첨
 👉 지금 퀴즈 풀기: {{SITE_BASE_URL}}/quiz.html`
-      },
-      {
-        id: 'p6',
-        title: '✨ [만족도 설문 & 클로징 럭키드로우 시작]',
-        time: '17:40',
-        content: `[만족도 설문 참여 및 클로징 럭키드로우 안내]
+        },
+        {
+          id: 'p6',
+          title: '✨ [만족도 설문 & 클로징 럭키드로우 시작]',
+          time: closeStart,
+          content: `[만족도 설문 참여 및 클로징 럭키드로우 안내]
 
 오늘 하루 동안 열정적으로 참여해 주신 모든 참가자분들께 감사드립니다.
 
 더 나은 세미나를 위해 1분 만족도 설문에 참여해 주세요:
-📝 설문 링크: https://forms.cloud.microsoft/Pages/ResponsePage.aspx?id=5M1pUCpkwEWAlNDC3sEL42ywEzOY3PNJr4qBXM_4T5dURDlOS1VaUFpXTVRPUTkzSFZXUDlBQlk1Vy4u
+📝 모바일 만족도 설문: {{SITE_BASE_URL}}/survey.html
 
 잠시 후 대망의 클로징 럭키드로우 경품 추첨이 진행됩니다!`
-      }
-    ];
+        }
+      ];
+    }
 
+    const DEFAULT_KAKAO_PRESETS = buildDynamicKakaoPresets();
     let kakaoPresets = [];
     let currentKakaoPresetId = 'p1';
 
@@ -4948,8 +5060,66 @@
       if (!Array.isArray(kakaoPresets) || kakaoPresets.length === 0) {
         kakaoPresets = JSON.parse(JSON.stringify(DEFAULT_KAKAO_PRESETS));
       }
+      syncKakaoPresetsWithSchedule(false);
+    }
+
+    function renderKakaoTab() {
+      initKakaoPresets();
+    }
+
+    function syncKakaoPresetsWithSchedule(showToastFlag = false) {
+      if (!scheduleData) initScheduleSystem();
+      const dynamicPresets = buildDynamicKakaoPresets(scheduleData);
+      const dynMap = {};
+      dynamicPresets.forEach(p => { dynMap[p.id] = p; });
+
+      if (!Array.isArray(kakaoPresets) || kakaoPresets.length === 0) {
+        kakaoPresets = dynamicPresets;
+      } else {
+        kakaoPresets = kakaoPresets.map(p => {
+          if (dynMap[p.id]) {
+            return dynMap[p.id];
+          }
+          return p;
+        });
+        dynamicPresets.forEach(dp => {
+          if (!kakaoPresets.some(kp => kp.id === dp.id)) {
+            kakaoPresets.push(dp);
+          }
+        });
+      }
+
+      try {
+        localStorage.setItem('hvac_kakao_presets', JSON.stringify(kakaoPresets));
+      } catch (e) {}
+
       renderKakaoPresetItems();
-      selectPreset(kakaoPresets[0].id);
+      selectPreset(currentKakaoPresetId || 'p1');
+      if (showToastFlag) {
+        showToast('🔄 최신 세션 일정(시간·과정명·강사명)에 맞춰 공지 멘트가 성공적으로 동기화되었습니다!');
+      }
+    }
+
+    function triggerInAppQuizBanner(sessionId = 1) {
+      if (!scheduleData) initScheduleSystem();
+      const s1 = (scheduleData.sessions || []).find(s => s.id === 's3') || { speaker: '여명석 교수', title: '국내주거난방의 변천과 현황' };
+      const speakerClean = (s1.speaker || '강사').replace(/\s*\([^)]*\)\s*$/, '').trim();
+      const bannerPayload = {
+        enabled: true,
+        level: 'warning',
+        text: `💡 [세션 ${sessionId} 퀴즈 오픈] ${speakerClean}님의 '${s1.title}' 강연이 종료되었습니다! 지금 핵심 퀴즈를 풀고 럭키드로우에 응모하세요!`,
+        linkUrl: `./quiz.html?session=${sessionId}`,
+        linkLabel: '👉 지금 퀴즈 풀기',
+        pages: ['index', 'checkin', 'qna', 'quiz', 'survey'],
+        updatedAt: Date.now()
+      };
+      try {
+        localStorage.setItem('hvac_notice_banner', JSON.stringify(bannerPayload));
+      } catch (e) {}
+      if (window.HVAC && window.HVAC.cloud && typeof window.HVAC.cloud.pushConfig === 'function') {
+        window.HVAC.cloud.pushConfig('hvac_notice_banner', bannerPayload);
+      }
+      showToast(`🔔 세션 ${sessionId} 실시간 퀴즈 알림 배너가 전체 참석자 화면으로 즉시 전송되었습니다!`);
     }
 
     function renderKakaoPresetItems() {
@@ -7472,6 +7642,25 @@
         return;
       }
 
+      // Firebase 클라우드 DB 실시간 업로드 및 크로스 탭 알림
+      try {
+        if (window.HVAC && window.HVAC.cloud && typeof window.HVAC.cloud.pushConfig === 'function') {
+          window.HVAC.cloud.pushConfig('hvac_schedule_settings', scheduleData);
+        }
+        window.dispatchEvent(new CustomEvent('hvac:config-updated', { detail: { keys: ['hvac_schedule_settings'] } }));
+      } catch (cloudErr) {
+        console.warn('Cloud schedule push non-fatal error:', cloudErr);
+      }
+
+      // 카카오톡 공지 멘트 라이브러리 자동 갱신
+      try {
+        if (typeof syncKakaoPresetsWithSchedule === 'function') {
+          syncKakaoPresetsWithSchedule(false);
+        }
+      } catch (kErr) {
+        console.warn('Kakao presets auto-sync non-fatal error:', kErr);
+      }
+
       try {
         syncAdminSessionSelectors();
         renderQnaList();
@@ -7480,7 +7669,7 @@
         console.warn('Q&A / MC selectors sync non-fatal warning:', err);
       }
 
-      if (showToastFlag) showToast('💾 전체 세션 일정이 저장되었습니다. 사이트에 실시간 동기화됩니다.');
+      if (showToastFlag) showToast('💾 전체 세션 일정이 저장되었습니다. 카카오 공지 및 사이트 전체에 실시간 동기화됩니다.');
     }
 
     function resetScheduleToDefault() {
@@ -8735,6 +8924,189 @@ ${link}
         closeModal('modalSurveyConfig');
         renderSurveyTab();
         showToast('🔄 설문 문항이 기본 세팅으로 복원되었습니다.');
+      }
+    }
+
+
+    // =========================================================
+    // 12-B. 세션 일정 일괄 순연 / 지연 시뮬레이션 및 적용 엔진
+    // =========================================================
+    function parseTimeString(t) {
+      const m = String(t || '').match(/(\d{1,2}):(\d{2})/);
+      if (!m) return null;
+      return parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
+    }
+
+    function formatTimeString(mins) {
+      const h = Math.floor(mins / 60) % 24;
+      const m = mins % 60;
+      return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
+    }
+
+    function openBatchShiftModal() {
+      if (!scheduleData) initScheduleSystem();
+      const sel = document.getElementById('shiftStartSessionIdx');
+      if (sel) {
+        sel.innerHTML = (scheduleData.sessions || []).map((s, idx) => {
+          return `<option value="${idx}" ${s.id === 's3' ? 'selected' : ''}>[${s.time}] ${s.sublabel || '세션'} - ${s.title} (${s.speaker || '-'})</option>`;
+        }).join('');
+      }
+      setShiftDelta(15);
+      openModal('modalBatchShiftSchedule');
+    }
+
+    function setShiftDelta(delta) {
+      const input = document.getElementById('shiftDeltaMinutes');
+      if (input) input.value = delta;
+      document.querySelectorAll('.shift-preset-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.textContent.includes(delta > 0 ? ('+' + delta) : String(delta)));
+      });
+      updateShiftPreview();
+    }
+
+    function updateShiftPreview() {
+      if (!scheduleData) return;
+      const startIdx = parseInt(document.getElementById('shiftStartSessionIdx').value, 10) || 0;
+      const deltaMins = parseInt(document.getElementById('shiftDeltaMinutes').value, 10) || 0;
+      const modeEl = document.querySelector('input[name="shiftMode"]:checked');
+      const mode = modeEl ? modeEl.value : 'all';
+
+      const simulated = simulateSessionShift(scheduleData.sessions, startIdx, deltaMins, mode);
+      const container = document.getElementById('shiftSimulationPreview');
+      if (!container) return;
+
+      container.innerHTML = simulated.map((s, i) => {
+        const orig = scheduleData.sessions[i];
+        const isChanged = orig && (orig.time !== s.time);
+        const style = isChanged ? 'color: #f3c448; font-weight: 800;' : 'color: #94a3b8;';
+        const mark = isChanged ? ' ➔ [변경]' : '';
+        return `<div style="${style}">${s.time} | ${s.sublabel || '세션'}: ${s.title}${mark}</div>`;
+      }).join('');
+    }
+
+    function simulateSessionShift(sessions, startIdx, deltaMins, mode) {
+      const clone = JSON.parse(JSON.stringify(sessions || []));
+      if (!clone[startIdx] || deltaMins === 0) return clone;
+
+      const sStart = clone[startIdx];
+      const sParts = (sStart.time || '').split('~');
+
+      if (mode === 'all') {
+        if (sParts.length === 2) {
+          const sEnd = parseTimeString(sParts[1]) + deltaMins;
+          sStart.time = sParts[0].trim() + ' ~ ' + formatTimeString(sEnd);
+          sStart.minute = String((parseInt(sStart.minute, 10) || 0) + deltaMins);
+        }
+        for (let i = startIdx + 1; i < clone.length; i++) {
+          const parts = (clone[i].time || '').split('~');
+          if (parts.length === 2) {
+            clone[i].time = formatTimeString(parseTimeString(parts[0]) + deltaMins) + ' ~ ' + formatTimeString(parseTimeString(parts[1]) + deltaMins);
+          }
+        }
+      } else if (mode === 'absorb_meal') {
+        if (sParts.length === 2) {
+          const sEnd = parseTimeString(sParts[1]) + deltaMins;
+          sStart.time = sParts[0].trim() + ' ~ ' + formatTimeString(sEnd);
+          sStart.minute = String((parseInt(sStart.minute, 10) || 0) + deltaMins);
+        }
+        for (let i = startIdx + 1; i < clone.length; i++) {
+          if (clone[i].type === 'meal' || clone[i].id === 's8') {
+            const parts = (clone[i].time || '').split('~');
+            clone[i].time = formatTimeString(parseTimeString(parts[0]) + deltaMins) + ' ~ ' + parts[1].trim();
+            clone[i].minute = String(Math.max(10, (parseInt(clone[i].minute, 10) || 90) - deltaMins));
+            break;
+          }
+          const parts = (clone[i].time || '').split('~');
+          if (parts.length === 2) {
+            clone[i].time = formatTimeString(parseTimeString(parts[0]) + deltaMins) + ' ~ ' + formatTimeString(parseTimeString(parts[1]) + deltaMins);
+          }
+        }
+      } else if (mode === 'absorb_next_break') {
+        if (sParts.length === 2) {
+          const sEnd = parseTimeString(sParts[1]) + deltaMins;
+          sStart.time = sParts[0].trim() + ' ~ ' + formatTimeString(sEnd);
+          sStart.minute = String((parseInt(sStart.minute, 10) || 0) + deltaMins);
+        }
+        if (startIdx + 1 < clone.length) {
+          const nextParts = (clone[startIdx + 1].time || '').split('~');
+          if (nextParts.length === 2) {
+            clone[startIdx + 1].time = formatTimeString(parseTimeString(nextParts[0]) + deltaMins) + ' ~ ' + nextParts[1].trim();
+            clone[startIdx + 1].minute = String(Math.max(5, (parseInt(clone[startIdx + 1].minute, 10) || 20) - deltaMins));
+          }
+        }
+      }
+      return clone;
+    }
+
+    function applyBatchShiftSchedule() {
+      const startIdx = parseInt(document.getElementById('shiftStartSessionIdx').value, 10) || 0;
+      const deltaMins = parseInt(document.getElementById('shiftDeltaMinutes').value, 10) || 0;
+      const modeEl = document.querySelector('input[name="shiftMode"]:checked');
+      const mode = modeEl ? modeEl.value : 'all';
+
+      if (deltaMins === 0) {
+        alert('조정할 시간(분)을 0이 아닌 값으로 입력해 주세요.');
+        return;
+      }
+
+      const confirmed = confirm(`기준 세션[${scheduleData.sessions[startIdx].title}] 이후 일정을 ${deltaMins > 0 ? ('+' + deltaMins + '분 지연') : (deltaMins + '분 단축')} 순연 적용하시겠습니까?`);
+      if (!confirmed) return;
+
+      scheduleData.sessions = simulateSessionShift(scheduleData.sessions, startIdx, deltaMins, mode);
+
+      // 모드가 all인 경우 영웅 총 일정(totalSchedule) 종료 시각도 순연
+      if (mode === 'all' && scheduleData.hero && scheduleData.hero.totalSchedule) {
+        const lastSession = scheduleData.sessions[scheduleData.sessions.length - 1];
+        if (lastSession && lastSession.time && lastSession.time.includes('~')) {
+          const lastEnd = lastSession.time.split('~')[1].trim();
+          scheduleData.hero.totalSchedule = '09:00 ~ ' + lastEnd;
+        }
+      }
+
+      saveAllSessionsToStorage(false);
+      renderScheduleTab();
+      closeModal('modalBatchShiftSchedule');
+      showToast('⚡ 순연 일정이 적용되었으며, 카카오 공지 멘트 및 모든 참석자 화면에 실시간 동기화되었습니다!');
+    }
+
+    function syncSurveyQuestionsFromSchedule(showToastFlag = false) {
+      if (!scheduleData) initScheduleSystem();
+      const sessions = scheduleData.sessions || [];
+      const lectures = sessions.filter(s =>
+        (s.type === 'session' && !(s.sublabel || '').includes('Opening') && !(s.title || '').includes('오프닝') && s.title !== 'Opening') ||
+        (s.sublabel && (s.sublabel.includes('Keynote') || s.sublabel.includes('Insight') || s.sublabel.includes('Special')))
+      );
+
+      const cfg = (window.HVAC && window.HVAC.getSurveyConfig)
+        ? JSON.parse(JSON.stringify(window.HVAC.getSurveyConfig()))
+        : JSON.parse(JSON.stringify(window.HVAC.DEFAULT_SURVEY_CONFIG));
+
+      const pageA2 = (cfg.pages || []).find(p => p.pageId === 'partA2' || (p.pageTitle || '').includes('과정별'));
+      if (!pageA2 || !Array.isArray(pageA2.questions)) {
+        alert('과정별 만족도 설문 문항(Page 2)을 찾을 수 없습니다.');
+        return;
+      }
+
+      const cleanSp = (sp) => String(sp || '').replace(/\s*\([^)]*\)\s*$/, '').trim();
+
+      pageA2.questions.forEach((q, idx) => {
+        if (idx < lectures.length) {
+          const lec = lectures[idx];
+          const sp = cleanSp(lec.speaker);
+          const num = idx + 2;
+          q.label = `${num}. ${lec.title}${sp ? ' - ' + sp : ''}`;
+        }
+      });
+
+      if (window.HVAC && window.HVAC.saveSurveyConfig) {
+        window.HVAC.saveSurveyConfig(cfg);
+      } else {
+        localStorage.setItem('hvac_survey_config', JSON.stringify(cfg));
+      }
+
+      if (typeof renderSurveyTab === 'function') renderSurveyTab();
+      if (showToastFlag) {
+        showToast('🔄 세션 일정표의 최신 강연명 및 강사명이 만족도 설문(과정별 문항)에 동기화되었습니다!');
       }
     }
 

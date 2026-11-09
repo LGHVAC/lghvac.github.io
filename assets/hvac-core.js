@@ -1184,7 +1184,13 @@
     cloud: {
       getConfig: getCloudConfig,
       poll: pollCloudChanges,
+      pushConfig: pushConfigToCloud,
       pushAllConfigs: pushAllConfigsToCloud,
+      pushAllAdminConfig: pushAllConfigsToCloud,
+      pullAllNow: function () { return pollCloudChanges(true); },
+      isActive: function () { var c = getCloudConfig(); return !!(c && c.enabled && c.dbUrl); },
+      saveConfig: function (cfg) { writeLocalSilent(CLOUD_CFG_KEY, cfg); startCloudLoop(); },
+      cloudPath: cloudPath,
       pushCheckinList: pushCheckinListToCloud,
       pushQnaList: pushQnaListToCloud,
       checkin: cloudCheckin,
