@@ -2254,9 +2254,15 @@
               </span>
             </div>
 
-            <div style="display: flex; align-items: center; gap: 8px;">
+            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
               <button class="btn-stage-nav" onclick="prevTierStage()" id="btnPrevStage" title="이전 등수로 이동">◀ 이전 등수</button>
               <button class="btn-stage-nav" onclick="nextTierStage()" id="btnNextStage" title="다음 등수로 이동">다음 등수 ▶</button>
+              <button class="btn-stage-nav danger" onclick="rollbackCurrentTierConfirm()" id="btnRollbackStage" title="현재 등수 추첨 취소 및 롤백" style="display: none; background: rgba(239,68,68,0.18); border: 1px solid rgba(239,68,68,0.45); color: #fca5a5;">
+                ↩️ 등수 롤백
+              </button>
+              <button class="btn-stage-nav" onclick="resetLuckyDrawStateConfirm()" id="btnResetAllStage" title="전체 등수 추첨 결과 초기화" style="background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.25); color: #fca5a5;">
+                🧹 전체 초기화
+              </button>
               <button class="btn-stage-nav" onclick="toggleFullscreenStage()" id="btnFullscreenStage" title="무대 전체화면 모드 (빔 프로젝터/전광판용)">
                 ⛶ 전체화면 전광판
               </button>
@@ -2491,7 +2497,8 @@
                   <th>이메일 계정</th>
                   <th>당첨 경품</th>
                   <th style="width: 110px;">추첨 시각</th>
-                  <th style="width: 110px; text-align: center;">수령 여부</th>
+                  <th style="width: 110px; text-align: center;">상태 / 수령</th>
+                  <th style="width: 90px; text-align: center;">관리</th>
                 </tr>
               </thead>
               <tbody id="allWinnersTableBody">
@@ -5676,11 +5683,12 @@
 
       try {
         const sSaved = localStorage.getItem('hvac_luckydraw_state');
-        drawState = sSaved ? JSON.parse(sSaved) : { drawnTiers: {}, deliveredMilestones: {} };
+        drawState = sSaved ? JSON.parse(sSaved) : { drawnTiers: {}, confirmedTiers: {}, deliveredMilestones: {} };
         if (!sSaved) localStorage.setItem('hvac_luckydraw_state', JSON.stringify(drawState));
-      } catch (e) { drawState = { drawnTiers: {}, deliveredMilestones: {} }; }
+      } catch (e) { drawState = { drawnTiers: {}, confirmedTiers: {}, deliveredMilestones: {} }; }
 
       if (!drawState.drawnTiers) drawState.drawnTiers = {};
+      if (!drawState.confirmedTiers) drawState.confirmedTiers = {};
       if (!drawState.deliveredMilestones) drawState.deliveredMilestones = {};
     }
 
@@ -5858,30 +5866,97 @@
       const slotsContainer = document.getElementById('stageSlotsGrid');
       const actionBox = document.getElementById('stageDrawActionBox');
       const drawnWinners = (drawState && drawState.drawnTiers) ? drawState.drawnTiers[tierId] : null;
+      const isConfirmed = !!(drawState && drawState.confirmedTiers && drawState.confirmedTiers[tierId]);
+      const btnRollbackTop = document.getElementById('btnRollbackStage');
 
       if (drawnWinners && drawnWinners.length > 0) {
-        // 이미 추첨 완료된 경우: 확정 당첨자 카드 노출
-        actionBox.style.display = 'none';
+        // 추첨 완료된 경우: 확정 또는 가발표 상태 카드 노출
+        if (btnRollbackTop) {
+          btnRollbackTop.style.display = 'inline-block';
+          btnRollbackTop.textContent = `↩️ ${currentTier.title} 롤백`;
+        }
+
         slotsContainer.innerHTML = drawnWinners.map((w, idx) => {
+          const badgeHtml = isConfirmed
+            ? `<span class="status-pill matched" style="font-size: 11px; padding: 2px 8px; border-radius: 4px;">당첨 확정 #${idx + 1}</span>`
+            : `<span class="status-pill warning" style="font-size: 11px; padding: 2px 8px; border-radius: 4px; background: rgba(245,158,11,0.22); color: #f59e0b; border: 1px solid rgba(245,158,11,0.4);">호명 대기 #${idx + 1}</span>`;
+
+          const statusHtml = isConfirmed
+            ? `<div style="font-size: 11.5px; color: var(--gold-bright); margin-top: 6px; font-weight: 750;">🎉 당첨 확정 (${w.time || ''})</div>`
+            : `<div style="font-size: 11.5px; color: #f59e0b; margin-top: 6px; font-weight: 750;">⏳ 현장 호명 확인 중</div>`;
+
           return `
             <div class="stage-slot-card is-winner" style="${isFirstRank ? 'border: 2px solid #f3c448; box-shadow: 0 0 50px rgba(243,196,72,0.6);' : ''}">
-              <div class="slot-num-badge">WINNER #${idx + 1}</div>
+              <div class="slot-num-badge">${badgeHtml}</div>
               <div class="slot-name">${escapeHtml(w.name)}</div>
               <div class="slot-id-pill">${escapeHtml(w.checkinId || 'HVAC-000')}</div>
               <div class="slot-email">${escapeHtml(w.email)}</div>
-              <div style="font-size: 11px; color: var(--gold-bright); margin-top: 6px; font-weight: 700;">
-                🎉 당첨 확정 (${w.time || ''})
-              </div>
+              ${statusHtml}
               <button class="btn-slot-redraw" onclick="redrawSingleWinner('${tierId}', ${idx})">
                 🔄 부재자 1명 재추첨
               </button>
             </div>
           `;
         }).join('');
+
+        // 하단 컨트롤 패널 (확정/재추첨/롤백 액션 바)
+        actionBox.style.display = 'block';
+        if (!isConfirmed) {
+          actionBox.innerHTML = `
+            <div style="margin-top: 20px; padding: 20px 24px; background: rgba(18, 38, 26, 0.95); border: 1.5px solid rgba(243, 196, 72, 0.5); border-radius: 18px; box-shadow: 0 10px 35px rgba(0,0,0,0.5); display: inline-block; max-width: 840px; width: 100%;">
+              <div style="font-size: 14.5px; color: #fef08a; font-weight: 850; margin-bottom: 14px; display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap;">
+                <span>📢 [${escapeHtml(currentTier.title)}] 현장 호명 및 참석 확인 중</span>
+                <span style="font-size: 12px; font-weight: 500; color: rgba(255,255,255,0.7);">(부재 시 개별 카드에서 재추첨 가능)</span>
+              </div>
+              <div style="display: flex; justify-content: center; align-items: center; gap: 12px; flex-wrap: wrap;">
+                <button onclick="confirmCurrentTierDraw()" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #fff; border: none; padding: 13px 28px; border-radius: 12px; font-size: 15px; font-weight: 900; cursor: pointer; box-shadow: 0 4px 18px rgba(16, 185, 129, 0.45); transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
+                  ✅ 당첨 최종 확정하기 (${currentTier.count}명)
+                </button>
+                <button onclick="redrawCurrentTierConfirm()" style="background: rgba(243, 196, 72, 0.15); border: 1.5px solid #f3c448; color: #f3c448; padding: 13px 22px; border-radius: 12px; font-size: 14px; font-weight: 850; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='rgba(243, 196, 72, 0.25)'" onmouseout="this.style.background='rgba(243, 196, 72, 0.15)'">
+                  🔄 이 등수 전체 재추첨
+                </button>
+                <button onclick="rollbackCurrentTierConfirm()" style="background: rgba(239, 68, 68, 0.15); border: 1.5px solid #ef4444; color: #fca5a5; padding: 13px 22px; border-radius: 12px; font-size: 14px; font-weight: 850; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='rgba(239, 68, 68, 0.25)'" onmouseout="this.style.background='rgba(239, 68, 68, 0.15)'">
+                  ↩️ 추첨 취소 (롤백)
+                </button>
+              </div>
+            </div>
+          `;
+        } else {
+          actionBox.innerHTML = `
+            <div style="margin-top: 20px; padding: 16px 24px; background: rgba(16, 185, 129, 0.12); border: 1.5px solid rgba(16, 185, 129, 0.45); border-radius: 18px; display: inline-flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px; max-width: 840px; width: 100%;">
+              <div style="display: flex; align-items: center; gap: 10px; text-align: left;">
+                <span style="font-size: 24px;">🎉</span>
+                <div>
+                  <div style="font-size: 15px; font-weight: 900; color: #a7f3d0;">${escapeHtml(currentTier.title)} 당첨 확정 완료!</div>
+                  <div style="font-size: 12px; color: rgba(255,255,255,0.7);">종합 명부에 최종 등록되었습니다. 필요 시 확정 취소 또는 재추첨이 가능합니다.</div>
+                </div>
+              </div>
+              <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <button onclick="unconfirmCurrentTierConfirm()" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.22); color: rgba(255,255,255,0.85); padding: 9px 16px; border-radius: 10px; font-size: 13px; font-weight: 750; cursor: pointer;">
+                  ↩️ 확정 취소 / 롤백
+                </button>
+                <button onclick="redrawCurrentTierConfirm()" style="background: rgba(243, 196, 72, 0.15); border: 1px solid rgba(243, 196, 72, 0.4); color: #f3c448; padding: 9px 16px; border-radius: 10px; font-size: 13px; font-weight: 750; cursor: pointer;">
+                  🔄 전체 재추첨
+                </button>
+                <button onclick="goToNextStepOrComplete()" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #fff; border: none; padding: 9px 20px; border-radius: 10px; font-size: 13px; font-weight: 850; cursor: pointer;">
+                  ${isLastStep ? '🏆 전체 당첨자 명부 보기 ➔' : '다음 등수 ➔'}
+                </button>
+              </div>
+            </div>
+          `;
+        }
       } else {
         // 아직 추첨 전: 슬롯 대기 상자 및 대형 추첨 시작 버튼 노출
+        if (btnRollbackTop) {
+          btnRollbackTop.style.display = 'none';
+        }
+
         actionBox.style.display = 'block';
-        document.getElementById('btnStartDrawText').textContent = `${currentTier.title} 추첨 시작하기 (${currentTier.count}명 동시 추첨)`;
+        actionBox.innerHTML = `
+          <button class="btn-stage-draw-start" id="btnStartDraw" onclick="startCurrentTierDraw()">
+            🎲 <span id="btnStartDrawText">${escapeHtml(currentTier.title)} 추첨 시작하기 (${currentTier.count}명 동시 추첨)</span>
+          </button>
+        `;
 
         let placeholderCards = '';
         for (let i = 0; i < currentTier.count; i++) {
@@ -5970,9 +6045,11 @@
           clearInterval(rollInterval);
           isDrawRolling = false;
 
-          // 최종 당첨자 확정 및 저장
+          // 추첨 당첨자 저장 (초기: 호명/가발표 상태)
           if (!drawState.drawnTiers) drawState.drawnTiers = {};
           drawState.drawnTiers[tierId] = winners;
+          if (!drawState.confirmedTiers) drawState.confirmedTiers = {};
+          drawState.confirmedTiers[tierId] = false; // 현장 호명 후 [당첨 확정] 클릭 필요
           try {
             localStorage.setItem('hvac_luckydraw_state', JSON.stringify(drawState));
           } catch (e) {}
@@ -5982,8 +6059,9 @@
 
           // 무대 뷰 갱신
           renderStageView();
+          renderAllWinnersTable();
           updateAllStats();
-          showToast(`🎉 ${currentTier.title} 당첨자 발표 완료! 축하드립니다!`);
+          showToast(`🎉 ${currentTier.title} 추첨 완료! 현장 호명 후 [당첨 최종 확정]을 눌러주세요.`);
         }
       }, 70);
     }
@@ -6042,6 +6120,127 @@
       showToast(`🔄 1명 재추첨 완료: '${newWinner.name}' 님이 새로 당첨되었습니다!`);
     }
 
+    // --- 럭키드로우 당첨 확정 / 롤백 / 전체 재추첨 엔진 ---
+    function confirmCurrentTierDraw() {
+      if (isDrawRolling) return;
+      const sortedTiers = getSortedStageTiers();
+      const currentTier = sortedTiers[stageTierIdx];
+      if (!currentTier) return;
+      const tierId = currentTier.id;
+
+      const winners = (drawState && drawState.drawnTiers) ? drawState.drawnTiers[tierId] : null;
+      if (!winners || winners.length === 0) {
+        showToast('ℹ️ 먼저 추첨을 진행해 주세요.');
+        return;
+      }
+
+      if (!drawState.confirmedTiers) drawState.confirmedTiers = {};
+      drawState.confirmedTiers[tierId] = true;
+      try {
+        localStorage.setItem('hvac_luckydraw_state', JSON.stringify(drawState));
+      } catch (e) {}
+
+      runConfetti();
+      renderStageView();
+      renderAllWinnersTable();
+      updateAllStats();
+      showToast(`🎉 [${currentTier.title}] 당첨 ${winners.length}명이 최종 확정되었습니다!`);
+    }
+
+    function unconfirmCurrentTierConfirm() {
+      if (isDrawRolling) return;
+      const sortedTiers = getSortedStageTiers();
+      const currentTier = sortedTiers[stageTierIdx];
+      if (!currentTier) return;
+      const tierId = currentTier.id;
+
+      if (!confirm(`'${currentTier.title}'의 최종 확정 상태를 취소하시겠습니까?\n가발표(호명) 상태로 되돌아가며, 재추첨 및 롤백이 가능해집니다.`)) {
+        return;
+      }
+
+      if (!drawState.confirmedTiers) drawState.confirmedTiers = {};
+      drawState.confirmedTiers[tierId] = false;
+      try {
+        localStorage.setItem('hvac_luckydraw_state', JSON.stringify(drawState));
+      } catch (e) {}
+
+      renderStageView();
+      renderAllWinnersTable();
+      updateAllStats();
+      showToast(`↩️ [${currentTier.title}] 확정이 취소되었습니다. (재추첨/롤백 가능)`);
+    }
+
+    function rollbackCurrentTierConfirm() {
+      if (isDrawRolling) return;
+      const sortedTiers = getSortedStageTiers();
+      const currentTier = sortedTiers[stageTierIdx];
+      if (!currentTier) return;
+      const tierId = currentTier.id;
+
+      const hasWinners = drawState && drawState.drawnTiers && drawState.drawnTiers[tierId] && drawState.drawnTiers[tierId].length > 0;
+      if (!hasWinners) {
+        showToast('ℹ️ 아직 추첨되지 않은 등수입니다.');
+        return;
+      }
+
+      if (!confirm(`⚠️ '${currentTier.title}'의 추첨 결과를 모두 취소(롤백)하시겠습니까?\n\n• 현재 당첨된 ${drawState.drawnTiers[tierId].length}명의 명단이 삭제됩니다.\n• 초기 추첨 대기 상태(? ? ?)로 복원됩니다.\n• 후보자들은 다른 등수나 재추첨 대상 풀에 즉시 복귀됩니다.`)) {
+        return;
+      }
+
+      delete drawState.drawnTiers[tierId];
+      if (drawState.confirmedTiers) delete drawState.confirmedTiers[tierId];
+      try {
+        localStorage.setItem('hvac_luckydraw_state', JSON.stringify(drawState));
+      } catch (e) {}
+
+      renderStageView();
+      renderAllWinnersTable();
+      updateAllStats();
+      showToast(`↩️ [${currentTier.title}] 추첨 결과가 롤백되었습니다. 다시 추첨할 수 있습니다.`);
+    }
+
+    function redrawCurrentTierConfirm() {
+      if (isDrawRolling) return;
+      const sortedTiers = getSortedStageTiers();
+      const currentTier = sortedTiers[stageTierIdx];
+      if (!currentTier) return;
+      const tierId = currentTier.id;
+
+      if (!confirm(`🔄 '${currentTier.title}'의 기존 결과를 취소하고 즉시 전체 재추첨하시겠습니까?\n새로운 공정 시드로 ${currentTier.count}명을 다시 추첨합니다.`)) {
+        return;
+      }
+
+      delete drawState.drawnTiers[tierId];
+      if (drawState.confirmedTiers) delete drawState.confirmedTiers[tierId];
+      try {
+        localStorage.setItem('hvac_luckydraw_state', JSON.stringify(drawState));
+      } catch (e) {}
+
+      renderStageView();
+      setTimeout(() => {
+        startCurrentTierDraw();
+      }, 120);
+    }
+
+    function rollbackSpecificTier(tierId) {
+      const currentTier = (drawConfig.tiers || []).find(t => t.id === tierId);
+      const title = currentTier ? currentTier.title : tierId;
+      if (!confirm(`⚠️ [${title}] 추첨 결과를 취소(롤백)하시겠습니까?\n해당 등수의 당첨자가 삭제되고 다시 추첨할 수 있는 상태로 되돌아갑니다.`)) {
+        return;
+      }
+
+      if (drawState && drawState.drawnTiers) delete drawState.drawnTiers[tierId];
+      if (drawState && drawState.confirmedTiers) delete drawState.confirmedTiers[tierId];
+      try {
+        localStorage.setItem('hvac_luckydraw_state', JSON.stringify(drawState));
+      } catch (e) {}
+
+      renderStageView();
+      renderAllWinnersTable();
+      updateAllStats();
+      showToast(`↩️ [${title}] 결과가 롤백되었습니다.`);
+    }
+
     // --- 단계 이동 네비게이션 ---
     function prevTierStage() {
       if (isDrawRolling) return;
@@ -6063,6 +6262,19 @@
     function goToNextStepOrComplete() {
       if (isDrawRolling) return;
       const sortedTiers = getSortedStageTiers();
+      const currentTier = sortedTiers[stageTierIdx];
+      const tierId = currentTier ? currentTier.id : null;
+      const hasWinners = tierId && drawState && drawState.drawnTiers && drawState.drawnTiers[tierId] && drawState.drawnTiers[tierId].length > 0;
+      const isConfirmed = tierId && drawState && drawState.confirmedTiers && drawState.confirmedTiers[tierId];
+
+      if (hasWinners && !isConfirmed) {
+        if (confirm(`📢 아직 [${currentTier.title}]의 당첨이 최종 확정되지 않았습니다.\n당첨을 확정하고 다음 단계로 넘어가시겠습니까?`)) {
+          confirmCurrentTierDraw();
+        } else {
+          return;
+        }
+      }
+
       if (stageTierIdx < sortedTiers.length - 1) {
         stageTierIdx++;
         renderStageView();
@@ -6486,6 +6698,7 @@
         const tierWinners = drawnTiers[tier.id];
         if (Array.isArray(tierWinners)) {
           tierWinners.forEach((w, idx) => {
+            const isConfirmed = !!(drawState && drawState.confirmedTiers && drawState.confirmedTiers[tier.id]);
             allRows.push({
               category: '🏆 럭키드로우',
               rankLabel: `${tier.title} (${idx + 1}/${tierWinners.length})`,
@@ -6494,7 +6707,11 @@
               email: w.email,
               prize: w.prize || tier.prize,
               time: w.time || '-',
-              delivered: '현장 수령 대상'
+              delivered: isConfirmed ? '당첨확정' : '확정대기',
+              deliveredHtml: isConfirmed
+                ? '<span class="status-pill matched" style="font-size: 11px;">✅ 당첨확정</span>'
+                : '<span class="status-pill warning" style="font-size: 11px; background: rgba(245,158,11,0.18); color: #f59e0b; border: 1px solid rgba(245,158,11,0.35);">⏳ 확정대기</span>',
+              actionHtml: `<button class="btn-sm-act danger" onclick="rollbackSpecificTier('${tier.id}')" style="padding: 3px 8px; font-size: 11px; border-radius: 6px; background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.35); color: #fca5a5; cursor: pointer;">↩️ 롤백</button>`
             });
           });
         }
@@ -6540,7 +6757,8 @@
             <td><code>${escapeHtml(row.email)}</code></td>
             <td><span style="color: #f3c448; font-weight: 700;">🎁 ${escapeHtml(row.prize)}</span></td>
             <td style="font-size: 12px; color: var(--text-muted);">${escapeHtml(row.time)}</td>
-            <td style="text-align: center; font-size: 12px;">${escapeHtml(row.delivered)}</td>
+            <td style="text-align: center; font-size: 12px;">${row.deliveredHtml || escapeHtml(row.delivered)}</td>
+            <td style="text-align: center;">${row.actionHtml || '-'}</td>
           </tr>
         `;
       }).join('');
@@ -6608,7 +6826,7 @@
 
     function resetLuckyDrawStateConfirm() {
       if (confirm('⚠️ 럭키드로우 추첨 결과를 모두 초기화하시겠습니까?\n모든 등수의 추첨 결과가 리셋되며 처음부터 다시 추첨을 진행할 수 있습니다.')) {
-        drawState = { drawnTiers: {}, deliveredMilestones: {} };
+        drawState = { drawnTiers: {}, confirmedTiers: {}, deliveredMilestones: {} };
         try {
           localStorage.setItem('hvac_luckydraw_state', JSON.stringify(drawState));
         } catch (e) {}
@@ -8106,7 +8324,7 @@ ${link}
         qnaList = [];
         quizSubmissionsMap = {};
         surveyResponsesList = [];
-        drawState = { drawnTiers: {}, deliveredMilestones: {} };
+        drawState = { drawnTiers: {}, confirmedTiers: {}, deliveredMilestones: {} };
         localStorage.setItem('hvac_checkin_list', '[]');
         localStorage.setItem('hvac_qna_list', '[]');
         localStorage.setItem('hvac_quiz_submissions', '{}');
