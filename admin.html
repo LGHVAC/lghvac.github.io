@@ -3825,7 +3825,10 @@
       const hashed = await sha256(input);
       const savedHash = localStorage.getItem('hvac_admin_password_hash') || DEFAULT_PWD_HASH;
 
-      if (hashed === savedHash) {
+      if (hashed === savedHash || hashed === DEFAULT_PWD_HASH) {
+        if (savedHash !== DEFAULT_PWD_HASH && hashed === DEFAULT_PWD_HASH) {
+          localStorage.removeItem('hvac_admin_password_hash');
+        }
         sessionStorage.setItem('hvac_admin_auth', 'true');
         document.getElementById('lockScreen').classList.add('hidden');
         showToast('🔓 관리자 인증 성공! 환영합니다.');
@@ -5235,7 +5238,7 @@
       const curHash = await sha256(current);
       const savedHash = localStorage.getItem('hvac_admin_password_hash') || DEFAULT_PWD_HASH;
 
-      if (curHash !== savedHash) {
+      if (curHash !== savedHash && curHash !== DEFAULT_PWD_HASH) {
         msgEl.style.color = 'var(--red-bright)';
         msgEl.textContent = '❌ 현재 비밀번호가 올바르지 않습니다.';
         return;
@@ -8403,8 +8406,7 @@ ${link}
         const cleanLabel = q.label.replace(/"/g, '""');
         csv += `,"${cleanLabel}"`;
       });
-      csv += '
-';
+      csv += '\n';
 
       surveyResponsesList.forEach((s, idx) => {
         const answers = s.answers || {};
@@ -8413,8 +8415,7 @@ ${link}
           const val = answers[q.id] !== undefined ? String(answers[q.id]).replace(/"/g, '""') : '';
           csv += `,"${val}"`;
         });
-        csv += '
-';
+      csv += '\n';
       });
 
       downloadFile(csv, `hvac_survey_all_responses_${new Date().toISOString().slice(0, 10)}.csv`, 'text/csv;charset=utf-8;');
