@@ -397,22 +397,28 @@
   //      무료(Spark) 플랜의 100 동시 연결 한도에 걸리지 않음
   //    - meta/updatedAt 타임스탬프(20B) 비교로 트래픽 최소화
   // ---------------------------------------------------------
+  var DEFAULT_CLOUD_CONFIG = {
+    enabled: true,
+    dbUrl: 'https://lg-hvac-default-rtdb.asia-southeast1.firebasedatabase.app',
+    roomKey: 'hvac2026'
+  };
+
   function getCloudConfig() {
-    // URL 파라미터 ?db=... 로 임시 연결 테스트 지원 (코드/Git 노출 방지)
+    // URL 파라미터 ?db=... 로 임시 연결 테스트 지원
     try {
       var params = new URLSearchParams(location.search);
       var paramDb = params.get('db');
       if (paramDb && /^https:\/\/[a-z0-9-]+.*\.(firebaseio\.com|firebasedatabase\.app)/i.test(paramDb)) {
-        var existing = read(CLOUD_CFG_KEY) || {};
+        var existing = read(CLOUD_CFG_KEY) || DEFAULT_CLOUD_CONFIG;
         existing.enabled = true;
         existing.dbUrl = paramDb.replace(/\/+$/, '');
         writeLocalSilent(CLOUD_CFG_KEY, existing);
       }
     } catch (e) {}
-    var cfg = read(CLOUD_CFG_KEY);
-    if (!cfg || !cfg.enabled || !cfg.dbUrl) return null;
+    var cfg = read(CLOUD_CFG_KEY) || DEFAULT_CLOUD_CONFIG;
+    if (!cfg || !cfg.enabled || !cfg.dbUrl) cfg = DEFAULT_CLOUD_CONFIG;
     var cleanUrl = String(cfg.dbUrl).trim().replace(/\/+$/, '');
-    if (!/^https:\/\//i.test(cleanUrl)) return null;
+    if (!/^https:\/\//i.test(cleanUrl)) cleanUrl = DEFAULT_CLOUD_CONFIG.dbUrl;
     return {
       enabled: true,
       dbUrl: cleanUrl,

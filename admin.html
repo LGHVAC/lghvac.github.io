@@ -7926,7 +7926,7 @@ ${link}
     }
 
     function resetOperationalDataConfirm() {
-      if (confirm('⚠️ 테스트용으로 쌓인 출석자 명단, Q&A 질문, 퀴즈 제출 점수, 럭키드로우 추첨 결과를 모두 초기화하시겠습니까?\n(세션 일정, 테마, 링크 등 설정값은 유지됩니다)')) {
+      if (confirm('⚠️ 테스트용으로 쌓인 출석자 명단, Q&A 질문, 퀴즈 제출 점수, 럭키드로우 추첨 결과를 모두 초기화하시겠습니까?\n(Firebase 클라우드 DB와 로컬 데이터 모두 깨끗하게 초기화됩니다)')) {
         checkinList = [];
         qnaList = [];
         quizSubmissionsMap = {};
@@ -7935,13 +7935,24 @@ ${link}
         localStorage.setItem('hvac_qna_list', '[]');
         localStorage.setItem('hvac_quiz_submissions', '{}');
         localStorage.setItem('hvac_luckydraw_state', JSON.stringify(drawState));
+
+        // Firebase 클라우드 DB의 테스트 데이터도 동시 초기화
+        if (window.HVAC && HVAC.cloud && HVAC.cloud.getConfig()) {
+          const cfg = HVAC.cloud.getConfig();
+          const base = cfg.dbUrl + '/' + cfg.roomKey;
+          fetch(base + '/checkins.json', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ seqCounter: 0, items: {} }) }).catch(() => {});
+          fetch(base + '/qna/list.json', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify([]) }).catch(() => {});
+          fetch(base + '/quiz/submissions.json', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) }).catch(() => {});
+          fetch(base + '/meta.json', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ checkins: Date.now(), qna: Date.now(), quiz: Date.now() }) }).catch(() => {});
+        }
+
         renderQnaList();
         renderMcCards();
         renderCheckinTable();
         renderQuizSubmissionsTable();
         if (activeTab === 'tabDraw') renderDrawTab();
         updateAllStats();
-        showToast('🧹 출석 · Q&A · 퀴즈 점수 · 추첨 결과가 깨끗하게 초기화되었습니다.');
+        showToast('🧹 출석 · Q&A · 퀴즈 점수 · 추첨 결과가 클라우드 및 로컬 모두 깨끗하게 초기화되었습니다.');
       }
     }
 
