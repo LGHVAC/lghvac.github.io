@@ -4173,7 +4173,295 @@
     }
 
     // =========================================================
-    // 2. 초기화 & 전역 상태
+    // 세미나 기본 일정표 & 전역 일정 상태 (Master Schedule Definition)
+    // =========================================================
+const DEFAULT_SCHEDULE_DATA = {
+      hero: {
+        eyebrow: "ENGINEERING INSIGHT DAY · 2026. 11. 16(월)",
+        year: "2026",
+        title: "HVAC Engineering",
+        titleSpan: "Expert Seminar",
+        copy: "국내 주거난방의 변천, 고밀도 AI 서버 액체냉각, AIDC 전력공급, 공동주택 공기열원 히트펌프, 에너지컨설팅과 과학·인문학을 한자리에서 다루는 오프라인 현장 전문가 세미나입니다.",
+        entryTime: "08:50까지",
+        totalSchedule: "09:00 ~ 18:00",
+        location: "국민대학교 본부관(별관)",
+        venue: "학술회의장"
+      },
+      sessions: [
+        {
+          id: "s1",
+          time: "~ 08:50",
+          minute: "-",
+          type: "general",
+          sublabel: "Registration & Welcome",
+          status: "진행 중",
+          location: "📍 본부관 학술회의장",
+          title: "세미나 참석자 등록 및 입장 안내",
+          speaker: "-",
+          note: "본부관 학술회의장",
+          bullets: [
+            "등록 데스크 근처에 준비된 음료와 다과를 드시면서 잠시 기다려주세요.",
+            "카카오톡 오픈 채팅방 입장 및 회의장에 8시 55분까지 입실 부탁드립니다.",
+            "오프닝 세션은 오전 9시에 정시 시작합니다!"
+          ]
+        },
+        {
+          id: "s2",
+          time: "09:00 ~ 09:20",
+          minute: "20",
+          type: "general",
+          sublabel: "Opening Session",
+          status: "예정",
+          location: "📍 본부관 학술회의장",
+          title: "오프닝 및 개회사",
+          speaker: "ES엔지니어링담당",
+          note: "일정안내, 시상",
+          bullets: [
+            "세미나 취지 및 1일 아젠다 안내",
+            "우수 엔지니어링 시상식 진행",
+            "현장 참여 퀴즈 및 럭키드로우 경품 안내"
+          ]
+        },
+        {
+          id: "s3",
+          time: "09:20 ~ 10:10",
+          minute: "50",
+          type: "session",
+          sublabel: "Keynote Session 1",
+          status: "예정",
+          location: "📍 본부관 학술회의장",
+          title: "국내주거난방의 변천과 현황",
+          speaker: "여명석 교수 (서울대학교)",
+          note: "서울대학교",
+          bullets: [
+            "우리나라 전통 온돌에서 현대 바닥 복사난방으로의 발전사",
+            "공동주택 바닥난방의 열적 쾌적성 및 에너지 절감 효과",
+            "탄소중립 시대의 주거 난방 미래 전망"
+          ],
+          bio: [
+            "서울대학교 건축학과 학사 / 석사 / 박사",
+            "서울대학교 공과대학 건축학과 교수",
+            "(전) 대한설비공학회 회장 · 한국건축친환경설비학회 회장",
+            "건축환경 · 복사냉난방 · 열쾌적 및 건물에너지 시스템 권위자"
+          ]
+        },
+        {
+          id: "s4",
+          time: "10:10 ~ 10:30",
+          minute: "20",
+          type: "break",
+          sublabel: "Break time",
+          status: "예정",
+          location: "📍 로비",
+          title: "☕ 휴식 시간 (Coffee Break)",
+          speaker: "-",
+          note: "다과 및 네트워킹",
+          bullets: [
+            "로비에 비치된 음료와 다과를 자유롭게 이용하세요.",
+            "동료 엔지니어들과의 자유로운 기술 네트워킹 시간입니다."
+          ]
+        },
+        {
+          id: "s5",
+          time: "10:30 ~ 11:20",
+          minute: "50",
+          type: "session",
+          sublabel: "Keynote Session 2",
+          status: "예정",
+          location: "📍 본부관 학술회의장",
+          title: "고밀도 AI 서버의 액체냉각 및 데이터센터 열관리 기술",
+          speaker: "이성혁 교수 (중앙대학교)",
+          note: "중앙대학교",
+          bullets: [
+            "고밀도 AI 칩(GPU) 발열 한계와 공랭의 한계점 극복",
+            "Direct-to-Chip(D2C) 액체냉각 및 액침냉각(Immersion) 최신 기술",
+            "데이터센터 PUE 절감을 위한 차세대 냉각 인프라 설계"
+          ],
+          bio: [
+            "중앙대학교 기계공학부 학사 / 석사 / 박사",
+            "중앙대학교 공과대학 기계공학부 교수 (열유체시스템연구실)",
+            "(현) 대한기계학회 열공학부문 · 대한설비공학회 데이터센터 위원회",
+            "고밀도 AI 서버 액체냉각(D2C/Immersion) 및 열관리 핵심 연구"
+          ]
+        },
+        {
+          id: "s6",
+          time: "11:20 ~ 11:40",
+          minute: "20",
+          type: "break",
+          sublabel: "Break time",
+          status: "예정",
+          location: "📍 로비",
+          title: "☕ 휴식 시간 (Break Time)",
+          speaker: "-",
+          note: "",
+          bullets: [
+            "다음 세션 시작 5분 전까지 착석해 주시기 바랍니다."
+          ]
+        },
+        {
+          id: "s7",
+          time: "11:40 ~ 12:30",
+          minute: "50",
+          type: "session",
+          sublabel: "Keynote Session 3",
+          status: "예정",
+          location: "📍 본부관 학술회의장",
+          title: "국내 전력시장 현황 및 AIDC 전력공급 방안",
+          speaker: "조홍종 교수 (단국대학교)",
+          note: "단국대학교",
+          bullets: [
+            "AI 데이터센터 급증에 따른 국가 전력망(Grid) 부하 분석",
+            "지역 분산에너지 활성화 및 송배전 유연성 확보 전략",
+            "민간 기업의 전력 조달 및 에너지 정책 대응 방안"
+          ],
+          bio: [
+            "서울대학교 경제학 학사 / 미국 펜실베이니아대학교 경제학 박사",
+            "단국대학교 경제학과 교수",
+            "제10·11차 전력수급기본계획 총괄분과위원 · 한국자원경제학회 회장",
+            "국가 전력망 정책 · AIDC 전력공급 및 분산에너지 시장 전문가"
+          ]
+        },
+        {
+          id: "s8",
+          time: "12:30 ~ 14:00",
+          minute: "90",
+          type: "meal",
+          sublabel: "Lunch Break",
+          status: "예정",
+          location: "📍 교내 식당",
+          title: "🍱 기념촬영 및 점심 식사",
+          speaker: "-",
+          note: "교내 식당",
+          bullets: [
+            "학술회의장 앞 로비에서 단체 기념촬영이 진행됩니다.",
+            "식권 또는 명찰을 패용하시고 교내 식당으로 이동해 주세요.",
+            "오후 세션은 14:00 정시에 시작합니다."
+          ]
+        },
+        {
+          id: "s9",
+          time: "14:00 ~ 14:50",
+          minute: "50",
+          type: "session",
+          sublabel: "Insight Session 1",
+          status: "예정",
+          location: "📍 본부관 학술회의장",
+          title: "헬로우 히트펌프, 굿바이 보일러",
+          speaker: "유정현 수석 (LHRI)",
+          note: "LHRI (토지주택연구원)",
+          bullets: [
+            "제로에너지건축물(ZEB) 구현을 위한 히트펌프 적용 사례",
+            "공기열원 히트펌프(AWHP)의 겨울철 난방 효율 개선 연구",
+            "공동주택 보일러 대체 가능성과 제도적 개선 과제"
+          ],
+          bio: [
+            "건축환경 및 설비공학 박사",
+            "LH 토지주택연구원(LHRI) 수석연구원",
+            "국토교통부 제로에너지건축물(ZEB) 및 공동주택 그린리모델링 자문위원",
+            "공동주택 공기열원 히트펌프(AWHP) 실증 및 보급 제도화 연구"
+          ]
+        },
+        {
+          id: "s10",
+          time: "14:50 ~ 15:10",
+          minute: "20",
+          type: "break",
+          sublabel: "Break time",
+          status: "예정",
+          location: "📍 로비",
+          title: "☕ 휴식 시간 (Break Time)",
+          speaker: "-",
+          note: "",
+          bullets: [
+            "오후 세션 중간 휴식 및 질의응답 준비 시간입니다."
+          ]
+        },
+        {
+          id: "s11",
+          time: "15:10 ~ 15:40",
+          minute: "30",
+          type: "session",
+          sublabel: "Insight Session 2",
+          status: "예정",
+          location: "📍 본부관 학술회의장",
+          title: "에너지컨설팅 사례 발표",
+          speaker: "오영훈 팀장 (에너지컨설팅팀)",
+          note: "에너지컨설팅팀",
+          bullets: [
+            "산업 플랜트 및 대형 빌딩 실시간 에너지 진단(Audit)",
+            "실제 현장 맞춤형 고효율 공조 솔루션 적용 성과 분석",
+            "운영 비용(OPEX) 절감 및 탄소 배출 감축 효과"
+          ],
+          bio: [
+            "ES사업본부 에너지컨설팅팀 팀장",
+            "대형 상업용 빌딩 · 산업 플랜트 · 데이터센터 고효율 공조 진단 총괄",
+            "고객 맞춤형 HVAC 엔지니어링 최적화 및 OPEX 절감 컨설팅 수행",
+            "탄소중립 ESCO 및 고효율 열원 개보수 실증 프로젝트 리드"
+          ]
+        },
+        {
+          id: "s12",
+          time: "15:40 ~ 16:00",
+          minute: "20",
+          type: "break",
+          sublabel: "Break time",
+          status: "예정",
+          location: "📍 로비",
+          title: "☕ 휴식 시간 (Break Time)",
+          speaker: "-",
+          note: "",
+          bullets: [
+            "세션 퀴즈 마감 전 최종 제출을 확인해 주세요."
+          ]
+        },
+        {
+          id: "s13",
+          time: "16:00 ~ 17:40",
+          minute: "100",
+          type: "session",
+          sublabel: "Special Lecture",
+          status: "예정",
+          location: "📍 본부관 학술회의장",
+          title: "테라포밍 또는 찬란한 멸종-그래도 우리는 지구에 살아야 한다",
+          speaker: "이정모 관장 (과학커뮤니케이터)",
+          note: "과학커뮤니케이터",
+          bullets: [
+            "기술과 과학이 급변하는 AI 시대의 소통과 공감",
+            "질문하고 의심하며 함께 탐구하는 열린 자세의 힘",
+            "과학자의 시선으로 바라본 인간과 엔지니어의 미래"
+          ],
+          bio: [
+            "연세대학교 생화학과 학사 / 동 대학원 석사",
+            "(전) 국립과천과학관 관장 · 서울시립과학관 관장 · 서대문자연사박물관 관장",
+            "대한민국 대표 과학커뮤니케이터 (펭귄각종과학관 관장)",
+            "저서 《찬란한 멸종》, 《공생 멸종 진화》 등 다수 집필 및 강연"
+          ]
+        },
+        {
+          id: "s14",
+          time: "17:40 ~ 18:00",
+          minute: "20",
+          type: "general",
+          sublabel: "Closing & Lucky Draw",
+          status: "예정",
+          location: "📍 본부관 학술회의장",
+          title: "Wrap up 및 클로징 럭키드로우",
+          speaker: "ES엔지니어링담당",
+          note: "설문 및 마무리",
+          bullets: [
+            "모바일 만족도 설문 제출 안내",
+            "대망의 클로징 럭키드로우(1~5등) 현장 추첨 진행",
+            "폐회 및 귀가 안내"
+          ]
+        }
+      ]
+    };
+
+    let scheduleData = null;
+
+    // =========================================================
+    // 2. 초기화 & 전역 상태
     // =========================================================
     let qnaList = [];
     let checkinList = [];
@@ -5117,7 +5405,11 @@
     // 7. [TAB 6] 카카오톡 채널 세션 공지 멘트 전송 센터 (동적 일정 연동)
     // =========================================================
     function buildDynamicKakaoPresets(sched) {
-      if (!sched) sched = scheduleData || DEFAULT_SCHEDULE_DATA;
+      if (!sched) {
+        if (typeof scheduleData !== 'undefined' && scheduleData) sched = scheduleData;
+        else if (typeof DEFAULT_SCHEDULE_DATA !== 'undefined' && DEFAULT_SCHEDULE_DATA) sched = DEFAULT_SCHEDULE_DATA;
+        else sched = null;
+      }
       const sessions = (sched && sched.sessions) || [];
       const sOpen = sessions.find(s => s.id === 's2' || (s.sublabel || '').includes('Opening')) || { time: '09:00 ~ 09:20' };
       const s1 = sessions.find(s => s.id === 's3') || { time: '09:20 ~ 10:10', title: '국내주거난방의 변천과 현황', speaker: '여명석 교수 (서울대학교)', sublabel: 'Keynote 1' };
@@ -5229,7 +5521,11 @@ ${s3.speaker}님의 '${s3.title}' 세션까지 오전 강연이 모두 종료되
       ];
     }
 
-    const DEFAULT_KAKAO_PRESETS = buildDynamicKakaoPresets();
+    function getDefaultKakaoPresets() {
+      const s = (typeof scheduleData !== 'undefined' && scheduleData) ? scheduleData : (typeof DEFAULT_SCHEDULE_DATA !== 'undefined' ? DEFAULT_SCHEDULE_DATA : null);
+      return buildDynamicKakaoPresets(s);
+    }
+    const DEFAULT_KAKAO_PRESETS = buildDynamicKakaoPresets(typeof DEFAULT_SCHEDULE_DATA !== 'undefined' ? DEFAULT_SCHEDULE_DATA : null);
     let kakaoPresets = [];
     let currentKakaoPresetId = 'p1';
 
@@ -7082,14 +7378,19 @@ ${s3.speaker}님의 '${s3.title}' 세션까지 오전 강연이 모두 종료되
         return;
       }
 
-      checkinList = generateMock200Attendees().slice(0, targetCount);
-
-      saveCheckin();
-      renderCheckinTable();
-      renderMilestoneTab();
-      renderStageView();
-      updateAllStats();
-      showToast(`⚡ 가상 출석자 ${targetCount}명 등록 완료! (이벤트 순번 및 럭키드로우 테스트 가능)`);
+      try {
+        checkinList = generateMock200Attendees().slice(0, targetCount);
+        saveCheckin();
+        if (typeof renderCheckinTable === 'function') renderCheckinTable();
+        if (typeof renderMilestoneTab === 'function') renderMilestoneTab();
+        if (typeof renderStageView === 'function') renderStageView();
+        if (typeof renderAllWinnersTable === 'function') renderAllWinnersTable();
+        if (typeof updateAllStats === 'function') updateAllStats();
+        showToast(`⚡ 가상 출석자 ${targetCount}명 등록 완료! (이벤트 순번 및 럭키드로우 테스트 가능)`);
+      } catch (err) {
+        console.error('seedMockAttendees error:', err);
+        alert('가상 출석자 생성 중 오류가 발생했습니다: ' + (err && err.message ? err.message : err));
+      }
     }
 
     // --- [SUB-TAB 4] 전체 당첨자 종합 명부 및 CSV 다운로드 ---
@@ -7248,291 +7549,6 @@ ${s3.speaker}님의 '${s3.title}' 세션까지 오전 강연이 모두 종료되
     // =========================================================
     // 12. [TAB 5] 📝 세미나 프로그램 & 세션 일정 관리 시스템
     // =========================================================
-    const DEFAULT_SCHEDULE_DATA = {
-      hero: {
-        eyebrow: "ENGINEERING INSIGHT DAY · 2026. 11. 16(월)",
-        year: "2026",
-        title: "HVAC Engineering",
-        titleSpan: "Expert Seminar",
-        copy: "국내 주거난방의 변천, 고밀도 AI 서버 액체냉각, AIDC 전력공급, 공동주택 공기열원 히트펌프, 에너지컨설팅과 과학·인문학을 한자리에서 다루는 오프라인 현장 전문가 세미나입니다.",
-        entryTime: "08:50까지",
-        totalSchedule: "09:00 ~ 18:00",
-        location: "국민대학교 본부관(별관)",
-        venue: "학술회의장"
-      },
-      sessions: [
-        {
-          id: "s1",
-          time: "~ 08:50",
-          minute: "-",
-          type: "general",
-          sublabel: "Registration & Welcome",
-          status: "진행 중",
-          location: "📍 본부관 학술회의장",
-          title: "세미나 참석자 등록 및 입장 안내",
-          speaker: "-",
-          note: "본부관 학술회의장",
-          bullets: [
-            "등록 데스크 근처에 준비된 음료와 다과를 드시면서 잠시 기다려주세요.",
-            "카카오톡 오픈 채팅방 입장 및 회의장에 8시 55분까지 입실 부탁드립니다.",
-            "오프닝 세션은 오전 9시에 정시 시작합니다!"
-          ]
-        },
-        {
-          id: "s2",
-          time: "09:00 ~ 09:20",
-          minute: "20",
-          type: "general",
-          sublabel: "Opening Session",
-          status: "예정",
-          location: "📍 본부관 학술회의장",
-          title: "오프닝 및 개회사",
-          speaker: "ES엔지니어링담당",
-          note: "일정안내, 시상",
-          bullets: [
-            "세미나 취지 및 1일 아젠다 안내",
-            "우수 엔지니어링 시상식 진행",
-            "현장 참여 퀴즈 및 럭키드로우 경품 안내"
-          ]
-        },
-        {
-          id: "s3",
-          time: "09:20 ~ 10:10",
-          minute: "50",
-          type: "session",
-          sublabel: "Keynote Session 1",
-          status: "예정",
-          location: "📍 본부관 학술회의장",
-          title: "국내주거난방의 변천과 현황",
-          speaker: "여명석 교수 (서울대학교)",
-          note: "서울대학교",
-          bullets: [
-            "우리나라 전통 온돌에서 현대 바닥 복사난방으로의 발전사",
-            "공동주택 바닥난방의 열적 쾌적성 및 에너지 절감 효과",
-            "탄소중립 시대의 주거 난방 미래 전망"
-          ],
-          bio: [
-            "서울대학교 건축학과 학사 / 석사 / 박사",
-            "서울대학교 공과대학 건축학과 교수",
-            "(전) 대한설비공학회 회장 · 한국건축친환경설비학회 회장",
-            "건축환경 · 복사냉난방 · 열쾌적 및 건물에너지 시스템 권위자"
-          ]
-        },
-        {
-          id: "s4",
-          time: "10:10 ~ 10:30",
-          minute: "20",
-          type: "break",
-          sublabel: "Break time",
-          status: "예정",
-          location: "📍 로비",
-          title: "☕ 휴식 시간 (Coffee Break)",
-          speaker: "-",
-          note: "다과 및 네트워킹",
-          bullets: [
-            "로비에 비치된 음료와 다과를 자유롭게 이용하세요.",
-            "동료 엔지니어들과의 자유로운 기술 네트워킹 시간입니다."
-          ]
-        },
-        {
-          id: "s5",
-          time: "10:30 ~ 11:20",
-          minute: "50",
-          type: "session",
-          sublabel: "Keynote Session 2",
-          status: "예정",
-          location: "📍 본부관 학술회의장",
-          title: "고밀도 AI 서버의 액체냉각 및 데이터센터 열관리 기술",
-          speaker: "이성혁 교수 (중앙대학교)",
-          note: "중앙대학교",
-          bullets: [
-            "고밀도 AI 칩(GPU) 발열 한계와 공랭의 한계점 극복",
-            "Direct-to-Chip(D2C) 액체냉각 및 액침냉각(Immersion) 최신 기술",
-            "데이터센터 PUE 절감을 위한 차세대 냉각 인프라 설계"
-          ],
-          bio: [
-            "중앙대학교 기계공학부 학사 / 석사 / 박사",
-            "중앙대학교 공과대학 기계공학부 교수 (열유체시스템연구실)",
-            "(현) 대한기계학회 열공학부문 · 대한설비공학회 데이터센터 위원회",
-            "고밀도 AI 서버 액체냉각(D2C/Immersion) 및 열관리 핵심 연구"
-          ]
-        },
-        {
-          id: "s6",
-          time: "11:20 ~ 11:40",
-          minute: "20",
-          type: "break",
-          sublabel: "Break time",
-          status: "예정",
-          location: "📍 로비",
-          title: "☕ 휴식 시간 (Break Time)",
-          speaker: "-",
-          note: "",
-          bullets: [
-            "다음 세션 시작 5분 전까지 착석해 주시기 바랍니다."
-          ]
-        },
-        {
-          id: "s7",
-          time: "11:40 ~ 12:30",
-          minute: "50",
-          type: "session",
-          sublabel: "Keynote Session 3",
-          status: "예정",
-          location: "📍 본부관 학술회의장",
-          title: "국내 전력시장 현황 및 AIDC 전력공급 방안",
-          speaker: "조홍종 교수 (단국대학교)",
-          note: "단국대학교",
-          bullets: [
-            "AI 데이터센터 급증에 따른 국가 전력망(Grid) 부하 분석",
-            "지역 분산에너지 활성화 및 송배전 유연성 확보 전략",
-            "민간 기업의 전력 조달 및 에너지 정책 대응 방안"
-          ],
-          bio: [
-            "서울대학교 경제학 학사 / 미국 펜실베이니아대학교 경제학 박사",
-            "단국대학교 경제학과 교수",
-            "제10·11차 전력수급기본계획 총괄분과위원 · 한국자원경제학회 회장",
-            "국가 전력망 정책 · AIDC 전력공급 및 분산에너지 시장 전문가"
-          ]
-        },
-        {
-          id: "s8",
-          time: "12:30 ~ 14:00",
-          minute: "90",
-          type: "meal",
-          sublabel: "Lunch Break",
-          status: "예정",
-          location: "📍 교내 식당",
-          title: "🍱 기념촬영 및 점심 식사",
-          speaker: "-",
-          note: "교내 식당",
-          bullets: [
-            "학술회의장 앞 로비에서 단체 기념촬영이 진행됩니다.",
-            "식권 또는 명찰을 패용하시고 교내 식당으로 이동해 주세요.",
-            "오후 세션은 14:00 정시에 시작합니다."
-          ]
-        },
-        {
-          id: "s9",
-          time: "14:00 ~ 14:50",
-          minute: "50",
-          type: "session",
-          sublabel: "Insight Session 1",
-          status: "예정",
-          location: "📍 본부관 학술회의장",
-          title: "헬로우 히트펌프, 굿바이 보일러",
-          speaker: "유정현 수석 (LHRI)",
-          note: "LHRI (토지주택연구원)",
-          bullets: [
-            "제로에너지건축물(ZEB) 구현을 위한 히트펌프 적용 사례",
-            "공기열원 히트펌프(AWHP)의 겨울철 난방 효율 개선 연구",
-            "공동주택 보일러 대체 가능성과 제도적 개선 과제"
-          ],
-          bio: [
-            "건축환경 및 설비공학 박사",
-            "LH 토지주택연구원(LHRI) 수석연구원",
-            "국토교통부 제로에너지건축물(ZEB) 및 공동주택 그린리모델링 자문위원",
-            "공동주택 공기열원 히트펌프(AWHP) 실증 및 보급 제도화 연구"
-          ]
-        },
-        {
-          id: "s10",
-          time: "14:50 ~ 15:10",
-          minute: "20",
-          type: "break",
-          sublabel: "Break time",
-          status: "예정",
-          location: "📍 로비",
-          title: "☕ 휴식 시간 (Break Time)",
-          speaker: "-",
-          note: "",
-          bullets: [
-            "오후 세션 중간 휴식 및 질의응답 준비 시간입니다."
-          ]
-        },
-        {
-          id: "s11",
-          time: "15:10 ~ 15:40",
-          minute: "30",
-          type: "session",
-          sublabel: "Insight Session 2",
-          status: "예정",
-          location: "📍 본부관 학술회의장",
-          title: "에너지컨설팅 사례 발표",
-          speaker: "오영훈 팀장 (에너지컨설팅팀)",
-          note: "에너지컨설팅팀",
-          bullets: [
-            "산업 플랜트 및 대형 빌딩 실시간 에너지 진단(Audit)",
-            "실제 현장 맞춤형 고효율 공조 솔루션 적용 성과 분석",
-            "운영 비용(OPEX) 절감 및 탄소 배출 감축 효과"
-          ],
-          bio: [
-            "ES사업본부 에너지컨설팅팀 팀장",
-            "대형 상업용 빌딩 · 산업 플랜트 · 데이터센터 고효율 공조 진단 총괄",
-            "고객 맞춤형 HVAC 엔지니어링 최적화 및 OPEX 절감 컨설팅 수행",
-            "탄소중립 ESCO 및 고효율 열원 개보수 실증 프로젝트 리드"
-          ]
-        },
-        {
-          id: "s12",
-          time: "15:40 ~ 16:00",
-          minute: "20",
-          type: "break",
-          sublabel: "Break time",
-          status: "예정",
-          location: "📍 로비",
-          title: "☕ 휴식 시간 (Break Time)",
-          speaker: "-",
-          note: "",
-          bullets: [
-            "세션 퀴즈 마감 전 최종 제출을 확인해 주세요."
-          ]
-        },
-        {
-          id: "s13",
-          time: "16:00 ~ 17:40",
-          minute: "100",
-          type: "session",
-          sublabel: "Special Lecture",
-          status: "예정",
-          location: "📍 본부관 학술회의장",
-          title: "테라포밍 또는 찬란한 멸종-그래도 우리는 지구에 살아야 한다",
-          speaker: "이정모 관장 (과학커뮤니케이터)",
-          note: "과학커뮤니케이터",
-          bullets: [
-            "기술과 과학이 급변하는 AI 시대의 소통과 공감",
-            "질문하고 의심하며 함께 탐구하는 열린 자세의 힘",
-            "과학자의 시선으로 바라본 인간과 엔지니어의 미래"
-          ],
-          bio: [
-            "연세대학교 생화학과 학사 / 동 대학원 석사",
-            "(전) 국립과천과학관 관장 · 서울시립과학관 관장 · 서대문자연사박물관 관장",
-            "대한민국 대표 과학커뮤니케이터 (펭귄각종과학관 관장)",
-            "저서 《찬란한 멸종》, 《공생 멸종 진화》 등 다수 집필 및 강연"
-          ]
-        },
-        {
-          id: "s14",
-          time: "17:40 ~ 18:00",
-          minute: "20",
-          type: "general",
-          sublabel: "Closing & Lucky Draw",
-          status: "예정",
-          location: "📍 본부관 학술회의장",
-          title: "Wrap up 및 클로징 럭키드로우",
-          speaker: "ES엔지니어링담당",
-          note: "설문 및 마무리",
-          bullets: [
-            "모바일 만족도 설문 제출 안내",
-            "대망의 클로징 럭키드로우(1~5등) 현장 추첨 진행",
-            "폐회 및 귀가 안내"
-          ]
-        }
-      ]
-    };
-
-    let scheduleData = null;
-
     function initScheduleSystem() {
       try {
         const saved = localStorage.getItem('hvac_schedule_settings');
@@ -7920,72 +7936,105 @@ ${s3.speaker}님의 '${s3.title}' 세션까지 오전 강연이 모두 종료되
     // 13. 장소 · 교통편 · 참석 유의사항 · 푸터 문구 관리 (hvac_site_content)
     // =========================================================
     const DEFAULT_SITE_CONTENT = {
-      venueMainName: '국민대학교 본부관(별관) 1층 학술회의장',
-      venueAddress: '서울 성북구 정릉로 77 국민대학교 (정문 진입 후 우측 본부관 1층)',
-      transitList: [
-        '우이신설선 북한산보국문역 2번 출구 → 시내버스 환승 후 국민대 정문 하차 (약 10분)',
-        '4호선 길음역 3번 출구 → 1213·153·171·7211번 버스 이용 후 국민대 앞 하차 (약 12분)',
-        '자가용 이용 시 정문 통과 후 지하주차장 주차 (등록 데스크에서 주차 할인권 지원)'
+      venueName: '국민대학교 본부관 (별관) 학술회의장',
+      footerText: '주최: ES엔지니어링담당 · 운영: ES아카데미팀 · 장소: 국민대학교 본부관 학술회의장',
+      transit: [
+        '4호선 길음역 3번 출구 → 국민대학교 정문행 버스, 약 10분',
+        '4호선 성신여대입구역 → 국민대학교행 버스, 약 15분',
+        '우이신설선 정릉역 → 국민대학교 정문, 도보 약 15분'
       ],
-      routeList: [
-        '오전 등록 및 강연: 본부관 1층 학술회의장 앞 로비 데스크에서 명찰 수령 및 모바일 체크인',
-        '기념촬영 (12:30): 오전 Keynote 3 종료 직후 학술회의장 단상 앞 단체 사진 촬영',
-        '점심 식사 (12:40~14:00): 교내 식당(법학관 5층 천하 식당 등 안내 요원 인솔 이동)'
+      routes: [
+        '국민대학교 정문 → 본부관 별관 1층 대강당 (학술회의장), 도보 약 6분',
+        '본부관 별관 → 법학관 5층 천하 (식당), 도보 약 2~3분'
       ],
-      guideCheckin: [
-        '원활한 행사 진행을 위해 08:50까지 입실 및 등록을 완료해 주시기 바랍니다.',
-        '입구 배너 또는 좌석 QR코드를 스캔하여 모바일 체크인을 진행하시면 고유 참가번호(HVAC-001~)가 부여됩니다.',
-        '지정된 순번(1st, 10th, 50th, 100th 등) 체크인 참가자에게는 현장에서 깜짝 경품을 드립니다.'
-      ],
-      guideEvent: [
-        '각 강연 중 궁금한 점은 실시간 Q&A 페이지에 남겨주시면 세션 종료 후 좌장/연사가 직접 답변합니다.',
-        '6개 강연 세션의 핵심 퀴즈를 모두 풀면 클로징 럭키드로우 추첨 대상 및 미션 완료 배지가 활성화됩니다.',
-        '발표자료는 저작권 보호를 위해 인증된 참석자에게만 보안 뷰어(또는 허가된 링크)로 제공됩니다.'
-      ],
-      footerOrg: '2026 HVAC Engineering Expert Seminar · 주관: ES엔지니어링담당',
-      footerCopy: '© 2026 HVAC Engineering Seminar Operations Portal. All rights reserved.'
+      notices: [
+        '일시: 2026년 11월 16일 (월) 09:00 ~ 18:00',
+        '오전 8시 50분까지 입실해 주세요.',
+        'Opening은 오전 9시에 시작합니다.',
+        '기념촬영 및 점심은 12:30부터 14:00까지 진행됩니다.',
+        '행사 장소는 국민대학교 본부관 (별관) 학술회의장입니다.',
+        '세부 일정은 운영 상황에 따라 조정될 수 있습니다.'
+      ]
     };
 
     function loadSiteContentToUi() {
       let c = DEFAULT_SITE_CONTENT;
       try {
         const saved = localStorage.getItem('hvac_site_content');
-        if (saved) c = Object.assign({}, DEFAULT_SITE_CONTENT, JSON.parse(saved));
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          c = Object.assign({}, DEFAULT_SITE_CONTENT, parsed);
+        }
       } catch (e) {}
 
-      const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
-      setVal('cfgVenueMainName', c.venueMainName);
-      setVal('cfgVenueAddress', c.venueAddress);
-      setVal('cfgTransitList', (c.transitList || []).join('\n'));
-      setVal('cfgRouteList', (c.routeList || []).join('\n'));
-      setVal('cfgGuideCheckin', (c.guideCheckin || []).join('\n'));
-      setVal('cfgGuideEvent', (c.guideEvent || []).join('\n'));
-      setVal('cfgFooterOrg', c.footerOrg);
-      setVal('cfgFooterCopy', c.footerCopy);
+      const setVal = (id, val) => {
+        const el = document.getElementById(id);
+        if (el) el.value = val || '';
+      };
+
+      setVal('cfgVenueFullName', c.venueName || c.venueMainName || DEFAULT_SITE_CONTENT.venueName);
+      setVal('cfgFooterHostText', c.footerText || c.footerOrg || DEFAULT_SITE_CONTENT.footerText);
+
+      const transitArr = c.transit || c.transitList || DEFAULT_SITE_CONTENT.transit;
+      setVal('cfgVenueTransit', Array.isArray(transitArr) ? transitArr.join('\n') : transitArr);
+
+      const routesArr = c.routes || c.routeList || DEFAULT_SITE_CONTENT.routes;
+      setVal('cfgVenueRoutes', Array.isArray(routesArr) ? routesArr.join('\n') : routesArr);
+
+      const noticesArr = c.notices || c.guideCheckin || DEFAULT_SITE_CONTENT.notices;
+      setVal('cfgNoticeItems', Array.isArray(noticesArr) ? noticesArr.join('\n') : noticesArr);
     }
 
     function saveSiteContentFromUi(showToastFlag = false) {
       const splitLines = (id) => (document.getElementById(id)?.value || '').split('\n').map(s => s.trim()).filter(Boolean);
+      const venueName = (document.getElementById('cfgVenueFullName')?.value || '').trim() || DEFAULT_SITE_CONTENT.venueName;
+      const footerText = (document.getElementById('cfgFooterHostText')?.value || '').trim() || DEFAULT_SITE_CONTENT.footerText;
+      const transit = splitLines('cfgVenueTransit');
+      const routes = splitLines('cfgVenueRoutes');
+      const notices = splitLines('cfgNoticeItems');
+
       const contentObj = {
-        venueMainName: (document.getElementById('cfgVenueMainName')?.value || '').trim() || DEFAULT_SITE_CONTENT.venueMainName,
-        venueAddress: (document.getElementById('cfgVenueAddress')?.value || '').trim() || DEFAULT_SITE_CONTENT.venueAddress,
-        transitList: splitLines('cfgTransitList'),
-        routeList: splitLines('cfgRouteList'),
-        guideCheckin: splitLines('cfgGuideCheckin'),
-        guideEvent: splitLines('cfgGuideEvent'),
-        footerOrg: (document.getElementById('cfgFooterOrg')?.value || '').trim() || DEFAULT_SITE_CONTENT.footerOrg,
-        footerCopy: (document.getElementById('cfgFooterCopy')?.value || '').trim() || DEFAULT_SITE_CONTENT.footerCopy
+        venueName: venueName,
+        footerText: footerText,
+        transit: transit.length ? transit : DEFAULT_SITE_CONTENT.transit,
+        routes: routes.length ? routes : DEFAULT_SITE_CONTENT.routes,
+        notices: notices.length ? notices : DEFAULT_SITE_CONTENT.notices,
+        // 호환성용 alias
+        venueMainName: venueName,
+        transitList: transit.length ? transit : DEFAULT_SITE_CONTENT.transit,
+        routeList: routes.length ? routes : DEFAULT_SITE_CONTENT.routes,
+        guideCheckin: notices.length ? notices : DEFAULT_SITE_CONTENT.notices,
+        footerOrg: footerText
       };
+
       try {
         localStorage.setItem('hvac_site_content', JSON.stringify(contentObj));
-        if (showToastFlag) showToast('💾 장소 · 교통편 · 참석 안내 · 푸터 문구가 저장되었습니다!');
-      } catch (e) {}
+
+        // Firebase Cloud DB push & event notification
+        try {
+          if (window.HVAC && window.HVAC.cloud && typeof window.HVAC.cloud.pushConfig === 'function') {
+            window.HVAC.cloud.pushConfig('hvac_site_content', contentObj);
+          }
+          window.dispatchEvent(new CustomEvent('hvac:config-updated', { detail: { keys: ['hvac_site_content'] } }));
+        } catch (cloudErr) {
+          console.warn('Cloud site content push non-fatal error:', cloudErr);
+        }
+
+        if (showToastFlag) showToast('💾 장소 · 동선 · 참석 안내 · 푸터 문구가 저장되었습니다! (메인/체크인 실시간 반영)');
+      } catch (e) {
+        console.error('saveSiteContent error:', e);
+        alert('안내 문구 저장에 실패했습니다.');
+      }
     }
 
     function resetSiteContentToDefault() {
-      if (confirm('장소·교통편·참석안내·푸터 문구를 초기 기본값으로 복원하시겠습니까?')) {
+      if (confirm('장소·교통편·동선·참석안내·푸터 문구를 초기 기본값으로 복원하시겠습니까?')) {
         try {
           localStorage.setItem('hvac_site_content', JSON.stringify(DEFAULT_SITE_CONTENT));
+          if (window.HVAC && window.HVAC.cloud && typeof window.HVAC.cloud.pushConfig === 'function') {
+            window.HVAC.cloud.pushConfig('hvac_site_content', DEFAULT_SITE_CONTENT);
+          }
+          window.dispatchEvent(new CustomEvent('hvac:config-updated', { detail: { keys: ['hvac_site_content'] } }));
         } catch (e) {}
         loadSiteContentToUi();
         showToast('🔄 안내 문구가 기본값으로 복원되었습니다.');
