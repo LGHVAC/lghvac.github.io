@@ -438,6 +438,179 @@
     }
 
     /* -------------------------------------------------------------
+       전체 화면 순번 깜짝 당첨 축하 모달 (Fullscreen Celebration Modal)
+    ------------------------------------------------------------- */
+    .fullscreen-celebration-backdrop {
+      background: radial-gradient(circle at 50% 25%, rgba(243, 196, 72, 0.28) 0%, rgba(4, 9, 6, 0.96) 75%) !important;
+      backdrop-filter: blur(14px) !important;
+      padding: 16px !important;
+      overflow-y: auto !important;
+      z-index: 100000 !important;
+    }
+
+    .celebration-card {
+      width: 100%;
+      max-width: 440px;
+      margin: auto;
+      background: linear-gradient(180deg, #0e2417 0%, #07130b 100%);
+      border: 2px solid #f3c448;
+      border-radius: 24px;
+      box-shadow: 0 0 60px rgba(243, 196, 72, 0.45), 0 25px 60px rgba(0, 0, 0, 0.9);
+      position: relative;
+      overflow: hidden;
+      animation: celebrationPop 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      text-align: center;
+    }
+
+    @keyframes celebrationPop {
+      0% { transform: scale(0.88); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    .celebration-hero-banner {
+      width: 100%;
+      height: 200px;
+      position: relative;
+      background: #040906;
+      overflow: hidden;
+      border-bottom: 1px solid rgba(243, 196, 72, 0.35);
+    }
+
+    .celebration-top-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .celebration-close-btn {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: rgba(0, 0, 0, 0.65);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      color: #fff;
+      font-size: 16px;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+      transition: all 0.2s;
+    }
+
+    .celebration-close-btn:hover {
+      background: #f3c448;
+      color: #000;
+      transform: scale(1.08);
+    }
+
+    .celebration-floating-badge {
+      position: absolute;
+      bottom: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(4, 9, 6, 0.85);
+      border: 1px solid #f3c448;
+      color: #ffd900;
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: 0.05em;
+      padding: 4px 14px;
+      border-radius: 999px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6);
+      white-space: nowrap;
+    }
+
+    .celebration-body {
+      padding: 22px 20px 24px;
+    }
+
+    .celebration-title {
+      font-size: 21px;
+      font-weight: 950;
+      color: #ffffff;
+      line-height: 1.35;
+      letter-spacing: -0.02em;
+      margin-bottom: 8px;
+    }
+
+    .celebration-sub {
+      font-size: 13.5px;
+      color: rgba(255, 255, 255, 0.82);
+      line-height: 1.5;
+      margin-bottom: 18px;
+    }
+
+    .celebration-ticket {
+      background: rgba(243, 196, 72, 0.07);
+      border: 1.5px dashed rgba(243, 196, 72, 0.45);
+      border-radius: 16px;
+      padding: 16px 18px;
+      margin-bottom: 16px;
+      text-align: left;
+      position: relative;
+    }
+
+    .celebration-ticket .ticket-row {
+      margin-bottom: 12px;
+    }
+
+    .celebration-ticket .ticket-divider {
+      height: 1px;
+      background: rgba(243, 196, 72, 0.2);
+      margin: 12px 0;
+    }
+
+    .celebration-ticket .ticket-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .celebration-ticket .ticket-lbl {
+      font-size: 11px;
+      color: rgba(243, 196, 72, 0.9);
+      font-weight: 800;
+      margin-bottom: 3px;
+    }
+
+    .celebration-notice-box {
+      background: rgba(16, 185, 129, 0.09);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      border-radius: 14px;
+      padding: 13px 15px;
+      text-align: left;
+      margin-bottom: 20px;
+    }
+
+    .celebration-notice-box h5 {
+      color: #34d399;
+      font-size: 13px;
+      font-weight: 900;
+      margin: 0 0 7px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .celebration-notice-box p {
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.88);
+      line-height: 1.55;
+      margin: 0 0 5px;
+      word-break: keep-all;
+    }
+
+    .celebration-notice-box p:last-child {
+      margin-bottom: 0;
+    }
+
+    /* -------------------------------------------------------------
        Screen 4: Main Dashboard (세미나 메인 화면)
     ------------------------------------------------------------- */
     .dashboard-header {
@@ -1421,36 +1594,55 @@
   </div>
 
   <!-- =========================================================
-       MODAL 1-B: N번째 체크인 깜짝 당첨 축하 팝업
+       MODAL 1-B: N번째 체크인 깜짝 당첨 축하 팝업 (전체화면 축하 뷰)
   ========================================================= -->
-  <div class="modal-backdrop" id="modalMilestonePrize">
-    <div class="confirm-card" style="border: 2px solid #f3c448; box-shadow: 0 0 50px rgba(243, 196, 72, 0.45); text-align: center; max-width: 390px;">
-      <div style="font-size: 46px; margin-bottom: 6px; animation: bounce 0.8s infinite alternate;">🎉</div>
-      <div style="display: inline-block; background: rgba(243, 196, 72, 0.16); color: #f3c448; border: 1px solid rgba(243, 196, 72, 0.4); font-size: 11.5px; font-weight: 850; padding: 4px 12px; border-radius: 99px; margin-bottom: 12px;">
-        SPECIAL MILESTONE WINNER
-      </div>
-      <h3 style="font-size: 21px; font-weight: 950; margin-bottom: 8px;">깜짝 이벤트 당첨 축하드립니다!</h3>
-      <p class="sub" style="font-size: 13.5px; margin-bottom: 16px; line-height: 1.45;">
-        축하합니다! 회원님은 <strong><span id="milestoneSeqNum" style="color: #f3c448; font-size: 16px; font-weight: 950;">-</span>번째</strong> 출석 체크의 행운의 주인공이 되셨습니다!
-      </p>
-
-      <div class="field-box" style="background: rgba(243, 196, 72, 0.08); border-color: rgba(243, 196, 72, 0.3); text-align: left;">
-        <div class="lbl" style="color: #f3c448; font-weight: 800;">🎁 당첨 경품</div>
-        <div class="val" id="milestonePrizeName" style="color: #fff; font-size: 16px; margin-top: 2px;">-</div>
+  <div class="modal-backdrop fullscreen-celebration-backdrop" id="modalMilestonePrize">
+    <div class="celebration-card">
+      <div class="celebration-hero-banner">
+        <img src="./assets/milestone-celebration.jpg" alt="이벤트 당첨 축하" class="celebration-top-img" onerror="this.src='./assets/milestone-celebration-square.jpg'" />
+        <button type="button" class="celebration-close-btn" onclick="closeMilestonePrizeModal()" title="닫기">✕</button>
+        <div class="celebration-floating-badge">
+          <span>✨ 2026 HVAC SPECIAL MILESTONE ✨</span>
+        </div>
       </div>
 
-      <div class="field-box" style="text-align: left;">
-        <div class="lbl">내 출석 등록 번호</div>
-        <div class="val" id="milestoneCheckinId" style="font-family: monospace; font-size: 15px; color: #10b981;">-</div>
-      </div>
+      <div class="celebration-body">
+        <h3 class="celebration-title">🎉 깜짝 순번 이벤트 당첨을 축하드립니다! 🎉</h3>
+        <p class="celebration-sub">
+          축하합니다! 회원님은 행운의 <strong style="color: #f3c448; font-size: 18px;"><span id="milestoneSeqNum">-</span>번째</strong> 출석 체크의 주인공이 되셨습니다!
+        </p>
 
-      <div style="font-size: 12px; color: rgba(255, 255, 255, 0.68); line-height: 1.45; margin: 14px 0 18px; padding: 10px; background: rgba(255,255,255,0.04); border-radius: 10px;">
-        📌 행사장 입구 안내 데스크에서 본 화면을 보여주시고 경품을 즉시 수령해 주세요.
-      </div>
+        <!-- 황금 티켓 스타일 당첨 내역 박스 -->
+        <div class="celebration-ticket">
+          <div class="ticket-row">
+            <div class="ticket-lbl">🎁 당첨 경품</div>
+            <div class="ticket-val" id="milestonePrizeName" style="color: #ffd900; font-size: 16.5px; font-weight: 950; margin-top: 2px;">-</div>
+          </div>
+          <div class="ticket-divider"></div>
+          <div class="ticket-grid">
+            <div>
+              <div class="ticket-lbl">내 출석 등록 번호</div>
+              <div class="ticket-val" id="milestoneCheckinId" style="color: #10b981; font-family: monospace; font-size: 14.5px; font-weight: 850;">-</div>
+            </div>
+            <div>
+              <div class="ticket-lbl">당첨자 성명</div>
+              <div class="ticket-val" id="milestoneWinnerName" style="color: #ffffff; font-size: 14px; font-weight: 850;">-</div>
+            </div>
+          </div>
+        </div>
 
-      <button class="btn-modal-confirm" id="btnMilestoneConfirm" type="button" style="width: 100%; height: 50px; background: linear-gradient(135deg, #f3c448, #d4a017); color: #000; font-weight: 900; font-size: 15px; border-radius: 14px;">
-        선물 확인 및 세미나 입장 ➔
-      </button>
+        <!-- 경품 추후 송부 공식 안내 박스 -->
+        <div class="celebration-notice-box">
+          <h5>📢 경품 수령 및 발송 안내 (중요)</h5>
+          <p>• 본 깜짝 순번 이벤트 경품은 <strong>세미나 행사 전체 종료 후</strong>, 등록해 주신 연락처(이메일/문자)로 <strong>모바일 기프티콘 또는 개별 배송을 통해 추후 일괄 송부</strong>될 예정입니다.</p>
+          <p>• 행사 당일 안내 데스크를 별도로 방문하지 않으셔도 되며, 당첨 내역은 주최측 운영 시스템에 안전하게 자동 저장되어 있습니다.</p>
+          <p>• 당첨 확인 내역은 세미나 진행 중 언제든지 메인 화면 상단의 <span style="color: #ffd900; font-weight: 800;">[🎁 N번째 당첨]</span> 뱃지를 터치하여 다시 열람하실 수 있습니다.</p>
+        </div>
+
+        <button class="btn-modal-confirm" id="btnMilestoneConfirm" type="button" style="width: 100%; height: 52px; background: linear-gradient(135deg, #f3c448, #d4a017); color: #040906; font-weight: 950; font-size: 15.5px; border-radius: 14px; box-shadow: 0 8px 25px rgba(243, 196, 72, 0.35);">
+          선물 확인 완료 및 세미나 입장 ➔
+        </button>
+      </div>
     </div>
   </div>
 
@@ -2159,20 +2351,31 @@
       setTimeout(() => inputName.focus(), 200);
     });
 
-    // 순번 당첨 모달 열기 헬퍼
-    function openMilestonePrizeModal(seq, prize, id) {
-      document.getElementById('milestoneSeqNum').textContent = seq;
-      document.getElementById('milestonePrizeName').textContent = prize;
-      document.getElementById('milestoneCheckinId').textContent = id;
+    // 순번 당첨 모달 열기 헬퍼 (전체화면 축하 팝업)
+    function openMilestonePrizeModal(seq, prize, id, name) {
+      const uName = name || (typeof checkinData !== 'undefined' && checkinData && checkinData.name) || (typeof readUserChecked === 'function' && readUserChecked() && readUserChecked().name) || '참석자';
+      const seqEl = document.getElementById('milestoneSeqNum');
+      if (seqEl) seqEl.textContent = String(seq);
+      const prizeEl = document.getElementById('milestonePrizeName');
+      if (prizeEl) prizeEl.textContent = String(prize || '깜짝 이벤트 특별 경품');
+      const idEl = document.getElementById('milestoneCheckinId');
+      if (idEl) idEl.textContent = String(id || '');
+      const nameEl = document.getElementById('milestoneWinnerName');
+      if (nameEl) nameEl.textContent = String(uName);
       document.getElementById('modalMilestonePrize').classList.add('show');
     }
 
-    document.getElementById('btnMilestoneConfirm').addEventListener('click', () => {
-      document.getElementById('modalMilestonePrize').classList.remove('show');
-      setTimeout(() => {
-        document.getElementById('modalMission').classList.add('show');
-      }, 350);
-    });
+    function closeMilestonePrizeModal() {
+      const modal = document.getElementById('modalMilestonePrize');
+      if (modal) modal.classList.remove('show');
+    }
+
+    const btnMilestoneConfirmEl = document.getElementById('btnMilestoneConfirm');
+    if (btnMilestoneConfirmEl) {
+      btnMilestoneConfirmEl.addEventListener('click', () => {
+        closeMilestonePrizeModal();
+      });
+    }
 
     // 팝업 내 [확인] 클릭 시: 체크인 완료 처리 및 대시보드 진입!
     btnModalConfirm.addEventListener('click', async () => {
@@ -2296,7 +2499,7 @@
       if (isMilestoneWinner) {
         badge.style.display = 'inline-block';
         badge.textContent = `🎁 ${seq}번째 당첨`;
-        badge.onclick = () => openMilestonePrizeModal(seq, milestonePrize, checkinId);
+        badge.onclick = () => openMilestonePrizeModal(seq, milestonePrize, checkinId, name);
       } else {
         badge.style.display = 'none';
       }
@@ -2307,7 +2510,7 @@
       // N번째 당첨자면 축하 모달 먼저 띄우기, 아니면 미션 모달
       if (isMilestoneWinner) {
         setTimeout(() => {
-          openMilestonePrizeModal(seq, milestonePrize, checkinId);
+          openMilestonePrizeModal(seq, milestonePrize, checkinId, name);
         }, 300);
       } else {
         setTimeout(() => {
@@ -2817,7 +3020,7 @@
             if (parsed.isMilestoneWinner) {
               badge.style.display = 'inline-block';
               badge.textContent = `🎁 ${parsed.seq}번째 당첨`;
-              badge.onclick = () => openMilestonePrizeModal(parsed.seq, parsed.milestonePrize, parsed.checkinId);
+              badge.onclick = () => openMilestonePrizeModal(parsed.seq, parsed.milestonePrize, parsed.checkinId, parsed.name);
             } else {
               badge.style.display = 'none';
             }
