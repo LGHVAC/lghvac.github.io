@@ -966,7 +966,7 @@
 
     <div id="quizList">
     <!-- 퀴즈 1 (여명석 교수) -->
-    <article class="quiz-card" data-quiz-id="1" data-correct="1">
+    <article class="quiz-card" data-quiz-id="1" data-correct="1" data-session-num="1">
       <div class="quiz-header">
         <span class="quiz-session-tag">KEYNOTE 1 · 주거난방</span>
         <span class="quiz-status-pill"></span>
@@ -983,7 +983,7 @@
     </article>
 
     <!-- 퀴즈 2 (이성혁 교수) -->
-    <article class="quiz-card" data-quiz-id="2" data-correct="2">
+    <article class="quiz-card" data-quiz-id="2" data-correct="2" data-session-num="2">
       <div class="quiz-header">
         <span class="quiz-session-tag">KEYNOTE 2 · 데이터센터 액체냉각</span>
         <span class="quiz-status-pill"></span>
@@ -1000,7 +1000,7 @@
     </article>
 
     <!-- 퀴즈 3 (조홍종 교수) -->
-    <article class="quiz-card" data-quiz-id="3" data-correct="1">
+    <article class="quiz-card" data-quiz-id="3" data-correct="1" data-session-num="3">
       <div class="quiz-header">
         <span class="quiz-session-tag">KEYNOTE 3 · 전력시장 & AIDC</span>
         <span class="quiz-status-pill"></span>
@@ -1017,7 +1017,7 @@
     </article>
 
     <!-- 퀴즈 4 (유정현 수석) -->
-    <article class="quiz-card" data-quiz-id="4" data-correct="3">
+    <article class="quiz-card" data-quiz-id="4" data-correct="3" data-session-num="4">
       <div class="quiz-header">
         <span class="quiz-session-tag">INSIGHT 1 · 공기열원 히트펌프</span>
         <span class="quiz-status-pill"></span>
@@ -1034,7 +1034,7 @@
     </article>
 
     <!-- 퀴즈 5 (오영훈 팀장) -->
-    <article class="quiz-card" data-quiz-id="5" data-correct="2">
+    <article class="quiz-card" data-quiz-id="5" data-correct="2" data-session-num="5">
       <div class="quiz-header">
         <span class="quiz-session-tag">INSIGHT 2 · 에너지컨설팅</span>
         <span class="quiz-status-pill"></span>
@@ -1051,7 +1051,7 @@
     </article>
 
     <!-- 퀴즈 6 (이정모 관장) -->
-    <article class="quiz-card" data-quiz-id="6" data-correct="1">
+    <article class="quiz-card" data-quiz-id="6" data-correct="1" data-session-num="6">
       <div class="quiz-header">
         <span class="quiz-session-tag">SPECIAL LECTURE · 과학 & 인문학</span>
         <span class="quiz-status-pill"></span>
@@ -1124,11 +1124,19 @@
         const raw = localStorage.getItem('hvac_quiz_config');
         if (!raw) return null;
         const cfg = JSON.parse(raw);
-        if (cfg && Array.isArray(cfg.quizzes) && cfg.quizzes.length) return cfg;
+        if (cfg && Array.isArray(cfg.quizzes) && cfg.quizzes.length) {
+          return {
+            quizzes: cfg.quizzes.map((q, idx) => ({
+              ...q,
+              sessionNum: q.sessionNum || (idx + 1)
+            }))
+          };
+        }
         if (Array.isArray(cfg) && cfg.length) {
           return {
             quizzes: cfg.map((q, idx) => ({
               id: q.id || String(idx + 1),
+              sessionNum: q.sessionNum || (idx + 1),
               tag: q.tag || ('QUIZ ' + (idx + 1)),
               question: q.question || '',
               options: q.options || [],
@@ -1149,8 +1157,9 @@
       list.innerHTML = cfg.quizzes.map((q, idx) => {
         const options = (q.options || []).filter(o => String(o).trim());
         const correct = String(q.correct || 1);
+        const sNum = q.sessionNum || (idx + 1);
         return `
-          <article class="quiz-card" data-quiz-id="${escapeHtml(q.id)}" data-correct="${escapeHtml(correct)}">
+          <article class="quiz-card" data-quiz-id="${escapeHtml(q.id)}" data-correct="${escapeHtml(correct)}" data-session-num="${sNum}">
             <div class="quiz-header">
               <span class="quiz-session-tag">${escapeHtml(q.tag || ('QUIZ ' + (idx + 1)))}</span>
               <span class="quiz-status-pill"></span>
@@ -1570,7 +1579,7 @@
 
       // 카드 노출 및 잠금 처리
       cards.forEach((card, idx) => {
-        const sNum = idx + 1;
+        const sNum = parseInt(card.getAttribute('data-session-num'), 10) || (idx + 1);
         const isMatch = (sess === 'all' || sess === sNum);
         card.style.display = isMatch ? 'block' : 'none';
 
