@@ -2188,6 +2188,8 @@
 
         <div class="toolbar-right">
           <button class="btn-act primary" onclick="openAddCheckinModal()">+ 수동 출석자 추가</button>
+          <button class="btn-act" style="background: rgba(243, 196, 72, 0.18); color: #f3c448; border: 1px solid rgba(243, 196, 72, 0.45); font-weight: 850;" onclick="seedMockAttendees(200)">⚡ 200명 가상 출석 생성</button>
+          <button class="btn-act" style="opacity: 0.85;" onclick="resetCheckinTo200()">🔄 200명 초기화</button>
           <button class="btn-act" onclick="openRosterModal()">📋 사전 등록 명부</button>
           <button class="btn-act" onclick="openOperatorModal()" style="border-color: #a855f7; color: #c084fc;">🛡️ 운영진 명단 관리</button>
           <button class="btn-act" onclick="exportCheckinCsv()">📥 출석부 CSV</button>
@@ -2404,7 +2406,8 @@
             <div style="display: flex; gap: 8px; flex-wrap: wrap;">
               <button class="btn-act" onclick="seedMockAttendees(15)">⚡ 15명 가상 출석 (10번째 당첨 즉시 테스트)</button>
               <button class="btn-act" onclick="seedMockAttendees(50)">⚡ 50명 가상 출석 (50번째 테스트)</button>
-              <button class="btn-act" onclick="seedMockAttendees(100)">⚡ 100명 가상 출석 (전체 테스트)</button>
+              <button class="btn-act" onclick="seedMockAttendees(100)">⚡ 100명 가상 출석</button>
+              <button class="btn-act primary" style="background: var(--gold-primary); color: #040906; font-weight: 850;" onclick="seedMockAttendees(200)">⚡ 200명 가상 출석 (200명 전체 테스트)</button>
             </div>
           </div>
 
@@ -3950,17 +3953,214 @@
     // 1. 사전 등록 명부 (Master Roster)
     // =========================================================
     const DEFAULT_ROSTER = [
-      { email: 'youngsoo.lee', name: '이영수' },
-      { email: 'myeongseok.yeo', name: '여명석' },
-      { email: 'seonghyuk.lee', name: '이성혁' },
-      { email: 'hongjong.cho', name: '조홍종' },
-      { email: 'junghyun.yoo', name: '유정현' },
-      { email: 'younghoon.oh', name: '오영훈' },
-      { email: 'jeongmo.lee', name: '이정모' },
-      { email: 'cheolsoo.kim', name: '김철수' },
-      { email: 'minji.park', name: '박민지' },
-      { email: 'hyunjin.lee', name: '이현진' },
-      { email: 'hvac.admin', name: '세미나운영진' }
+      { email: 'youngsoo.lee', name: '이영수', dept: 'ES엔지니어링담당', position: '운영총괄' },
+      { email: 'myeongseok.yeo', name: '여명석', dept: '서울대학교', position: '교수' },
+      { email: 'seonghyuk.lee', name: '이성혁', dept: '중앙대학교', position: '교수' },
+      { email: 'hongjong.cho', name: '조홍종', dept: '단국대학교', position: '교수' },
+      { email: 'junghyun.yoo', name: '유정현', dept: 'LHRI', position: '수석연구원' },
+      { email: 'younghoon.oh', name: '오영훈', dept: '에너지컨설팅팀', position: '팀장' },
+      { email: 'jeongmo.lee', name: '이정모', dept: '과학커뮤니케이터', position: '관장' },
+      { email: 'hvac.admin', name: '세미나운영진', dept: '운영사무국', position: '운영스태프' },
+      { email: 'user1', name: '김민준1', dept: '칠러선행개발팀', position: '책임연구원' },
+      { email: 'user2', name: '이민준2', dept: 'AIDC냉각솔루션팀', position: '선임연구원' },
+      { email: 'user3', name: '박민준3', dept: 'HVAC제어연구소', position: '연구원' },
+      { email: 'user4', name: '최민준4', dept: '공조시스템개발실', position: '팀장' },
+      { email: 'user5', name: '정민준5', dept: '스마트홈플랫폼팀', position: '주임연구원' },
+      { email: 'user6', name: '강민준6', dept: 'B2B엔지니어링팀', position: '수석연구원' },
+      { email: 'user7', name: '조민준7', dept: '에너지컨설팅팀', position: '전문위원' },
+      { email: 'user8', name: '윤민준8', dept: '인버터구동개발팀', position: '파트장' },
+      { email: 'user9', name: '장민준9', dept: '압축기선행연구팀', position: '책임연구원' },
+      { email: 'user10', name: '임민준10', dept: '글로벌기술지원팀', position: '선임연구원' },
+      { email: 'user11', name: '한민준11', dept: '시스템HVAC영업팀', position: '연구원' },
+      { email: 'user12', name: '오민준12', dept: '냉열원선행연구실', position: '팀장' },
+      { email: 'user13', name: '서민준13', dept: '칠러선행개발팀', position: '주임연구원' },
+      { email: 'user14', name: '신민준14', dept: 'AIDC냉각솔루션팀', position: '수석연구원' },
+      { email: 'user15', name: '권민준15', dept: 'HVAC제어연구소', position: '전문위원' },
+      { email: 'user16', name: '황민준16', dept: '공조시스템개발실', position: '파트장' },
+      { email: 'user17', name: '안민준17', dept: '스마트홈플랫폼팀', position: '책임연구원' },
+      { email: 'user18', name: '송민준18', dept: 'B2B엔지니어링팀', position: '선임연구원' },
+      { email: 'user19', name: '전민준19', dept: '에너지컨설팅팀', position: '연구원' },
+      { email: 'user20', name: '홍민준20', dept: '인버터구동개발팀', position: '팀장' },
+      { email: 'user21', name: '김서준21', dept: '압축기선행연구팀', position: '주임연구원' },
+      { email: 'user22', name: '이서준22', dept: '글로벌기술지원팀', position: '수석연구원' },
+      { email: 'user23', name: '박서준23', dept: '시스템HVAC영업팀', position: '전문위원' },
+      { email: 'user24', name: '최서준24', dept: '냉열원선행연구실', position: '파트장' },
+      { email: 'user25', name: '정서준25', dept: '칠러선행개발팀', position: '책임연구원' },
+      { email: 'user26', name: '강서준26', dept: 'AIDC냉각솔루션팀', position: '선임연구원' },
+      { email: 'user27', name: '조서준27', dept: 'HVAC제어연구소', position: '연구원' },
+      { email: 'user28', name: '윤서준28', dept: '공조시스템개발실', position: '팀장' },
+      { email: 'user29', name: '장서준29', dept: '스마트홈플랫폼팀', position: '주임연구원' },
+      { email: 'user30', name: '임서준30', dept: 'B2B엔지니어링팀', position: '수석연구원' },
+      { email: 'user31', name: '한서준31', dept: '에너지컨설팅팀', position: '전문위원' },
+      { email: 'user32', name: '오서준32', dept: '인버터구동개발팀', position: '파트장' },
+      { email: 'user33', name: '서서준33', dept: '압축기선행연구팀', position: '책임연구원' },
+      { email: 'user34', name: '신서준34', dept: '글로벌기술지원팀', position: '선임연구원' },
+      { email: 'user35', name: '권서준35', dept: '시스템HVAC영업팀', position: '연구원' },
+      { email: 'user36', name: '황서준36', dept: '냉열원선행연구실', position: '팀장' },
+      { email: 'user37', name: '안서준37', dept: '칠러선행개발팀', position: '주임연구원' },
+      { email: 'user38', name: '송서준38', dept: 'AIDC냉각솔루션팀', position: '수석연구원' },
+      { email: 'user39', name: '전서준39', dept: 'HVAC제어연구소', position: '전문위원' },
+      { email: 'user40', name: '홍서준40', dept: '공조시스템개발실', position: '파트장' },
+      { email: 'user41', name: '김도윤41', dept: '스마트홈플랫폼팀', position: '책임연구원' },
+      { email: 'user42', name: '이도윤42', dept: 'B2B엔지니어링팀', position: '선임연구원' },
+      { email: 'user43', name: '박도윤43', dept: '에너지컨설팅팀', position: '연구원' },
+      { email: 'user44', name: '최도윤44', dept: '인버터구동개발팀', position: '팀장' },
+      { email: 'user45', name: '정도윤45', dept: '압축기선행연구팀', position: '주임연구원' },
+      { email: 'user46', name: '강도윤46', dept: '글로벌기술지원팀', position: '수석연구원' },
+      { email: 'user47', name: '조도윤47', dept: '시스템HVAC영업팀', position: '전문위원' },
+      { email: 'user48', name: '윤도윤48', dept: '냉열원선행연구실', position: '파트장' },
+      { email: 'user49', name: '장도윤49', dept: '칠러선행개발팀', position: '책임연구원' },
+      { email: 'user50', name: '임도윤50', dept: 'AIDC냉각솔루션팀', position: '선임연구원' },
+      { email: 'user51', name: '한도윤51', dept: 'HVAC제어연구소', position: '연구원' },
+      { email: 'user52', name: '오도윤52', dept: '공조시스템개발실', position: '팀장' },
+      { email: 'user53', name: '서도윤53', dept: '스마트홈플랫폼팀', position: '주임연구원' },
+      { email: 'user54', name: '신도윤54', dept: 'B2B엔지니어링팀', position: '수석연구원' },
+      { email: 'user55', name: '권도윤55', dept: '에너지컨설팅팀', position: '전문위원' },
+      { email: 'user56', name: '황도윤56', dept: '인버터구동개발팀', position: '파트장' },
+      { email: 'user57', name: '안도윤57', dept: '압축기선행연구팀', position: '책임연구원' },
+      { email: 'user58', name: '송도윤58', dept: '글로벌기술지원팀', position: '선임연구원' },
+      { email: 'user59', name: '전도윤59', dept: '시스템HVAC영업팀', position: '연구원' },
+      { email: 'user60', name: '홍도윤60', dept: '냉열원선행연구실', position: '팀장' },
+      { email: 'user61', name: '김예준61', dept: '칠러선행개발팀', position: '주임연구원' },
+      { email: 'user62', name: '이예준62', dept: 'AIDC냉각솔루션팀', position: '수석연구원' },
+      { email: 'user63', name: '박예준63', dept: 'HVAC제어연구소', position: '전문위원' },
+      { email: 'user64', name: '최예준64', dept: '공조시스템개발실', position: '파트장' },
+      { email: 'user65', name: '정예준65', dept: '스마트홈플랫폼팀', position: '책임연구원' },
+      { email: 'user66', name: '강예준66', dept: 'B2B엔지니어링팀', position: '선임연구원' },
+      { email: 'user67', name: '조예준67', dept: '에너지컨설팅팀', position: '연구원' },
+      { email: 'user68', name: '윤예준68', dept: '인버터구동개발팀', position: '팀장' },
+      { email: 'user69', name: '장예준69', dept: '압축기선행연구팀', position: '주임연구원' },
+      { email: 'user70', name: '임예준70', dept: '글로벌기술지원팀', position: '수석연구원' },
+      { email: 'user71', name: '한예준71', dept: '시스템HVAC영업팀', position: '전문위원' },
+      { email: 'user72', name: '오예준72', dept: '냉열원선행연구실', position: '파트장' },
+      { email: 'user73', name: '서예준73', dept: '칠러선행개발팀', position: '책임연구원' },
+      { email: 'user74', name: '신예준74', dept: 'AIDC냉각솔루션팀', position: '선임연구원' },
+      { email: 'user75', name: '권예준75', dept: 'HVAC제어연구소', position: '연구원' },
+      { email: 'user76', name: '황예준76', dept: '공조시스템개발실', position: '팀장' },
+      { email: 'user77', name: '안예준77', dept: '스마트홈플랫폼팀', position: '주임연구원' },
+      { email: 'user78', name: '송예준78', dept: 'B2B엔지니어링팀', position: '수석연구원' },
+      { email: 'user79', name: '전예준79', dept: '에너지컨설팅팀', position: '전문위원' },
+      { email: 'user80', name: '홍예준80', dept: '인버터구동개발팀', position: '파트장' },
+      { email: 'user81', name: '김시우81', dept: '압축기선행연구팀', position: '책임연구원' },
+      { email: 'user82', name: '이시우82', dept: '글로벌기술지원팀', position: '선임연구원' },
+      { email: 'user83', name: '박시우83', dept: '시스템HVAC영업팀', position: '연구원' },
+      { email: 'user84', name: '최시우84', dept: '냉열원선행연구실', position: '팀장' },
+      { email: 'user85', name: '정시우85', dept: '칠러선행개발팀', position: '주임연구원' },
+      { email: 'user86', name: '강시우86', dept: 'AIDC냉각솔루션팀', position: '수석연구원' },
+      { email: 'user87', name: '조시우87', dept: 'HVAC제어연구소', position: '전문위원' },
+      { email: 'user88', name: '윤시우88', dept: '공조시스템개발실', position: '파트장' },
+      { email: 'user89', name: '장시우89', dept: '스마트홈플랫폼팀', position: '책임연구원' },
+      { email: 'user90', name: '임시우90', dept: 'B2B엔지니어링팀', position: '선임연구원' },
+      { email: 'user91', name: '한시우91', dept: '에너지컨설팅팀', position: '연구원' },
+      { email: 'user92', name: '오시우92', dept: '인버터구동개발팀', position: '팀장' },
+      { email: 'user93', name: '서시우93', dept: '압축기선행연구팀', position: '주임연구원' },
+      { email: 'user94', name: '신시우94', dept: '글로벌기술지원팀', position: '수석연구원' },
+      { email: 'user95', name: '권시우95', dept: '시스템HVAC영업팀', position: '전문위원' },
+      { email: 'user96', name: '황시우96', dept: '냉열원선행연구실', position: '파트장' },
+      { email: 'user97', name: '안시우97', dept: '칠러선행개발팀', position: '책임연구원' },
+      { email: 'user98', name: '송시우98', dept: 'AIDC냉각솔루션팀', position: '선임연구원' },
+      { email: 'user99', name: '전시우99', dept: 'HVAC제어연구소', position: '연구원' },
+      { email: 'user100', name: '홍시우100', dept: '공조시스템개발실', position: '팀장' },
+      { email: 'user101', name: '김하준101', dept: '스마트홈플랫폼팀', position: '주임연구원' },
+      { email: 'user102', name: '이하준102', dept: 'B2B엔지니어링팀', position: '수석연구원' },
+      { email: 'user103', name: '박하준103', dept: '에너지컨설팅팀', position: '전문위원' },
+      { email: 'user104', name: '최하준104', dept: '인버터구동개발팀', position: '파트장' },
+      { email: 'user105', name: '정하준105', dept: '압축기선행연구팀', position: '책임연구원' },
+      { email: 'user106', name: '강하준106', dept: '글로벌기술지원팀', position: '선임연구원' },
+      { email: 'user107', name: '조하준107', dept: '시스템HVAC영업팀', position: '연구원' },
+      { email: 'user108', name: '윤하준108', dept: '냉열원선행연구실', position: '팀장' },
+      { email: 'user109', name: '장하준109', dept: '칠러선행개발팀', position: '주임연구원' },
+      { email: 'user110', name: '임하준110', dept: 'AIDC냉각솔루션팀', position: '수석연구원' },
+      { email: 'user111', name: '한하준111', dept: 'HVAC제어연구소', position: '전문위원' },
+      { email: 'user112', name: '오하준112', dept: '공조시스템개발실', position: '파트장' },
+      { email: 'user113', name: '서하준113', dept: '스마트홈플랫폼팀', position: '책임연구원' },
+      { email: 'user114', name: '신하준114', dept: 'B2B엔지니어링팀', position: '선임연구원' },
+      { email: 'user115', name: '권하준115', dept: '에너지컨설팅팀', position: '연구원' },
+      { email: 'user116', name: '황하준116', dept: '인버터구동개발팀', position: '팀장' },
+      { email: 'user117', name: '안하준117', dept: '압축기선행연구팀', position: '주임연구원' },
+      { email: 'user118', name: '송하준118', dept: '글로벌기술지원팀', position: '수석연구원' },
+      { email: 'user119', name: '전하준119', dept: '시스템HVAC영업팀', position: '전문위원' },
+      { email: 'user120', name: '홍하준120', dept: '냉열원선행연구실', position: '파트장' },
+      { email: 'user121', name: '김주원121', dept: '칠러선행개발팀', position: '책임연구원' },
+      { email: 'user122', name: '이주원122', dept: 'AIDC냉각솔루션팀', position: '선임연구원' },
+      { email: 'user123', name: '박주원123', dept: 'HVAC제어연구소', position: '연구원' },
+      { email: 'user124', name: '최주원124', dept: '공조시스템개발실', position: '팀장' },
+      { email: 'user125', name: '정주원125', dept: '스마트홈플랫폼팀', position: '주임연구원' },
+      { email: 'user126', name: '강주원126', dept: 'B2B엔지니어링팀', position: '수석연구원' },
+      { email: 'user127', name: '조주원127', dept: '에너지컨설팅팀', position: '전문위원' },
+      { email: 'user128', name: '윤주원128', dept: '인버터구동개발팀', position: '파트장' },
+      { email: 'user129', name: '장주원129', dept: '압축기선행연구팀', position: '책임연구원' },
+      { email: 'user130', name: '임주원130', dept: '글로벌기술지원팀', position: '선임연구원' },
+      { email: 'user131', name: '한주원131', dept: '시스템HVAC영업팀', position: '연구원' },
+      { email: 'user132', name: '오주원132', dept: '냉열원선행연구실', position: '팀장' },
+      { email: 'user133', name: '서주원133', dept: '칠러선행개발팀', position: '주임연구원' },
+      { email: 'user134', name: '신주원134', dept: 'AIDC냉각솔루션팀', position: '수석연구원' },
+      { email: 'user135', name: '권주원135', dept: 'HVAC제어연구소', position: '전문위원' },
+      { email: 'user136', name: '황주원136', dept: '공조시스템개발실', position: '파트장' },
+      { email: 'user137', name: '안주원137', dept: '스마트홈플랫폼팀', position: '책임연구원' },
+      { email: 'user138', name: '송주원138', dept: 'B2B엔지니어링팀', position: '선임연구원' },
+      { email: 'user139', name: '전주원139', dept: '에너지컨설팅팀', position: '연구원' },
+      { email: 'user140', name: '홍주원140', dept: '인버터구동개발팀', position: '팀장' },
+      { email: 'user141', name: '김지호141', dept: '압축기선행연구팀', position: '주임연구원' },
+      { email: 'user142', name: '이지호142', dept: '글로벌기술지원팀', position: '수석연구원' },
+      { email: 'user143', name: '박지호143', dept: '시스템HVAC영업팀', position: '전문위원' },
+      { email: 'user144', name: '최지호144', dept: '냉열원선행연구실', position: '파트장' },
+      { email: 'user145', name: '정지호145', dept: '칠러선행개발팀', position: '책임연구원' },
+      { email: 'user146', name: '강지호146', dept: 'AIDC냉각솔루션팀', position: '선임연구원' },
+      { email: 'user147', name: '조지호147', dept: 'HVAC제어연구소', position: '연구원' },
+      { email: 'user148', name: '윤지호148', dept: '공조시스템개발실', position: '팀장' },
+      { email: 'user149', name: '장지호149', dept: '스마트홈플랫폼팀', position: '주임연구원' },
+      { email: 'user150', name: '임지호150', dept: 'B2B엔지니어링팀', position: '수석연구원' },
+      { email: 'user151', name: '한지호151', dept: '에너지컨설팅팀', position: '전문위원' },
+      { email: 'user152', name: '오지호152', dept: '인버터구동개발팀', position: '파트장' },
+      { email: 'user153', name: '서지호153', dept: '압축기선행연구팀', position: '책임연구원' },
+      { email: 'user154', name: '신지호154', dept: '글로벌기술지원팀', position: '선임연구원' },
+      { email: 'user155', name: '권지호155', dept: '시스템HVAC영업팀', position: '연구원' },
+      { email: 'user156', name: '황지호156', dept: '냉열원선행연구실', position: '팀장' },
+      { email: 'user157', name: '안지호157', dept: '칠러선행개발팀', position: '주임연구원' },
+      { email: 'user158', name: '송지호158', dept: 'AIDC냉각솔루션팀', position: '수석연구원' },
+      { email: 'user159', name: '전지호159', dept: 'HVAC제어연구소', position: '전문위원' },
+      { email: 'user160', name: '홍지호160', dept: '공조시스템개발실', position: '파트장' },
+      { email: 'user161', name: '김지후161', dept: '스마트홈플랫폼팀', position: '책임연구원' },
+      { email: 'user162', name: '이지후162', dept: 'B2B엔지니어링팀', position: '선임연구원' },
+      { email: 'user163', name: '박지후163', dept: '에너지컨설팅팀', position: '연구원' },
+      { email: 'user164', name: '최지후164', dept: '인버터구동개발팀', position: '팀장' },
+      { email: 'user165', name: '정지후165', dept: '압축기선행연구팀', position: '주임연구원' },
+      { email: 'user166', name: '강지후166', dept: '글로벌기술지원팀', position: '수석연구원' },
+      { email: 'user167', name: '조지후167', dept: '시스템HVAC영업팀', position: '전문위원' },
+      { email: 'user168', name: '윤지후168', dept: '냉열원선행연구실', position: '파트장' },
+      { email: 'user169', name: '장지후169', dept: '칠러선행개발팀', position: '책임연구원' },
+      { email: 'user170', name: '임지후170', dept: 'AIDC냉각솔루션팀', position: '선임연구원' },
+      { email: 'user171', name: '한지후171', dept: 'HVAC제어연구소', position: '연구원' },
+      { email: 'user172', name: '오지후172', dept: '공조시스템개발실', position: '팀장' },
+      { email: 'user173', name: '서지후173', dept: '스마트홈플랫폼팀', position: '주임연구원' },
+      { email: 'user174', name: '신지후174', dept: 'B2B엔지니어링팀', position: '수석연구원' },
+      { email: 'user175', name: '권지후175', dept: '에너지컨설팅팀', position: '전문위원' },
+      { email: 'user176', name: '황지후176', dept: '인버터구동개발팀', position: '파트장' },
+      { email: 'user177', name: '안지후177', dept: '압축기선행연구팀', position: '책임연구원' },
+      { email: 'user178', name: '송지후178', dept: '글로벌기술지원팀', position: '선임연구원' },
+      { email: 'user179', name: '전지후179', dept: '시스템HVAC영업팀', position: '연구원' },
+      { email: 'user180', name: '홍지후180', dept: '냉열원선행연구실', position: '팀장' },
+      { email: 'user181', name: '김준서181', dept: '칠러선행개발팀', position: '주임연구원' },
+      { email: 'user182', name: '이준서182', dept: 'AIDC냉각솔루션팀', position: '수석연구원' },
+      { email: 'user183', name: '박준서183', dept: 'HVAC제어연구소', position: '전문위원' },
+      { email: 'user184', name: '최준서184', dept: '공조시스템개발실', position: '파트장' },
+      { email: 'user185', name: '정준서185', dept: '스마트홈플랫폼팀', position: '책임연구원' },
+      { email: 'user186', name: '강준서186', dept: 'B2B엔지니어링팀', position: '선임연구원' },
+      { email: 'user187', name: '조준서187', dept: '에너지컨설팅팀', position: '연구원' },
+      { email: 'user188', name: '윤준서188', dept: '인버터구동개발팀', position: '팀장' },
+      { email: 'user189', name: '장준서189', dept: '압축기선행연구팀', position: '주임연구원' },
+      { email: 'user190', name: '임준서190', dept: '글로벌기술지원팀', position: '수석연구원' },
+      { email: 'user191', name: '한준서191', dept: '시스템HVAC영업팀', position: '전문위원' },
+      { email: 'user192', name: '오준서192', dept: '냉열원선행연구실', position: '파트장' },
+      { email: 'user193', name: '서준서193', dept: '칠러선행개발팀', position: '책임연구원' },
+      { email: 'user194', name: '신준서194', dept: 'AIDC냉각솔루션팀', position: '선임연구원' },
+      { email: 'user195', name: '권준서195', dept: 'HVAC제어연구소', position: '연구원' },
+      { email: 'user196', name: '황준서196', dept: '공조시스템개발실', position: '팀장' },
+      { email: 'user197', name: '안준서197', dept: '스마트홈플랫폼팀', position: '주임연구원' },
+      { email: 'user198', name: '송준서198', dept: 'B2B엔지니어링팀', position: '수석연구원' },
+      { email: 'user199', name: '전준서199', dept: '에너지컨설팅팀', position: '전문위원' },
+      { email: 'user200', name: '홍준서200', dept: '인버터구동개발팀', position: '파트장' }
     ];
 
     function getRoster() {
@@ -4123,17 +4323,9 @@
         checkinList = cSaved ? JSON.parse(cSaved) : [];
       } catch (e) { checkinList = []; }
 
-      // 출석자가 비어있으면 초기 시딩
+      // 출석자가 비어있으면 200명 기본 가상 출석자 시딩
       if (checkinList.length === 0) {
-        checkinList = [
-          { seq: 1, checkinId: 'HVAC-001', name: '이영수', email: 'youngsoo.lee', checkinTime: '오전 08:42', date: '2026-11-16' },
-          { seq: 2, checkinId: 'HVAC-002', name: '여명석', email: 'myeongseok.yeo', checkinTime: '오전 08:50', date: '2026-11-16' },
-          { seq: 3, checkinId: 'HVAC-003', name: '정성호', email: 'sungho.jeong', checkinTime: '오전 08:55', date: '2026-11-16' },
-          { seq: 4, checkinId: 'HVAC-004', name: '박상민', email: 'sangmin.park', checkinTime: '오전 09:02', date: '2026-11-16' },
-          { seq: 5, checkinId: 'HVAC-005', name: '김철수', email: 'cheolsoo.kim', checkinTime: '오전 09:10', date: '2026-11-16' },
-          { seq: 6, checkinId: 'HVAC-006', name: '김철수', email: 'unknown_guest99@gmail.com', checkinTime: '오전 09:12', date: '2026-11-16' },
-          { seq: 7, checkinId: 'HVAC-007', name: '오타입력자', email: 'minji.park', checkinTime: '오전 09:15', date: '2026-11-16' }
-        ];
+        checkinList = generateMock200Attendees();
         saveCheckin();
       } else {
         let changed = false;
@@ -6818,44 +7010,86 @@ ${s3.speaker}님의 '${s3.title}' 세션까지 오전 강연이 모두 종료되
       showToast(drawState.deliveredMilestones[seq] ? `🎁 #${seq}번 당첨자 현장 경품 수령 완료 처리되었습니다.` : `⏳ #${seq}번 미수령 상태로 변경되었습니다.`);
     }
 
+// =========================================================
+    // 가상 출석인원 200명 생성 엔진 (Mock 200 Attendees Generator)
+    // =========================================================
+    function generateMock200Attendees() {
+      const surnames = ['김', '이', '박', '최', '정', '강', '조', '윤', '장', '임', '한', '오', '서', '신', '권', '황', '안', '송', '전', '홍'];
+      const firstNames = ['민준', '서준', '도윤', '예준', '시우', '하준', '주원', '지호', '지후', '준서', '서연', '서윤', '지우', '서현', '하은', '민서', '지유', '윤서', '채원', '지원', '태양', '성호', '철수', '영수', '우진', '동현', '승우', '소희', '유진', '상혁'];
+      const depts = [
+        '칠러선행개발팀', 'AIDC냉각솔루션팀', 'HVAC제어연구소', '공조시스템개발실',
+        '스마트홈플랫폼팀', 'B2B엔지니어링팀', '에너지컨설팅팀', '인버터구동개발팀',
+        '압축기선행연구팀', '글로벌기술지원팀', '시스템HVAC영업팀', '냉열원선행연구실'
+      ];
+      const positions = ['책임연구원', '선임연구원', '연구원', '팀장', '주임연구원', '수석연구원', '전문위원', '파트장'];
+
+      const milestoneMap = {
+        1: '스타벅스 커피 쿠폰 (1호 체크인)',
+        7: '스타벅스 커피 쿠폰 (럭키 7)',
+        10: '스타벅스 커피 쿠폰 (10번째 체크인)',
+        77: '스타벅스 커피 쿠폰 (행운의 77번째)',
+        100: '스타벅스 커피 쿠폰 (센추리 100번째)'
+      };
+
+      const list = [];
+      for (let seq = 1; seq <= 200; seq++) {
+        const sur = surnames[(seq - 1) % surnames.length];
+        const first = firstNames[Math.floor((seq - 1) / surnames.length) % firstNames.length];
+        const name = sur + first + seq;
+        const dept = depts[(seq - 1) % depts.length];
+        const pos = positions[(seq - 1) % positions.length];
+        const minute = 512 + Math.floor((seq - 1) * 42 / 199);
+        const hour = Math.floor(minute / 60);
+        const min = minute % 60;
+        const checkinTime = '오전 ' + String(hour).padStart(2, '0') + ':' + String(min).padStart(2, '0');
+        const isOp = (seq === 5 || seq === 25 || seq === 60 || seq === 120 || seq === 190);
+        const isMilestone = !isOp && !!milestoneMap[seq];
+
+        list.push({
+          seq: seq,
+          checkinId: 'HVAC-' + String(seq).padStart(3, '0'),
+          name: name,
+          email: 'user' + seq + '@lge.com',
+          dept: dept,
+          position: pos,
+          type: isOp ? 'operator' : 'matched',
+          isOperator: isOp,
+          checkinTime: checkinTime,
+          date: '2026-11-16',
+          isMilestoneWinner: isMilestone,
+          milestonePrize: isMilestone ? milestoneMap[seq] : '',
+          sessionToken: 'tok_mock_' + String(seq).padStart(3, '0')
+        });
+      }
+      return list;
+    }
+
+    function resetCheckinTo200() {
+      if (confirm('출석자 목록을 200명 가상 출석 데이터로 전체 초기화하시겠습니까?')) {
+        checkinList = generateMock200Attendees();
+        saveCheckin();
+        renderCheckinTable();
+        renderMilestoneTab();
+        renderStageView();
+        updateAllStats();
+        showToast('⚡ 가상 출석자 200명이 성공적으로 생성 및 저장되었습니다!');
+      }
+    }
+
     // --- 관리자 테스트용 가상 출석자 시딩 ---
     function seedMockAttendees(targetCount) {
-      if (!confirm(`현재 출석자 수(${checkinList.length}명)에서 총 ${targetCount}명까지 가상 출석자를 자동 채번하시겠습니까?\n10번째, 50번째 등 지정된 순번에 맞춰 깜짝 당첨 테스트가 가능합니다.`)) {
+      if (!confirm(`가상 출석자를 총 ${targetCount}명으로 생성/확장하시겠습니까?\n1~200번째 지정 순번에 맞춰 순번 깜짝 당첨 및 럭키드로우 추첨 테스트가 가능합니다.`)) {
         return;
       }
 
-      const sampleNames = ['강도현', '조유진', '윤상혁', '최서연', '송지훈', '신다은', '한태양', '배수현', '황우진', '권나래', '서준호', '안소희', '오동건', '유예린', '문승우'];
-      const sampleDepts = ['AIDC개발팀', '공조선행연', '스마트홈팀', '칠러설계팀', '시스템HVAC', '제어SW팀', '인버터설계'];
-
-      const maxSeq = checkinList.reduce((m, item) => Math.max(m, (item && item.seq) ? Number(item.seq) : 0), 0);
-      let currentSeq = maxSeq;
-
-      while (checkinList.length < targetCount) {
-        currentSeq++;
-        const name = sampleNames[currentSeq % sampleNames.length] + (currentSeq > 15 ? Math.floor(currentSeq / 15) : '');
-        const email = `guest_${currentSeq}@lge.com`;
-        const checkinId = 'HVAC-' + String(currentSeq).padStart(3, '0');
-        const m = getMilestoneBySeq(currentSeq);
-        const isMilestone = !!m;
-
-        checkinList.push({
-          seq: currentSeq,
-          checkinId: checkinId,
-          name: name,
-          email: email,
-          checkinTime: `오전 09:${String(15 + Math.floor(currentSeq / 3)).padStart(2, '0')}`,
-          date: '2026-11-16',
-          isMilestoneWinner: isMilestone,
-          milestonePrize: m ? m.prize : ''
-        });
-      }
+      checkinList = generateMock200Attendees().slice(0, targetCount);
 
       saveCheckin();
       renderCheckinTable();
       renderMilestoneTab();
       renderStageView();
       updateAllStats();
-      showToast(`⚡ 가상 출석자 ${targetCount}명 등록 완료! (이벤트 순번 테스트 가능)`);
+      showToast(`⚡ 가상 출석자 ${targetCount}명 등록 완료! (이벤트 순번 및 럭키드로우 테스트 가능)`);
     }
 
     // --- [SUB-TAB 4] 전체 당첨자 종합 명부 및 CSV 다운로드 ---
