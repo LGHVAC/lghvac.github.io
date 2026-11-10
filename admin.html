@@ -3078,14 +3078,14 @@
                 📋 텍스트 복사
               </button>
             </div>
-            <!-- 실시간 인앱 퀴즈 알림 배너 원클릭 발송기 (15초 팝업) -->
+            <!-- 실시간 인앱 퀴즈 알림 배너 원클릭 발송기 (15초 팝업 · 최초 1분 후 자동 소멸) -->
             <div style="margin-top: 16px; background: rgba(243, 196, 72, 0.1); border: 1px solid rgba(243, 196, 72, 0.35); border-radius: 10px; padding: 12px 14px; display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;">
               <div>
                 <div style="font-weight: 850; font-size: 13px; color: #f3c448; display: flex; align-items: center; gap: 6px;">
-                  <span>🔔</span> <span>체크인 참석자 실시간 퀴즈 알림 배너 팝업 (15초 노출)</span>
+                  <span>🔔</span> <span>체크인 참석자 실시간 퀴즈 알림 배너 팝업 (15초 노출 · 최초 1분 후 자동 소멸)</span>
                 </div>
                 <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 3px; line-height: 1.4;">
-                  카카오톡 외부 링크 대신, 현재 모바일 앱 화면(체크인/Q&amp;A/메인) 상단에 퀴즈 알림 배너 팝업을 15초간 즉시 띄웁니다.
+                  카카오톡 외부 링크 대신, 현재 모바일 앱 화면(체크인/Q&amp;A/메인) 상단에 퀴즈 알림 배너 팝업을 15초간 띄웁니다. 최초 알림 1분 후에는 재접속해도 반복 표시되지 않습니다.
                 </div>
               </div>
               <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
@@ -5814,6 +5814,9 @@ ${s3.speaker}님의 '${s3.title}' 세션까지 오전 강연이 모두 종료되
         linkUrl: `./quiz.html?session=${sessionId}`,
         linkLabel: '👉 지금 퀴즈 풀기',
         duration: 15000,
+        expireAfterMs: 60000, // 1분 후 자동 소멸
+        isQuizAlert: true,
+        sessionId: sessionId,
         pages: ['index', 'checkin', 'qna', 'quiz', 'survey'],
         updatedAt: Date.now()
       };
@@ -5826,7 +5829,7 @@ ${s3.speaker}님의 '${s3.title}' 세션까지 오전 강연이 모두 종료되
       try {
         window.dispatchEvent(new CustomEvent('hvac:config-updated', { detail: { keys: ['hvac_notice_banner'] } }));
       } catch (e) {}
-      showToast(`🔔 [세션 ${sessionId} 퀴즈 알림 팝업 발송] 전체 참석자 화면(체크인/Q&A/메인) 상단에 15초간 퀴즈 알림 배너 팝업이 발송되었습니다!`, 15000);
+      showToast(`🔔 [세션 ${sessionId} 퀴즈 알림 팝업 발송] 전체 참석자 화면 상단에 15초간 퀴즈 알림 배너 팝업이 발송되었습니다! (최초 알림 1분 후 자동 소멸)`, 15000);
     }
 
     function triggerSelectedInAppQuizBanner() {
@@ -8501,6 +8504,16 @@ ${s3.speaker}님의 '${s3.title}' 세션까지 오전 강연이 모두 종료되
     function lockAllQuizSessionsExceptFirst() {
       saveUnlockedQuizSessions([1]);
       renderQuizReleaseGrid();
+      try {
+        const cur = JSON.parse(localStorage.getItem('hvac_notice_banner') || '{}');
+        if (cur && (cur.isQuizAlert || (cur.text && cur.text.includes('퀴즈')))) {
+          cur.enabled = false;
+          cur.updatedAt = Date.now();
+          localStorage.setItem('hvac_notice_banner', JSON.stringify(cur));
+          if (window.HVAC && window.HVAC.cloud) window.HVAC.cloud.pushConfig('hvac_notice_banner', cur);
+          window.dispatchEvent(new CustomEvent('hvac:config-updated', { detail: { keys: ['hvac_notice_banner'] } }));
+        }
+      } catch (e) {}
       showToast('🔒 1세션만 열리고 2~6세션은 잠금 리셋되었습니다.', 15000);
     }
 

@@ -165,10 +165,54 @@
     var pages = Array.isArray(cfg.pages) && cfg.pages.length ? cfg.pages : ['index', 'checkin', 'qna', 'quiz'];
     if (pages.indexOf(pageId()) < 0) return;
 
+    var bannerId = String(cfg.updatedAt || cfg.text);
+    var isQuizAlert = !!(cfg.isQuizAlert ||
+      (cfg.linkUrl && cfg.linkUrl.indexOf('quiz.html') >= 0) ||
+      (cfg.text && (cfg.text.indexOf('퀴즈') >= 0 || cfg.text.indexOf('Quiz') >= 0)));
+
+    var now = Date.now();
+
+    // 1) 발송 시점 기준 만료 검사 (Global Expiration):
+    //    퀴즈 알림 팝업(또는 expireAfterMs 지정 배너)은 관리자 발송 후 1분(60초) 이상 경과 시 신규 접속자에게 표시 안 함
+    var expireAfterMs = Number(cfg.expireAfterMs) || (isQuizAlert ? 60000 : 0);
+    if (expireAfterMs > 0 && cfg.updatedAt && (now - Number(cfg.updatedAt) >= expireAfterMs)) {
+      return;
+    }
+
+    // 2) 현재 브라우저 세션에서 이미 닫았거나 15초 자동 만료된 경우 재노출 방지
     var dismissKey = 'hvac_banner_dismissed';
     try {
-      if (sessionStorage.getItem(dismissKey) === String(cfg.updatedAt || cfg.text)) return;
+      if (sessionStorage.getItem(dismissKey) === bannerId) return;
     } catch (e) {}
+
+    // 3) 사용자 로컬 최초 노출 시각(First Seen) 기준 1분 만료 검사 (Per-user Expiration)
+    //    '최초 알림 후 1분 후에는 접속해도 표시 안되게':
+    //    localStorage에 해당 배너의 기기별 최초 노출 시각을 영구 기록
+    var seenHistoryKey = 'hvac_banner_seen_history';
+    var seenHistory = {};
+    try {
+      seenHistory = JSON.parse(localStorage.getItem(seenHistoryKey) || '{}');
+    } catch (e) {
+      seenHistory = {};
+    }
+
+    if (seenHistory[bannerId]) {
+      var firstSeenAt = Number(seenHistory[bannerId]);
+      // 최초 알림 노출 후 1분(60,000ms) 이상 경과 시, 재접속해도 표시 안 함
+      if (firstSeenAt && (now - firstSeenAt >= 60000)) {
+        return;
+      }
+    } else {
+      // 이 기기에서 최초로 팝업이 노출되는 순간: 현재 시각 저장
+      seenHistory[bannerId] = now;
+      try {
+        var histKeys = Object.keys(seenHistory);
+        if (histKeys.length > 30) {
+          histKeys.slice(0, histKeys.length - 30).forEach(function (k) { delete seenHistory[k]; });
+        }
+        localStorage.setItem(seenHistoryKey, JSON.stringify(seenHistory));
+      } catch (e) {}
+    }
 
     var st = BANNER_STYLE[cfg.level] || BANNER_STYLE.info;
     var bar = document.createElement('div');
@@ -208,11 +252,18 @@
           if (bar && bar.parentNode) bar.remove();
         }, 400);
       }
+      // 15초 자동 경과 후 자연 소멸 시, 같은 세션 내 페이지 이동마다 재점등되는 현상 방지
+      try { sessionStorage.setItem(dismissKey, bannerId); } catch (e) {}
     }, autoDismissMs);
 
     bar.querySelector('button').addEventListener('click', function () {
       if (bannerTimer) clearTimeout(bannerTimer);
-      try { sessionStorage.setItem(dismissKey, String(cfg.updatedAt || cfg.text)); } catch (e) {}
+      try {
+        sessionStorage.setItem(dismissKey, bannerId);
+        // 사용자가 명시적으로 닫기(✕)를 누른 경우, 즉시 1분 경과 처리로 영구 소멸
+        seenHistory[bannerId] = Date.now() - 60000;
+        localStorage.setItem(seenHistoryKey, JSON.stringify(seenHistory));
+      } catch (e) {}
       bar.remove();
     });
     document.body.appendChild(bar);
