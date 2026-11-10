@@ -899,8 +899,22 @@
 
     function getQuizConfig() {
       try {
-        const cfg = JSON.parse(localStorage.getItem('hvac_quiz_config') || 'null');
+        const raw = localStorage.getItem('hvac_quiz_config');
+        if (!raw) return null;
+        const cfg = JSON.parse(raw);
         if (cfg && Array.isArray(cfg.quizzes) && cfg.quizzes.length) return cfg;
+        if (Array.isArray(cfg) && cfg.length) {
+          return {
+            quizzes: cfg.map((q, idx) => ({
+              id: q.id || String(idx + 1),
+              tag: q.tag || ('QUIZ ' + (idx + 1)),
+              question: q.question || '',
+              options: q.options || [],
+              correct: typeof q.correct === 'number' ? String(q.correct + 1) : String(q.correct || '1'),
+              explanation: q.explanation || ''
+            }))
+          };
+        }
       } catch (e) {}
       return null;
     }
@@ -1286,18 +1300,11 @@
       }
     }
 
-    // ---- 초기화 ----
-    loadSavedAnswers();
-    renderQuizCardsFromConfig();
-    initQuizCards();
-    syncQuizSessionTags();
-    initSessionTabsAndRouting();
-    updateQuizScoringRuleBanner();
-
     // =========================================================
     // 세션별 순차 공개(Unlock) & URL 파라미터(?session=N) 라우팅
     // =========================================================
     const DEFAULT_UNLOCKED = [1]; // 기본값: 1세션 오픈
+    let currentFilterSession = 'all';
 
     function getUnlockedSessions() {
       try {
@@ -1317,8 +1324,6 @@
       } catch (e) {}
       return null;
     }
-
-    let currentFilterSession = 'all';
 
     function applySessionFilter(sess) {
       currentFilterSession = sess;
@@ -1404,6 +1409,14 @@
       });
     }
 
+    // ---- 초기화 ----
+    loadSavedAnswers();
+    renderQuizCardsFromConfig();
+    initQuizCards();
+    syncQuizSessionTags();
+    initSessionTabsAndRouting();
+    updateQuizScoringRuleBanner();
+
 
     // 퀴즈 다시 풀기 (초기화)
     document.getElementById('btnResetQuiz').addEventListener('click', function () {
@@ -1451,8 +1464,8 @@
     syncSurveyBtnState();
 
     // 관리자 설정 변경 또는 배포 설정(site-config.json) 반영 시 갱신
-    if (window.HVAC) {
-      HVAC.onConfigUpdated(function (keys) {
+    if (window.HVAC && window.HVAC.onConfigUpdated) {
+      window.HVAC.onConfigUpdated(function (keys) {
         if (keys.includes('hvac_quiz_config')) {
           if (renderQuizCardsFromConfig()) {
             initQuizCards();

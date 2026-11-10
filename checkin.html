@@ -2525,9 +2525,14 @@
     // 퀴즈 문항 ID 목록 (관리자 퀴즈 관리(hvac_quiz_config)와 연동, 없으면 기본 6문항)
     function getQuizIds() {
       try {
-        const cfg = JSON.parse(localStorage.getItem('hvac_quiz_config') || 'null');
+        const raw = localStorage.getItem('hvac_quiz_config');
+        if (!raw) return ['1', '2', '3', '4', '5', '6'];
+        const cfg = JSON.parse(raw);
         if (cfg && Array.isArray(cfg.quizzes) && cfg.quizzes.length) {
-          return cfg.quizzes.map(q => String(q.id));
+          return cfg.quizzes.map((q, i) => String(q.id || (i + 1)));
+        }
+        if (Array.isArray(cfg) && cfg.length) {
+          return cfg.map((q, i) => String(q.id || (i + 1)));
         }
       } catch (e) {}
       return ['1', '2', '3', '4', '5', '6'];

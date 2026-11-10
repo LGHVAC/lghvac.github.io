@@ -2843,7 +2843,7 @@
           </div>
         </div>
 
-        <div id="adminQuizCardList" style="display: grid; gap: 14px; margin-top: 16px;">
+        <div id="quizAdminList" style="display: grid; gap: 14px; margin-top: 16px;">
           <!-- JS 동적 렌더링 -->
         </div>
       </div>
@@ -8479,6 +8479,7 @@ ${link}
         quizConfigList = JSON.parse(JSON.stringify(DEFAULT_QUIZ_CONFIG));
       }
       loadQuizSubmissionsFromStorage();
+      renderQuizAdminList();
       renderQuizReleaseGrid();
       loadQuizScoringPolicyToUi();
       updateAllStats();
@@ -8502,8 +8503,17 @@ ${link}
     }
 
     function renderQuizAdminList() {
-      const container = document.getElementById('quizAdminList');
+      const container = document.getElementById('quizAdminList') || document.getElementById('adminQuizCardList');
       if (!container) return;
+
+      if (!quizConfigList || quizConfigList.length === 0) {
+        container.innerHTML = `
+          <div style="text-align: center; padding: 40px; color: var(--text-muted); background: var(--card-bg); border-radius: 12px; border: 1px dashed var(--card-border);">
+            등록된 퀴즈 문항이 없습니다. [+ 새 퀴즈 문항 추가] 버튼을 눌러 문항을 등록해 보세요.
+          </div>
+        `;
+        return;
+      }
 
       container.innerHTML = quizConfigList.map((q, idx) => {
         const opts = Array.isArray(q.options) ? q.options : [];
@@ -8628,8 +8638,22 @@ ${link}
     function saveQuizConfigToStorage(showToastFlag = false) {
       try {
         localStorage.setItem('hvac_quiz_config', JSON.stringify(quizConfigList));
-        if (showToastFlag) showToast('💾 전체 퀴즈 문항이 저장되었습니다! (quiz.html 실시간 반영)');
-      } catch (e) {}
+
+        // Firebase 클라우드 DB 실시간 업로드 및 크로스 탭 알림
+        try {
+          if (window.HVAC && window.HVAC.cloud && typeof window.HVAC.cloud.pushConfig === 'function') {
+            window.HVAC.cloud.pushConfig('hvac_quiz_config', quizConfigList);
+          }
+          window.dispatchEvent(new CustomEvent('hvac:config-updated', { detail: { keys: ['hvac_quiz_config'] } }));
+        } catch (cloudErr) {
+          console.warn('Cloud quiz push non-fatal error:', cloudErr);
+        }
+
+        if (showToastFlag) showToast('💾 전체 퀴즈 문항이 저장되었습니다! (quiz.html 및 체크인 실시간 반영)');
+      } catch (e) {
+        console.error('Quiz save error:', e);
+        alert('퀴즈 문항 저장에 실패했습니다: ' + (e && e.message ? e.message : e));
+      }
     }
 
     function resetQuizConfigToDefault() {
