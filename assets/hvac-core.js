@@ -28,7 +28,8 @@
     'hvac_quiz_scoring_policy',
     'hvac_notice_banner',
     'hvac_milestone_events',
-    'hvac_survey_config'
+    'hvac_survey_config',
+    'hvac_checkin_passcode'
   ];
   var APPLIED_MARKER = 'hvac_config_applied_at';
   var CLOUD_CFG_KEY = 'hvac_cloud_config';

@@ -2113,6 +2113,29 @@
          [TAB 3] 출석 체크 인원 모니터링 & 이상 인원 관리
          ----------------------------------------------------- -->
     <section id="tabCheckin" class="tab-panel">
+      <!-- 🔐 세미나 당일 현장 체크인 인증 암호 (PIN) 설정 카드 -->
+      <div class="card" style="margin-bottom: 20px; background: linear-gradient(135deg, rgba(16,185,129,0.08) 0%, rgba(15,23,42,0.6) 100%); border: 1px solid rgba(16,185,129,0.25);">
+        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px; padding: 14px 18px;">
+          <div style="flex: 1; min-width: 280px;">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+              <h3 style="font-size: 15px; font-weight: 700; color: #fff; margin: 0; display: flex; align-items: center; gap: 6px;">
+                🔐 세미나 당일 현장 체크인 인증 암호 (PIN) 설정
+              </h3>
+              <span class="badge" style="background: rgba(16,185,129,0.2); color: #34d399; border: 1px solid rgba(16,185,129,0.4); font-size: 11px; padding: 2px 8px; border-radius: 99px;">현장 참석 보안</span>
+            </div>
+            <p style="font-size: 12.5px; color: var(--text-muted); margin: 0; line-height: 1.45;">
+              11/16(월) 세미나 현장(본부관 학술회의장) 참석자만 모바일 체크인을 완료할 수 있도록 4자리 암호를 설정합니다. (기본 암호: <strong>0000</strong>)
+            </p>
+          </div>
+          <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+            <span style="font-size: 13px; color: var(--text-muted); font-weight: 600;">현재 인증 암호:</span>
+            <input type="text" id="cfgCheckinPasscode" class="form-control" maxlength="4" style="width: 95px; text-align: center; font-size: 18px; font-weight: 800; letter-spacing: 4px; padding: 6px 8px; background: rgba(0,0,0,0.3); border-color: rgba(16,185,129,0.5); color: #34d399;" placeholder="0000">
+            <button class="btn-act primary" onclick="saveCheckinPasscode(true)">💾 암호 저장</button>
+            <button class="btn-act" onclick="resetCheckinPasscode()">기본값(0000) 복원</button>
+          </div>
+        </div>
+      </div>
+
       <!-- 출석 통계 지표 -->
       <div class="stats-grid">
         <div class="stat-card">
@@ -3122,7 +3145,27 @@
           </div>
         </div>
 
-        <!-- 2. 웹사이트 테마 프리셋 & 컬러 커스터마이징 카드 -->
+        <!-- 2. 현장 모바일 체크인 인증 암호 (PIN) 관리 카드 -->
+        <div class="settings-card">
+          <div class="settings-card-head">
+            <h3 class="settings-title">🔐 세미나 당일 현장 체크인 인증 암호</h3>
+            <div style="display: flex; gap: 8px;">
+              <button class="btn-act" onclick="resetCheckinPasscode()">기본값(0000) 복원</button>
+              <button class="btn-act primary" onclick="saveCheckinPasscode(true)">💾 암호 저장</button>
+            </div>
+          </div>
+          <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px; line-height: 1.5;">
+            11/11(수) 전체 공지 후 사전 체크인을 방지하고, 11/16(월) 세미나 현장 참석자만 모바일 체크인을 진행할 수 있도록 4자리 암호를 설정합니다. (기본값: 0000)
+          </p>
+
+          <div class="link-row" style="border-bottom: none;">
+            <div class="link-label">체크인 4자리 숫자 암호</div>
+            <input type="text" id="cfgCheckinPasscodeSettings" class="form-control" maxlength="4" style="max-width: 140px; text-align: center; font-size: 18px; font-weight: 800; letter-spacing: 4px;" placeholder="0000">
+            <button class="btn-tbl" onclick="saveCheckinPasscode(true)">저장 및 클라우드 동기화</button>
+          </div>
+        </div>
+
+        <!-- 3. 웹사이트 테마 프리셋 & 컬러 커스터마이징 카드 -->
         <div class="settings-card">
           <div class="settings-card-head">
             <h3 class="settings-title">🎨 세미나 테마 프리셋 & 색상 커스터마이징</h3>
@@ -4550,6 +4593,7 @@ const DEFAULT_SCHEDULE_DATA = {
       initKakaoPresets();
       loadSiteLinks();
       loadThemeSettings();
+      if (typeof loadCheckinPasscode === 'function') loadCheckinPasscode();
       if (typeof loadSiteContentToUi === 'function') loadSiteContentToUi();
       if (typeof initQuizAdminSystem === 'function') initQuizAdminSystem();
       if (typeof loadCloudConfigToUi === 'function') loadCloudConfigToUi();
@@ -6021,6 +6065,75 @@ ${s3.speaker}님의 '${s3.title}' 세션까지 오전 강연이 모두 종료되
         window.open(val, '_blank');
       } else {
         alert('URL을 입력해 주세요.');
+      }
+    }
+
+    // ---------------------------------------------------------
+    // 세미나 당일 현장 체크인 인증 암호 (PIN) 관리 (hvac_checkin_passcode)
+    // ---------------------------------------------------------
+    function getCheckinPasscode() {
+      try {
+        const raw = localStorage.getItem('hvac_checkin_passcode');
+        if (!raw) return '0000';
+        try {
+          const parsed = JSON.parse(raw);
+          if (typeof parsed === 'string' && /^\d{4}$/.test(parsed.trim())) return parsed.trim();
+          if (typeof parsed === 'number') return String(parsed).padStart(4, '0');
+        } catch (e) {
+          if (/^\d{4}$/.test(raw.trim())) return raw.trim();
+        }
+      } catch (e) {}
+      return '0000';
+    }
+
+    function loadCheckinPasscode() {
+      const pin = getCheckinPasscode();
+      const el1 = document.getElementById('cfgCheckinPasscode');
+      const el2 = document.getElementById('cfgCheckinPasscodeSettings');
+      if (el1) el1.value = pin;
+      if (el2) el2.value = pin;
+    }
+
+    function saveCheckinPasscode(showToastFlag = false) {
+      const el1 = document.getElementById('cfgCheckinPasscode');
+      const el2 = document.getElementById('cfgCheckinPasscodeSettings');
+      const rawVal = ((el1 && el1.value) ? el1.value : (el2 ? el2.value : '')).trim();
+
+      if (!/^\d{4}$/.test(rawVal)) {
+        alert('현장 체크인 암호는 숫자 4자리로 입력해 주세요. (예: 0000, 1116 등)');
+        if (el1) el1.focus();
+        else if (el2) el2.focus();
+        return;
+      }
+
+      try {
+        localStorage.setItem('hvac_checkin_passcode', JSON.stringify(rawVal));
+        if (el1) el1.value = rawVal;
+        if (el2) el2.value = rawVal;
+
+        if (window.HVAC && window.HVAC.cloud && typeof window.HVAC.cloud.pushConfig === 'function') {
+          window.HVAC.cloud.pushConfig('hvac_checkin_passcode', rawVal);
+        }
+        window.dispatchEvent(new CustomEvent('hvac:config-updated', { detail: { keys: ['hvac_checkin_passcode'] } }));
+
+        if (showToastFlag) showToast(`🔐 현장 체크인 암호가 [${rawVal}]로 저장되었습니다!`);
+      } catch (e) {
+        console.error('saveCheckinPasscode error:', e);
+        alert('체크인 암호 저장 실패: ' + e.message);
+      }
+    }
+
+    function resetCheckinPasscode() {
+      if (confirm('현장 체크인 암호를 초기 기본값(0000)으로 복원하시겠습니까?')) {
+        try {
+          localStorage.setItem('hvac_checkin_passcode', JSON.stringify('0000'));
+          if (window.HVAC && window.HVAC.cloud && typeof window.HVAC.cloud.pushConfig === 'function') {
+            window.HVAC.cloud.pushConfig('hvac_checkin_passcode', '0000');
+          }
+          window.dispatchEvent(new CustomEvent('hvac:config-updated', { detail: { keys: ['hvac_checkin_passcode'] } }));
+          loadCheckinPasscode();
+          showToast('🔄 현장 체크인 암호가 기본값(0000)으로 복원되었습니다.');
+        } catch (e) {}
       }
     }
 
@@ -7950,7 +8063,8 @@ ${s3.speaker}님의 '${s3.title}' 세션까지 오전 강연이 모두 종료되
       notices: [
         '일시: 2026년 11월 16일 (월) 09:00 ~ 18:00',
         '오전 8시 50분까지 입실해 주세요.',
-        'Opening은 오전 9시에 시작합니다.',
+        'Opening은 오전 9시에 정시 시작합니다.',
+        '모바일 체크인은 11/16(월) 세미나 당일 현장 로비 데스크의 4자리 암호 입력 후 완료됩니다.',
         '기념촬영 및 점심은 12:30부터 14:00까지 진행됩니다.',
         '행사 장소는 국민대학교 본부관 (별관) 학술회의장입니다.',
         '세부 일정은 운영 상황에 따라 조정될 수 있습니다.'
@@ -8768,7 +8882,8 @@ ${link}
         hvac_qna_list: qnaList,
         hvac_luckydraw_config: drawConfig,
         hvac_luckydraw_milestones: milestoneList,
-        hvac_luckydraw_state: drawState
+        hvac_luckydraw_state: drawState,
+        hvac_checkin_passcode: getCheckinPasscode()
       };
       downloadFile(JSON.stringify(backup, null, 2), `hvac_full_backup_${new Date().toISOString().slice(0, 10)}.json`, 'application/json');
       showToast('💾 전체 운영 데이터가 JSON 파일로 통합 백업되었습니다.');
@@ -8785,7 +8900,8 @@ ${link}
             'hvac_schedule_settings', 'hvac_site_content', 'hvac_site_links', 'hvac_theme_settings',
             'hvac_notice_banner', 'hvac_quiz_config', 'hvac_quiz_submissions', 'hvac_kakao_presets',
             'hvac_roster_list', 'hvac_checkin_list', 'hvac_qna_list',
-            'hvac_luckydraw_config', 'hvac_luckydraw_milestones', 'hvac_luckydraw_state'
+            'hvac_luckydraw_config', 'hvac_luckydraw_milestones', 'hvac_luckydraw_state',
+            'hvac_checkin_passcode'
           ];
           keys.forEach(k => {
             if (data[k] !== undefined && data[k] !== null) {
@@ -8864,6 +8980,8 @@ ${link}
       } else if (key === 'hvac_schedule_settings') {
         initScheduleSystem();
         if (activeTab === 'tabSchedule') renderScheduleTab();
+      } else if (key === 'hvac_checkin_passcode') {
+        loadCheckinPasscode();
       }
     }
 

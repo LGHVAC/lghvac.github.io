@@ -1127,11 +1127,38 @@
           2026. 11. 16(월) · 국민대학교 본부관 (별관)
           <div style="font-size: 11px; opacity: 0.65; margin-top: 5px; letter-spacing: -0.01em;">주최: ES엔지니어링담당 · 운영: ES아카데미팀</div>
         </div>
+
+        <!-- 11/11 사전 안내 & 전체 아젠다/약도 미리보기 카드 -->
+        <div class="intro-notice-card" style="margin-top: 14px; background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 14px; padding: 12px 14px; text-align: left;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+            <div style="display: flex; align-items: center; gap: 5px; font-size: 12.5px; font-weight: 700; color: #f3c448;">
+              <span>📢</span> 현장 체크인 사전 안내
+            </div>
+            <span style="font-size: 10.5px; background: rgba(243,196,72,0.18); color: #f3c448; border: 1px solid rgba(243,196,72,0.35); padding: 1px 7px; border-radius: 99px; font-weight: 700;">11/16 당일 현장</span>
+          </div>
+          <p style="font-size: 11.5px; color: rgba(255, 255, 255, 0.75); line-height: 1.45; margin: 0 0 10px;">
+            모바일 출석체크는 <strong>11/16(월) 세미나 현장</strong> 등록 데스크에서 안내되는 <strong>4자리 암호</strong>를 입력하여 완료됩니다.<br>
+            참석 전 아래 버튼을 통해 <strong>전체 아젠다(시간표)와 행사장 약도</strong>를 미리 확인하실 수 있습니다.
+          </p>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+            <button type="button" id="btnIntroTimetable" style="background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.22); border-radius: 9px; color: #fff; padding: 8px 6px; font-size: 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px;">
+              📅 전체 아젠다
+            </button>
+            <button type="button" id="btnIntroMap" style="background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.22); border-radius: 9px; color: #fff; padding: 8px 6px; font-size: 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px;">
+              🗺️ 행사장 약도
+            </button>
+          </div>
+          <div style="text-align: center; margin-top: 8px;">
+            <a href="./index.html" style="color: #93c5fd; font-size: 11px; text-decoration: none; opacity: 0.9;">
+              🏠 세미나 상세 웹페이지 홈 가기 ↗
+            </a>
+          </div>
+        </div>
       </div>
 
-      <div>
+      <div style="margin-top: 14px;">
         <button class="btn-bottom btn-light" id="btnGoStep1" type="button">
-          체크인
+          현장 모바일 체크인 시작
         </button>
       </div>
     </section>
@@ -1178,7 +1205,7 @@
     </section>
 
     <!-- =========================================================
-         SCREEN 3: 2단계 - 이름 입력 (한글)
+         SCREEN 3: 2단계 - 이름 & 현장 인증 암호 입력 (숫자 4자리)
     ========================================================= -->
     <section class="screen" id="screenStep2">
       <div>
@@ -1193,7 +1220,10 @@
         </div>
 
         <div class="form-body">
-          <h2 class="form-title">이름</h2>
+          <h2 class="form-title">이름 & 현장 인증</h2>
+          <label style="display: block; font-size: 12.5px; font-weight: 700; color: rgba(255,255,255,0.85); margin-bottom: 6px;">
+            참석자 성명
+          </label>
           <div class="input-wrapper">
             <input
               type="text"
@@ -1203,9 +1233,37 @@
               autocomplete="name"
             >
           </div>
-          <small style="display: block; margin-top: 8px; font-size: 12px; color: rgba(255, 255, 255, 0.65); letter-spacing: -0.01em;">
-            ※ 한글 성명(2~3자) 또는 영문 성명을 입력해 주세요.
+          <small style="display: block; margin-top: 6px; font-size: 11.5px; color: rgba(255, 255, 255, 0.6); letter-spacing: -0.01em;">
+            ※ 사전 등록 명부의 한글 또는 영문 성명을 입력해 주세요.
           </small>
+
+          <div style="margin-top: 22px; padding-top: 16px; border-top: 1px dashed rgba(255,255,255,0.18);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <label for="inputPin" style="font-size: 13px; font-weight: 700; color: #f3c448; display: flex; align-items: center; gap: 5px;">
+                🔐 현장 인증 암호 (숫자 4자리)
+              </label>
+              <span style="font-size: 11px; color: rgba(255,255,255,0.5);">당일 현장 공개</span>
+            </div>
+            <div class="input-wrapper">
+              <input
+                type="password"
+                id="inputPin"
+                class="app-input"
+                placeholder="4자리 숫자 입력"
+                inputmode="numeric"
+                pattern="[0-9]*"
+                maxlength="4"
+                autocomplete="off"
+                style="letter-spacing: 8px; font-size: 20px; font-weight: 800; text-align: center;"
+              >
+            </div>
+            <small style="display: block; margin-top: 6px; font-size: 11.5px; color: rgba(255, 255, 255, 0.6); letter-spacing: -0.01em;">
+              ※ 11/16(월) 세미나 현장 등록 데스크 및 안내 배너의 4자리 암호를 입력해 주세요.
+            </small>
+            <div id="pinErrorMsg" style="display: none; margin-top: 8px; padding: 8px 10px; border-radius: 8px; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); font-size: 12px; color: #fca5a5; font-weight: 600; line-height: 1.4;">
+              ⚠️ 현장 인증 암호가 일치하지 않습니다. 현장 등록 데스크 또는 안내 배너를 확인해 주세요.
+            </div>
+          </div>
         </div>
       </div>
 
@@ -1329,6 +1387,14 @@
         <div class="val-row">
           <div class="val" id="modalValName">홍길동</div>
           <div class="badge-lock" style="color: rgba(255,255,255,0.65);">변경 가능</div>
+        </div>
+      </div>
+
+      <div class="field-box" style="background: rgba(16,185,129,0.08); border-color: rgba(16,185,129,0.3);">
+        <div class="lbl" style="color: #34d399; font-weight: 700;">현장 보안 인증</div>
+        <div class="val-row">
+          <div class="val" style="color: #34d399; font-size: 13.5px; font-weight: 700;">🟢 당일 현장 암호 4자리 인증 완료</div>
+          <div class="badge-lock" style="color: #34d399; border-color: rgba(16,185,129,0.4);">인증 통과</div>
         </div>
       </div>
 
@@ -1886,6 +1952,24 @@
 
     const inputEmail = document.getElementById('inputEmail');
     const inputName = document.getElementById('inputName');
+    const inputPin = document.getElementById('inputPin');
+    const pinErrorMsg = document.getElementById('pinErrorMsg');
+
+    function getCheckinPasscode() {
+      try {
+        const raw = (window.HVAC && window.HVAC.read && window.HVAC.read('hvac_checkin_passcode'))
+          || localStorage.getItem('hvac_checkin_passcode');
+        if (!raw) return '0000';
+        if (typeof raw === 'string' && /^\d{4}$/.test(raw.trim())) return raw.trim();
+        if (typeof raw === 'number') return String(raw).padStart(4, '0');
+        try {
+          const parsed = JSON.parse(raw);
+          if (typeof parsed === 'string' && /^\d{4}$/.test(parsed.trim())) return parsed.trim();
+          if (typeof parsed === 'number') return String(parsed).padStart(4, '0');
+        } catch (e) {}
+      } catch (e) {}
+      return '0000';
+    }
 
     // 모달 요소
     const modalConfirm = document.getElementById('modalConfirm');
@@ -1893,6 +1977,22 @@
     const modalValName = document.getElementById('modalValName');
     const btnModalEdit = document.getElementById('btnModalEdit');
     const btnModalConfirm = document.getElementById('btnModalConfirm');
+
+    // 인트로 화면의 '전체 아젠다' 및 '행사장 약도' 미리보기 버튼 연동 (체크인 전 열람 지원)
+    const btnIntroTimetable = document.getElementById('btnIntroTimetable');
+    if (btnIntroTimetable) {
+      btnIntroTimetable.addEventListener('click', () => {
+        renderTimetableSheet();
+        modalTimetable.classList.add('show');
+      });
+    }
+
+    const btnIntroMap = document.getElementById('btnIntroMap');
+    if (btnIntroMap) {
+      btnIntroMap.addEventListener('click', () => {
+        modalMap.classList.add('show');
+      });
+    }
 
     // 1단계: 인트로 -> 이메일 입력 이동
     btnGoStep1.addEventListener('click', () => {
@@ -1926,7 +2026,7 @@
       }
     });
 
-    // 1단계 -> 2단계(이름 입력) 이동
+    // 1단계 -> 2단계(이름 & 현장 암호 입력) 이동
     btnGoStep2.addEventListener('click', () => {
       showScreen('step2');
       setTimeout(() => inputName.focus(), 250);
@@ -1936,28 +2036,59 @@
       showScreen('step1');
     });
 
-    // 2단계 이름 입력 검증 (한글 또는 영문 2자 이상 입력 시 '체크인' 버튼 활성화)
-    inputName.addEventListener('input', () => {
-      const val = inputName.value.trim();
-      if (val.length >= 2) {
+    // 2단계 이름 및 현장 암호(PIN) 입력 검증 (이름 2자 이상 & 암호 4자리 숫자 입력 시 활성화)
+    function validateStep2() {
+      const nameVal = inputName.value.trim();
+      const pinVal = inputPin ? inputPin.value.trim() : '';
+      if (nameVal.length >= 2 && pinVal.length === 4 && /^\d{4}$/.test(pinVal)) {
         btnOpenConfirmModal.classList.remove('btn-disabled');
         btnOpenConfirmModal.removeAttribute('disabled');
       } else {
         btnOpenConfirmModal.classList.add('btn-disabled');
         btnOpenConfirmModal.setAttribute('disabled', 'true');
       }
-    });
+    }
 
+    inputName.addEventListener('input', validateStep2);
     inputName.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && !btnOpenConfirmModal.disabled) {
-        btnOpenConfirmModal.click();
+      if (e.key === 'Enter') {
+        if (inputPin) inputPin.focus();
+        else if (!btnOpenConfirmModal.disabled) btnOpenConfirmModal.click();
       }
     });
+
+    if (inputPin) {
+      inputPin.addEventListener('input', () => {
+        inputPin.value = inputPin.value.replace(/[^0-9]/g, '').slice(0, 4);
+        if (pinErrorMsg) pinErrorMsg.style.display = 'none';
+        inputPin.style.borderColor = '';
+        validateStep2();
+      });
+      inputPin.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !btnOpenConfirmModal.disabled) {
+          btnOpenConfirmModal.click();
+        }
+      });
+    }
 
     // '체크인할까요?' 확인 팝업 열기 (사전 신청자 vs 현장 추가 등록자 vs 운영진 분기)
     let currentCheckinMeta = { type: 'walkin', position: '', dept: '', empNo: '', isOperator: false };
 
     btnOpenConfirmModal.addEventListener('click', () => {
+      // 🔐 현장 인증 암호(PIN) 검증
+      const enteredPin = (inputPin ? inputPin.value : '').trim();
+      const targetPin = getCheckinPasscode();
+      if (enteredPin !== targetPin) {
+        if (pinErrorMsg) pinErrorMsg.style.display = 'block';
+        if (inputPin) {
+          inputPin.style.borderColor = '#ef4444';
+          inputPin.focus();
+        }
+        return;
+      }
+      if (pinErrorMsg) pinErrorMsg.style.display = 'none';
+      if (inputPin) inputPin.style.borderColor = '';
+
       const rawEmail = inputEmail.value.trim();
       const cleanEmail = rawEmail.toLowerCase().replace('@lge.com', '');
       const rawName = inputName.value.trim();
