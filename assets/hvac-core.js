@@ -615,7 +615,7 @@
   // 만족도 설문(Survey) 기본 설정 및 클라우드 연동 엔진
   // =========================================================
   var DEFAULT_SURVEY_CONFIG = {
-    title: "제10회 HVAC 엔지니어링 전문가 세미나 만족도 설문",
+    title: "2026 HVAC Engineering Expert Seminar 만족도 설문",
     subtitle: "참석해 주신 여러분의 소중한 피드백은 차기 세미나 기획 및 기술 프로그램 개선에 큰 힘이 됩니다.",
     pages: [
       {
