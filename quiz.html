@@ -885,10 +885,13 @@
     const toast = document.getElementById('toast');
     const CIRCLED = ['①', '②', '③', '④', '⑤', '⑥'];
 
-    function showToast(msg) {
+    let toastTimer = null;
+    function showToast(msg, duration = 2800) {
+      if (!toast) return;
       toast.textContent = msg;
       toast.classList.add('show');
-      setTimeout(() => toast.classList.remove('show'), 2400);
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toast.classList.remove('show'), duration);
     }
 
     function escapeHtml(str) {
@@ -1405,6 +1408,9 @@
           updateQuizScoringRuleBanner();
           updateQuizSummary();
           applySessionFilter(currentFilterSession);
+          if (e.key === 'hvac_quiz_unlocked_sessions') {
+            showToast('🔓 세션 퀴즈가 새로 오픈되었습니다! 지금 도전해 보세요. (15초)', 15000);
+          }
         }
       });
     }
@@ -1481,6 +1487,9 @@
           updateQuizScoringRuleBanner();
           updateQuizSummary();
           applySessionFilter(currentFilterSession);
+          if (keys.includes('hvac_quiz_unlocked_sessions')) {
+            showToast('🔓 세션 퀴즈가 새로 오픈되었습니다! 지금 도전해 보세요. (15초)', 15000);
+          }
         }
       });
     }

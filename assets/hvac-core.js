@@ -198,7 +198,20 @@
       '<button type="button" aria-label="공지 닫기" style="background:rgba(0,0,0,0.22);border:0;color:#fff;' +
       'width:26px;height:26px;border-radius:50%;cursor:pointer;font-size:13px;flex-shrink:0;">✕</button>';
 
+    var autoDismissMs = Number(cfg.duration) || 15000; // 퀴즈 오픈 알람 배너 15초 유지
+    var bannerTimer = setTimeout(function () {
+      if (bar && bar.parentNode) {
+        bar.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
+        bar.style.opacity = '0';
+        bar.style.transform = 'translateX(-50%) translateY(-20px)';
+        setTimeout(function () {
+          if (bar && bar.parentNode) bar.remove();
+        }, 400);
+      }
+    }, autoDismissMs);
+
     bar.querySelector('button').addEventListener('click', function () {
+      if (bannerTimer) clearTimeout(bannerTimer);
       try { sessionStorage.setItem(dismissKey, String(cfg.updatedAt || cfg.text)); } catch (e) {}
       bar.remove();
     });

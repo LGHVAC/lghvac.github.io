@@ -1254,11 +1254,18 @@
       pointer-events: none;
       transition: all 0.25s ease;
       z-index: 999999;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      max-width: 90vw;
+      text-align: center;
     }
 
     .toast.show {
       opacity: 1;
       transform: translateX(-50%) translateY(0);
+      pointer-events: auto;
     }
     /* =========================================================
        8. 탭 5: 링크 및 테마 설정
@@ -3071,19 +3078,29 @@
                 📋 텍스트 복사
               </button>
             </div>
-            <!-- 실시간 인앱 퀴즈 알림 배너 원클릭 발송기 -->
+            <!-- 실시간 인앱 퀴즈 알림 배너 원클릭 발송기 (15초 팝업) -->
             <div style="margin-top: 16px; background: rgba(243, 196, 72, 0.1); border: 1px solid rgba(243, 196, 72, 0.35); border-radius: 10px; padding: 12px 14px; display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;">
               <div>
                 <div style="font-weight: 850; font-size: 13px; color: #f3c448; display: flex; align-items: center; gap: 6px;">
-                  <span>🔔</span> <span>체크인 참석자 실시간 퀴즈 알림 배너 팝업</span>
+                  <span>🔔</span> <span>체크인 참석자 실시간 퀴즈 알림 배너 팝업 (15초 노출)</span>
                 </div>
                 <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 3px; line-height: 1.4;">
-                  카카오톡 외부 링크 대신, 현재 모바일 앱 화면(체크인/Q&amp;A 등) 상단에 퀴즈 알림 배너를 즉시 띄웁니다.
+                  카카오톡 외부 링크 대신, 현재 모바일 앱 화면(체크인/Q&amp;A/메인) 상단에 퀴즈 알림 배너 팝업을 15초간 즉시 띄웁니다.
                 </div>
               </div>
-              <button type="button" class="btn-tbl" style="background: var(--gold-primary); color: #040906; font-weight: 900; padding: 7px 14px;" onclick="triggerInAppQuizBanner()">
-                🚀 실시간 퀴즈 배너 발송
-              </button>
+              <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                <select id="selectInAppQuizSession" class="form-control" style="width: auto; padding: 7px 10px; font-weight: 800; background: #08160f; color: #f3c448; border-color: rgba(243,196,72,0.45); font-size: 12.5px;">
+                  <option value="1">세션 1: 여명석 교수</option>
+                  <option value="2">세션 2: 이성혁 교수</option>
+                  <option value="3">세션 3: 조홍종 교수</option>
+                  <option value="4">세션 4: 유정현 수석</option>
+                  <option value="5">세션 5: 오영훈 팀장</option>
+                  <option value="6">세션 6: 이정모 관장</option>
+                </select>
+                <button type="button" class="btn-tbl" style="background: var(--gold-primary); color: #040906; font-weight: 900; padding: 7px 14px;" onclick="triggerSelectedInAppQuizBanner()">
+                  🚀 실시간 퀴즈 배너 팝업 발송 (15초)
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -4582,6 +4599,23 @@ const DEFAULT_SCHEDULE_DATA = {
       if (qnaFilterEl && Array.from(qnaFilterEl.options).some(o => o.value === prevFilterVal)) {
         qnaFilterEl.value = prevFilterVal;
       }
+
+      const quizBannerSel = document.getElementById('selectInAppQuizSession');
+      if (quizBannerSel) {
+        const prevQuizVal = quizBannerSel.value || '1';
+        quizBannerSel.innerHTML = '';
+        lectureSessions.forEach((s, idx) => {
+          const num = idx + 1;
+          const cleanSp = (s.speaker || '').replace(/\s*\([^)]*\)\s*$/, '').trim();
+          const opt = document.createElement('option');
+          opt.value = String(num);
+          opt.textContent = `세션 ${num}: ${cleanSp || '강사'} - ${(s.title || '').slice(0, 20)}…`;
+          quizBannerSel.appendChild(opt);
+        });
+        if (quizBannerSel.querySelector(`option[value="${prevQuizVal}"]`)) {
+          quizBannerSel.value = prevQuizVal;
+        }
+      }
     }
 
     function initDashboard() {
@@ -5448,6 +5482,21 @@ const DEFAULT_SCHEDULE_DATA = {
 // =========================================================
     // 7. [TAB 6] 카카오톡 채널 세션 공지 멘트 전송 센터 (동적 일정 연동)
     // =========================================================
+    function getLectureSessionByQuizNum(num = 1) {
+      if (!scheduleData) initScheduleSystem();
+      const sessions = (scheduleData && scheduleData.sessions) || [];
+      const lectures = sessions.filter(s =>
+        (s.type === 'session' && !(s.sublabel || '').includes('Opening') && !(s.title || '').includes('오프닝') && s.title !== 'Opening') ||
+        (s.sublabel && (s.sublabel.includes('Keynote') || s.sublabel.includes('Insight') || s.sublabel.includes('Special')))
+      );
+      if (lectures[num - 1]) return lectures[num - 1];
+      const sessionMap = { 1: 's3', 2: 's5', 3: 's7', 4: 's9', 5: 's11', 6: 's13' };
+      return sessions.find(s => s.id === sessionMap[num]) || {
+        speaker: '발표자',
+        title: `세션 ${num} 강연`
+      };
+    }
+
     function buildDynamicKakaoPresets(sched) {
       if (!sched) {
         if (typeof scheduleData !== 'undefined' && scheduleData) sched = scheduleData;
@@ -5459,10 +5508,13 @@ const DEFAULT_SCHEDULE_DATA = {
       const s1 = sessions.find(s => s.id === 's3') || { time: '09:20 ~ 10:10', title: '국내주거난방의 변천과 현황', speaker: '여명석 교수 (서울대학교)', sublabel: 'Keynote 1' };
       const b1 = sessions.find(s => s.id === 's4') || { time: '10:10 ~ 10:30', minute: '20' };
       const s2 = sessions.find(s => s.id === 's5') || { time: '10:30 ~ 11:20', title: '고밀도 AI 서버의 액체냉각 및 데이터센터 열관리 기술', speaker: '이성혁 교수 (중앙대학교)', sublabel: 'Keynote 2' };
-      const s3 = sessions.find(s => s.id === 's7') || { time: '11:40 ~ 12:30', title: '국내 전력시장 현황 및 AIDC 전력공급 방안', speaker: '조홍종 교수 (단국대학교)' };
+      const b2 = sessions.find(s => s.id === 's6') || { time: '11:20 ~ 11:40', minute: '20' };
+      const s3 = sessions.find(s => s.id === 's7') || { time: '11:40 ~ 12:30', title: '국내 전력시장 현황 및 AIDC 전력공급 방안', speaker: '조홍종 교수 (단국대학교)', sublabel: 'Keynote 3' };
       const sMeal = sessions.find(s => s.id === 's8' || s.type === 'meal') || { time: '12:30 ~ 14:00', minute: '90' };
       const s4 = sessions.find(s => s.id === 's9') || { time: '14:00 ~ 14:50', title: '헬로우 히트펌프, 굿바이 보일러', speaker: '유정현 수석 (LHRI)', sublabel: 'Insight 1' };
+      const b3 = sessions.find(s => s.id === 's10') || { time: '14:50 ~ 15:10', minute: '20' };
       const s5 = sessions.find(s => s.id === 's11') || { time: '15:10 ~ 15:40', title: '에너지컨설팅 사례 발표', speaker: '오영훈 팀장 (에너지컨설팅팀)', sublabel: 'Insight 2' };
+      const b4 = sessions.find(s => s.id === 's12') || { time: '15:40 ~ 16:00', minute: '20' };
       const s6 = sessions.find(s => s.id === 's13') || { time: '16:00 ~ 17:40', title: '테라포밍 또는 찬란한 멸종-그래도 우리는 지구에 살아야 한다', speaker: '이정모 관장 (과학커뮤니케이터)', sublabel: 'Special' };
       const sClose = sessions.find(s => s.id === 's14' || (s.sublabel || '').includes('Closing')) || { time: '17:40 ~ 18:00' };
 
@@ -5472,14 +5524,22 @@ const DEFAULT_SCHEDULE_DATA = {
       const openStart = getStartTime(sOpen.time, '09:00');
       const s1End = getEndTime(s1.time, '10:10');
       const s2Start = getStartTime(s2.time, '10:30');
+      const s2End = getEndTime(s2.time, '11:20');
+      const s3Start = getStartTime(s3.time, '11:40');
+      const s3End = getEndTime(s3.time, '12:30');
       const mealStart = getStartTime(sMeal.time, '12:30');
       const pmStart = getStartTime(s4.time, '14:00');
+      const s4End = getEndTime(s4.time, '14:50');
+      const s5Start = getStartTime(s5.time, '15:10');
+      const s5End = getEndTime(s5.time, '15:40');
+      const s6Start = getStartTime(s6.time, '16:00');
+      const s6End = getEndTime(s6.time, '17:40');
       const closeStart = getStartTime(sClose.time, '17:40');
 
       return [
         {
           id: 'p1',
-          title: '📢 [개회 및 세미나 시작]',
+          title: '📢 [09:00 개회 및 세미나 시작]',
           time: openStart,
           content: `[2026 HVAC Engineering Expert Seminar 개회 안내]
 
@@ -5494,21 +5554,58 @@ const DEFAULT_SCHEDULE_DATA = {
         },
         {
           id: 'p2',
-          title: `💡 [${s1.sublabel || 'Keynote 1'} 종료 & 퀴즈 안내]`,
+          title: `💡 [${s1End} 세션 1 종료 & 퀴즈 1 안내]`,
           time: s1End,
-          content: `[${s1.sublabel || 'Keynote 1'} 종료 및 ${b1.minute || '20'}분 휴식 안내]
+          content: `[📢 2026 HVAC 전문가 세미나 실시간 퀴즈 안내]
 
-${s1.speaker}님의 '${s1.title}' 강연이 종료되었습니다.
+방금 [세션 1] ${s1.speaker}님의
+'${s1.title}' 강연이 종료되었습니다!
 
-💡 방금 들으신 핵심 내용 퀴즈를 풀고 클로징 럭키드로우 경품에 도전하세요!
-👉 세션 1 퀴즈 풀기: {{SITE_BASE_URL}}/quiz.html?session=1
-(체크인 화면 상단 알림 배너로도 실시간 참여가 가능합니다)
+💡 지금 바로 핵심 퀴즈를 풀고 만찬 럭키드로우 경품에 도전하세요!
 
-${b1.minute || '20'}분간의 휴식 후 ${s2Start}부터 ${s2.speaker}님의 ${s2.sublabel || 'Keynote 2'} (${s2.title}) 세션이 이어집니다.`
+👉 세션 1 퀴즈 풀기: 하기 링크 또는 모바일 앱 퀴즈 메뉴 이동
+{{SITE_BASE_URL}}/quiz.html?session=1
+(정답을 맞히시면 경품 추첨권이 부여됩니다!)
+
+☕ ${b1.minute || '20'}분간의 휴식 후 ${s2Start}부터 ${s2.speaker}님의 세션 2 (${s2.title}) 강연이 이어집니다.`
+        },
+        {
+          id: 'p_q2',
+          title: `💡 [${s2End} 세션 2 종료 & 퀴즈 2 안내]`,
+          time: s2End,
+          content: `[📢 2026 HVAC 전문가 세미나 실시간 퀴즈 안내]
+
+방금 [세션 2] ${s2.speaker}님의
+'${s2.title}' 강연이 종료되었습니다!
+
+💡 지금 바로 핵심 퀴즈를 풀고 만찬 럭키드로우 경품에 도전하세요!
+
+👉 세션 2 퀴즈 풀기: 하기 링크 또는 모바일 앱 퀴즈 메뉴 이동
+{{SITE_BASE_URL}}/quiz.html?session=2
+(정답을 맞히시면 경품 추첨권이 부여됩니다!)
+
+☕ ${b2.minute || '20'}분간의 휴식 후 ${s3Start}부터 ${s3.speaker}님의 세션 3 (${s3.title}) 강연이 이어집니다.`
+        },
+        {
+          id: 'p_q3',
+          title: `💡 [${s3End} 세션 3 종료 & 퀴즈 3 안내]`,
+          time: s3End,
+          content: `[📢 2026 HVAC 전문가 세미나 실시간 퀴즈 안내]
+
+방금 [세션 3] ${s3.speaker}님의
+'${s3.title}' 강연이 종료되었습니다!
+
+💡 오전 강연 핵심 퀴즈를 풀고 만찬 럭키드로우 경품에 도전하세요!
+
+👉 세션 3 퀴즈 풀기: 하기 링크 또는 모바일 앱 퀴즈 메뉴 이동
+{{SITE_BASE_URL}}/quiz.html?session=3
+(정답을 맞히시면 경품 추첨권이 부여됩니다!)
+
+📸 단체 기념촬영(본부관 단상) 후 교내 식당(법학관 5층)에서 점심 식사가 진행됩니다.`
         },
         {
           id: 'p3',
-          title: '🍽️ [오전 세션 종료 & 기념촬영/점심 안내]',
+          title: '🍱 [12:30 오전 세션 종료 & 기념촬영/점심 안내]',
           time: mealStart,
           content: `[오전 세션 종료 및 기념촬영 · 점심 식사 안내]
 
@@ -5523,23 +5620,57 @@ ${s3.speaker}님의 '${s3.title}' 세션까지 오전 강연이 모두 종료되
         },
         {
           id: 'p4',
-          title: '⚡ [오후 세션 시작 안내]',
+          title: '⚡ [14:00 오후 세션 시작 안내]',
           time: pmStart,
           content: `[오후 세션 시작 5분 전 안내]
 
 참가자 여러분, 즐거운 점심 식사 되셨습니까?
 잠시 후 ${pmStart}부터 오후 세션이 재개됩니다.
 
-⚡ ${s4.sublabel || 'Insight 1'}: ${s4.speaker} '${s4.title}'
-⚡ ${s5.sublabel || 'Insight 2'} (${getStartTime(s5.time, '15:10')}~): ${s5.speaker} '${s5.title}'
-⚡ ${s6.sublabel || 'Special'} (${getStartTime(s6.time, '16:00')}~): ${s6.speaker} '${s6.title}'
+⚡ 세션 4: ${s4.speaker} '${s4.title}'
+⚡ 세션 5 (${s5Start}~): ${s5.speaker} '${s5.title}'
+⚡ 세션 6 (${s6Start}~): ${s6.speaker} '${s6.title}'
 
 강연 중 궁금하신 사항은 실시간 Q&A에 남겨주시면 세션 종료 후 질의응답 시간에 답변드립니다!
 💬 질문 등록: {{SITE_BASE_URL}}/qna.html`
         },
         {
+          id: 'p_q4',
+          title: `💡 [${s4End} 세션 4 종료 & 퀴즈 4 안내]`,
+          time: s4End,
+          content: `[📢 2026 HVAC 전문가 세미나 실시간 퀴즈 안내]
+
+방금 [세션 4] ${s4.speaker}님의
+'${s4.title}' 강연이 종료되었습니다!
+
+💡 지금 바로 핵심 퀴즈를 풀고 만찬 럭키드로우 경품에 도전하세요!
+
+👉 세션 4 퀴즈 풀기: 하기 링크 또는 모바일 앱 퀴즈 메뉴 이동
+{{SITE_BASE_URL}}/quiz.html?session=4
+(정답을 맞히시면 경품 추첨권이 부여됩니다!)
+
+☕ ${b3.minute || '20'}분간의 휴식 후 ${s5Start}부터 ${s5.speaker}님의 세션 5 (${s5.title}) 강연이 이어집니다.`
+        },
+        {
+          id: 'p_q5',
+          title: `💡 [${s5End} 세션 5 종료 & 퀴즈 5 안내]`,
+          time: s5End,
+          content: `[📢 2026 HVAC 전문가 세미나 실시간 퀴즈 안내]
+
+방금 [세션 5] ${s5.speaker}님의
+'${s5.title}' 강연이 종료되었습니다!
+
+💡 지금 바로 핵심 퀴즈를 풀고 만찬 럭키드로우 경품에 도전하세요!
+
+👉 세션 5 퀴즈 풀기: 하기 링크 또는 모바일 앱 퀴즈 메뉴 이동
+{{SITE_BASE_URL}}/quiz.html?session=5
+(정답을 맞히시면 경품 추첨권이 부여됩니다!)
+
+☕ ${b4.minute || '20'}분간의 휴식 후 ${s6Start}부터 ${s6.speaker}님의 세션 6 특별 강연이 이어집니다.`
+        },
+        {
           id: 'p5',
-          title: '🏆 [퀴즈 마감 15분 전 최종 리마인드]',
+          title: '🏆 [17:25 퀴즈 마감 15분 전 최종 리마인드]',
           time: '17:25',
           content: `[🚨 세션 퀴즈 마감 15분 전 안내]
 
@@ -5550,8 +5681,25 @@ ${s3.speaker}님의 '${s3.title}' 세션까지 오전 강연이 모두 종료되
 👉 지금 퀴즈 풀기: {{SITE_BASE_URL}}/quiz.html`
         },
         {
+          id: 'p_q6',
+          title: `💡 [${s6End} 세션 6 강연 종료 & 최종 퀴즈 마감]`,
+          time: s6End,
+          content: `[📢 2026 HVAC 전문가 세미나 실시간 퀴즈 안내]
+
+방금 [세션 6 특별강연] ${s6.speaker}님의
+'${s6.title}' 강연이 종료되었습니다!
+
+💡 마지막 세션 6 퀴즈를 완료하시고 경품 추첨 기회를 놓치지 마세요!
+
+👉 세션 6 퀴즈 풀기: 하기 링크 또는 모바일 앱 퀴즈 메뉴 이동
+{{SITE_BASE_URL}}/quiz.html?session=6
+(모든 세션 퀴즈 풀이 시 럭키드로우 당첨 확률이 높아집니다!)
+
+✨ 잠시 후 만족도 설문 작성 및 대망의 클로징 경품 추첨이 진행됩니다!`
+        },
+        {
           id: 'p6',
-          title: '✨ [만족도 설문 & 클로징 럭키드로우 시작]',
+          title: '✨ [17:40 만족도 설문 & 클로징 럭키드로우 시작]',
           time: closeStart,
           content: `[만족도 설문 참여 및 클로징 럭키드로우 안내]
 
@@ -5621,12 +5769,23 @@ ${s3.speaker}님의 '${s3.title}' 세션까지 오전 강연이 모두 종료되
         });
       }
 
+      // dynamicPresets 순서에 맞춰 정렬 (사용자 추가 프리셋은 뒤로)
+      const dynOrder = dynamicPresets.map(p => p.id);
+      kakaoPresets.sort((a, b) => {
+        const idxA = dynOrder.indexOf(a.id);
+        const idxB = dynOrder.indexOf(b.id);
+        if (idxA >= 0 && idxB >= 0) return idxA - idxB;
+        if (idxA >= 0) return -1;
+        if (idxB >= 0) return 1;
+        return 0;
+      });
+
       try {
         localStorage.setItem('hvac_kakao_presets', JSON.stringify(kakaoPresets));
       } catch (e) {}
 
       renderKakaoPresetItems();
-      selectPreset(currentKakaoPresetId || 'p1');
+      selectPreset(currentKakaoPresetId || kakaoPresets[0].id);
       if (showToastFlag) {
         showToast('🔄 최신 세션 일정(시간·과정명·강사명)에 맞춰 공지 멘트가 성공적으로 동기화되었습니다!');
       }
@@ -5634,14 +5793,15 @@ ${s3.speaker}님의 '${s3.title}' 세션까지 오전 강연이 모두 종료되
 
     function triggerInAppQuizBanner(sessionId = 1) {
       if (!scheduleData) initScheduleSystem();
-      const s1 = (scheduleData.sessions || []).find(s => s.id === 's3') || { speaker: '여명석 교수', title: '국내주거난방의 변천과 현황' };
-      const speakerClean = (s1.speaker || '강사').replace(/\s*\([^)]*\)\s*$/, '').trim();
+      const sess = getLectureSessionByQuizNum(sessionId);
+      const speakerClean = (sess.speaker || '강사').replace(/\s*\([^)]*\)\s*$/, '').trim();
       const bannerPayload = {
         enabled: true,
         level: 'warning',
-        text: `💡 [세션 ${sessionId} 퀴즈 오픈] ${speakerClean}님의 '${s1.title}' 강연이 종료되었습니다! 지금 핵심 퀴즈를 풀고 럭키드로우에 응모하세요!`,
+        text: `💡 [세션 ${sessionId} 퀴즈 오픈] ${speakerClean}님의 '${sess.title}' 강연이 종료되었습니다! 지금 핵심 퀴즈를 풀고 럭키드로우에 응모하세요!`,
         linkUrl: `./quiz.html?session=${sessionId}`,
         linkLabel: '👉 지금 퀴즈 풀기',
+        duration: 15000,
         pages: ['index', 'checkin', 'qna', 'quiz', 'survey'],
         updatedAt: Date.now()
       };
@@ -5651,7 +5811,16 @@ ${s3.speaker}님의 '${s3.title}' 세션까지 오전 강연이 모두 종료되
       if (window.HVAC && window.HVAC.cloud && typeof window.HVAC.cloud.pushConfig === 'function') {
         window.HVAC.cloud.pushConfig('hvac_notice_banner', bannerPayload);
       }
-      showToast(`🔔 세션 ${sessionId} 실시간 퀴즈 알림 배너가 전체 참석자 화면으로 즉시 전송되었습니다!`);
+      try {
+        window.dispatchEvent(new CustomEvent('hvac:config-updated', { detail: { keys: ['hvac_notice_banner'] } }));
+      } catch (e) {}
+      showToast(`🔔 [세션 ${sessionId} 퀴즈 알림 팝업 발송] 전체 참석자 화면(체크인/Q&A/메인) 상단에 15초간 퀴즈 알림 배너 팝업이 발송되었습니다!`, 15000);
+    }
+
+    function triggerSelectedInAppQuizBanner() {
+      const sel = document.getElementById('selectInAppQuizSession');
+      const sNum = sel ? parseInt(sel.value, 10) || 1 : 1;
+      triggerInAppQuizBanner(sNum);
     }
 
     function renderKakaoPresetItems() {
@@ -5980,11 +6149,25 @@ ${s3.speaker}님의 '${s3.title}' 세션까지 오전 강연이 모두 종료되
       });
     }
 
-    function showToast(msg) {
+    let toastTimer = null;
+    function showToast(msg, duration = 3500) {
       const toast = document.getElementById('toast');
-      toast.textContent = msg;
+      if (!toast) return;
+      if (toastTimer) clearTimeout(toastTimer);
+      toast.innerHTML = `
+        <span style="flex: 1;">${msg}</span>
+        <button type="button" onclick="hideToast()" style="background: rgba(255,255,255,0.18); border: none; color: #fff; width: 22px; height: 22px; border-radius: 50%; cursor: pointer; font-size: 11px; margin-left: 10px; display: inline-flex; align-items: center; justify-content: center; vertical-align: middle;" title="닫기">✕</button>
+      `;
       toast.classList.add('show');
-      setTimeout(() => toast.classList.remove('show'), 2500);
+      toastTimer = setTimeout(() => {
+        toast.classList.remove('show');
+      }, duration);
+    }
+
+    function hideToast() {
+      const toast = document.getElementById('toast');
+      if (toast) toast.classList.remove('show');
+      if (toastTimer) clearTimeout(toastTimer);
     }
 
     // ESC 키로 모달 닫기
@@ -8285,11 +8468,12 @@ ${s3.speaker}님의 '${s3.title}' 세션까지 오전 강연이 모두 종료되
       let unlocked = getUnlockedQuizSessions();
       if (unlocked.includes(sNum)) {
         unlocked = unlocked.filter(n => n !== sNum);
-        showToast(`🔒 세션 ${sNum} 퀴즈가 비공개(잠금) 처리되었습니다.`);
+        showToast(`🔒 세션 ${sNum} 퀴즈가 비공개(잠금) 처리되었습니다.`, 15000);
       } else {
         unlocked.push(sNum);
         unlocked.sort((a, b) => a - b);
-        showToast(`🔓 세션 ${sNum} 퀴즈가 오픈되었습니다! 참석자가 이제 풀 수 있습니다.`);
+        triggerInAppQuizBanner(sNum); // 퀴즈 오픈 시 참석자 실시간 퀴즈 알람 배너 팝업 동시 전송 (15초 유지)
+        showToast(`🔓 [세션 ${sNum} 퀴즈 오픈] 퀴즈가 공개되었으며, 참석자 화면으로 15초간 실시간 알람 배너 팝업이 전송되었습니다!`, 15000);
       }
       saveUnlockedQuizSessions(unlocked);
       renderQuizReleaseGrid();
@@ -8299,13 +8483,13 @@ ${s3.speaker}님의 '${s3.title}' 세션까지 오전 강연이 모두 종료되
       const all = [1, 2, 3, 4, 5, 6];
       saveUnlockedQuizSessions(all);
       renderQuizReleaseGrid();
-      showToast('🔓 1~6 전체 세션 퀴즈가 모두 오픈되었습니다.');
+      showToast('🔓 1~6 전체 세션 퀴즈가 모두 오픈되었으며, 참석자 화면으로 실시간 알람이 전송되었습니다.', 15000);
     }
 
     function lockAllQuizSessionsExceptFirst() {
       saveUnlockedQuizSessions([1]);
       renderQuizReleaseGrid();
-      showToast('🔒 1세션만 열리고 2~6세션은 잠금 리셋되었습니다.');
+      showToast('🔒 1세션만 열리고 2~6세션은 잠금 리셋되었습니다.', 15000);
     }
 
     function copyKakaoQuizNotice(sNum) {
