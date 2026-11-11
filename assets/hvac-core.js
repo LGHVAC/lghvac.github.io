@@ -113,7 +113,8 @@
     { key: 'kakaoChannel', test: function (h) { return /pf\.kakao\.com/.test(h); } },
     { key: 'attendanceForm', test: function (h) { return /\/r\/kaugdHpUxh/.test(h); } },
     { key: 'surveyForm', test: function (h) { return /ResponsePage\.aspx|forms\.cloud\.microsoft/.test(h); } },
-    { key: 'mapUrl', test: function (h) { return /map\.naver\.com|map\.kakao\.com|maps\.google/.test(h); } }
+    { key: 'googleMapUrl', test: function (h) { return /maps\.app\.goo\.gl|google\.[a-z.]+\/maps/.test(h); } },
+    { key: 'mapUrl', test: function (h) { return /map\.naver\.com|map\.kakao\.com/.test(h); } }
   ];
 
   function tagLinks(root) {

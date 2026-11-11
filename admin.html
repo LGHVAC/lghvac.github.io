@@ -3146,9 +3146,15 @@
           </div>
 
           <div class="link-row">
-            <div class="link-label">오시는 길 지도 URL (네이버/카카오)</div>
+            <div class="link-label">오시는 길 네이버 지도 URL (Naver Map)</div>
             <input type="url" id="linkMap" class="form-control" placeholder="https://map.naver.com 또는 카카오맵 링크">
             <button class="btn-tbl" onclick="testLink('linkMap')">열기 ↗</button>
+          </div>
+
+          <div class="link-row">
+            <div class="link-label">오시는 길 구글 지도 URL (Google Maps)</div>
+            <input type="url" id="linkGoogleMap" class="form-control" placeholder="https://maps.app.goo.gl/dts8ECvXtLcWcx4m6">
+            <button class="btn-tbl" onclick="testLink('linkGoogleMap')">열기 ↗</button>
           </div>
 
           <div class="link-row" style="border-bottom: none;">
@@ -6218,7 +6224,8 @@ ${s3.speaker}님의 '${s3.title}' 세션까지 오전 강연이 모두 종료되
       kakaoChat: '',
       surveyForm: 'https://forms.cloud.microsoft/Pages/ResponsePage.aspx?id=5M1pUCpkwEWAlNDC3sEL42ywEzOY3PNJr4qBXM_4T5dURDlOS1VaUFpXTVRPUTkzSFZXUDlBQlk1Vy4u',
       attendanceForm: 'https://forms.cloud.microsoft/r/kaugdHpUxh',
-      mapUrl: 'https://map.naver.com/p/search/%EA%B5%AD%EB%AF%BC%EB%8C%80%ED%95%99%EA%B5%90%20%EB%B3%B8%EB%B6%80%EA%B4%80'
+      mapUrl: 'https://map.naver.com/p/search/%EA%B5%AD%EB%AF%BC%EB%8C%80%ED%95%99%EA%B5%90%20%EB%B3%B8%EB%B6%80%EA%B4%80',
+      googleMapUrl: 'https://maps.app.goo.gl/dts8ECvXtLcWcx4m6'
     };
 
     function loadSiteLinks() {
@@ -6232,6 +6239,8 @@ ${s3.speaker}님의 '${s3.title}' 세션까지 오전 강연이 모두 종료되
         document.getElementById('linkSurveyForm').value = links.surveyForm || DEFAULT_SITE_LINKS.surveyForm;
         document.getElementById('linkAttendanceForm').value = links.attendanceForm || DEFAULT_SITE_LINKS.attendanceForm;
         document.getElementById('linkMap').value = links.mapUrl || DEFAULT_SITE_LINKS.mapUrl;
+        const googleMapInput = document.getElementById('linkGoogleMap');
+        if (googleMapInput) googleMapInput.value = links.googleMapUrl || DEFAULT_SITE_LINKS.googleMapUrl;
       } catch (e) {}
     }
 
@@ -6246,13 +6255,15 @@ ${s3.speaker}님의 '${s3.title}' 세션까지 오전 강연이 모두 종료되
 
     function saveSiteLinks() {
       const baseInput = document.getElementById('linkSiteBaseUrl');
+      const googleMapInput = document.getElementById('linkGoogleMap');
       const links = {
         siteBaseUrl: baseInput ? baseInput.value.trim().replace(/\/+$/, '') : '',
         kakaoChannel: document.getElementById('linkKakaoChannel').value.trim() || DEFAULT_SITE_LINKS.kakaoChannel,
         kakaoChat: document.getElementById('linkKakaoChat').value.trim() || DEFAULT_SITE_LINKS.kakaoChat,
         surveyForm: document.getElementById('linkSurveyForm').value.trim() || DEFAULT_SITE_LINKS.surveyForm,
         attendanceForm: document.getElementById('linkAttendanceForm').value.trim() || DEFAULT_SITE_LINKS.attendanceForm,
-        mapUrl: document.getElementById('linkMap').value.trim() || DEFAULT_SITE_LINKS.mapUrl
+        mapUrl: document.getElementById('linkMap').value.trim() || DEFAULT_SITE_LINKS.mapUrl,
+        googleMapUrl: (googleMapInput ? googleMapInput.value.trim() : '') || DEFAULT_SITE_LINKS.googleMapUrl
       };
       try {
         localStorage.setItem('hvac_site_links', JSON.stringify(links));
@@ -8271,8 +8282,7 @@ ${s3.speaker}님의 '${s3.title}' 세션까지 오전 강연이 모두 종료되
       ],
       routes: [
         '국민대학교 정문 → 본부관 별관 1층 대강당 (학술회의장), 도보 약 6분',
-        '본부관 별관 → 법학관 5층 청향 (식당), 도보 약 2~3분',
-        '주차 안내: 행사장 내 별도 주차가 지원되지 않으므로 대중교통 이용을 적극 권장합니다.'
+        '본부관 별관 → 법학관 5층 청향 (식당), 도보 약 2~3분'
       ],
       notices: [
         '일시: 2026년 11월 16일(월) 09:00 ~ 18:00 (오전 08:50까지 입실)',
