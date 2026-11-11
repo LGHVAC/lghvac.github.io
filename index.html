@@ -1102,9 +1102,23 @@
     }
 
     .venue-map-card h2 {
-      font-size: 22px;
-      margin: 10px 0 16px;
+      font-size: clamp(18px, 4.2vw, 22px);
+      margin: 0 0 16px;
       color: #fff;
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .venue-map-card .badge {
+      margin: 0;
+    }
+
+    .venue-map-card .title-sep {
+      color: rgba(255, 255, 255, 0.35);
+      font-weight: 300;
+      font-size: 15px;
     }
 
     .venue-map-image-button {
@@ -1478,6 +1492,7 @@
       .speaker-card,
       .venue-card,
       .route-card,
+      .venue-map-card,
       .info-box,
       .kakao-card {
         padding: 22px;
@@ -1974,8 +1989,11 @@
 
           <!-- 국민대학교 행사장 안내 약도 카드 -->
           <article class="venue-map-card reveal">
-            <span class="badge">CAMPUS ROUTE MAP</span>
-            <h2>국민대학교 행사장 안내 약도</h2>
+            <h2>
+              <span>국민대학교 행사장 안내 약도</span>
+              <span class="title-sep">/</span>
+              <span class="badge">CAMPUS ROUTE MAP</span>
+            </h2>
             <button class="venue-map-image-button" id="openMapModal" type="button" title="약도 크게 보기">
               <img class="venue-map-image" src="./assets/kookmin-venue-map.png" alt="국민대학교 행사장 안내 약도">
             </button>
