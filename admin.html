@@ -960,6 +960,14 @@
       color: #fff;
     }
 
+    .btn-tbl.active {
+      background: rgba(16, 185, 129, 0.22);
+      border-color: #10b981;
+      color: #34d399;
+      font-weight: 850;
+      box-shadow: 0 0 10px rgba(16, 185, 129, 0.25);
+    }
+
     .btn-tbl.btn-kick {
       color: var(--red-bright);
       border-color: rgba(239, 68, 68, 0.3);
@@ -2857,7 +2865,12 @@
           </div>
         </div>
 
-        <div id="quizAdminList" style="display: grid; gap: 14px; margin-top: 16px;">
+        <!-- 세션 탭 필터 (사회자 질의응답 진행화면과 동일한 세션별 탭 바) -->
+        <div id="quizAdminSessionFilterBar" style="display: flex; gap: 8px; margin-top: 16px; margin-bottom: 12px; overflow-x: auto; padding-bottom: 6px; scrollbar-width: thin;">
+          <!-- JS 동적 렌더링 -->
+        </div>
+
+        <div id="quizAdminList" style="display: grid; gap: 14px; margin-top: 8px;">
           <!-- JS 동적 렌더링 -->
         </div>
       </div>
@@ -4920,6 +4933,10 @@ const DEFAULT_SCHEDULE_DATA = {
         if (quizBannerSel.querySelector(`option[value="${prevQuizVal}"]`)) {
           quizBannerSel.value = prevQuizVal;
         }
+      }
+
+      if (typeof renderQuizAdminSessionFilterBar === 'function') {
+        renderQuizAdminSessionFilterBar();
       }
     }
 
@@ -9279,9 +9296,109 @@ ${link}
       renderQuizSubmissionsTable();
     }
 
+    let quizAdminSessionFilter = 'all';
+
+    function getQuizItemSessionKey(q, idx) {
+      if (!q) return '0';
+      const tag = (q.tag || '').toLowerCase();
+      
+      // 1. 태그명 기반 지능형 매칭 (오프닝, 각 세션 연사 및 주제)
+      if (tag.includes('오프닝') || tag.includes('opening') || tag.includes('about 전문가 세미나') || tag.includes('아이스브레이킹')) return '0';
+      if (tag.includes('keynote 1') || tag.includes('keynote session 1') || tag.includes('주거난방') || tag.includes('여명석')) return '1';
+      if (tag.includes('keynote 2') || tag.includes('keynote session 2') || tag.includes('액체냉각') || tag.includes('이성혁')) return '2';
+      if (tag.includes('keynote 3') || tag.includes('keynote session 3') || tag.includes('전력시장') || tag.includes('조홍종')) return '3';
+      if (tag.includes('insight 1') || tag.includes('insight session 1') || tag.includes('히트펌프') || tag.includes('유정현')) return '4';
+      if (tag.includes('insight 2') || tag.includes('insight session 2') || tag.includes('retrofit') || tag.includes('에너지') || tag.includes('오영훈') || tag.includes('컨설팅')) return '5';
+      if (tag.includes('special') || tag.includes('테라포밍') || tag.includes('이정모') || tag.includes('인문학')) return '6';
+
+      // 2. 명시적 sessionNum 숫자 기반 매칭
+      if (q.sessionNum !== undefined && q.sessionNum !== null && q.sessionNum !== '') {
+        const sNum = parseInt(q.sessionNum, 10);
+        if (!isNaN(sNum)) return String(sNum);
+      }
+
+      // 3. 인덱스 기반 기본 세션 번호 추정 (Q0=0, Q1~Q2=1, Q3~Q4=2, ...)
+      if (idx === 0) return '0';
+      return String(Math.min(5, Math.ceil(idx / 2)));
+    }
+
+    function filterQuizAdminSession(sessKey) {
+      quizAdminSessionFilter = String(sessKey);
+      renderQuizAdminSessionFilterBar();
+      renderQuizAdminList();
+    }
+
+    function getFilteredQuizItems() {
+      const result = [];
+      (quizConfigList || []).forEach((q, idx) => {
+        const sessKey = getQuizItemSessionKey(q, idx);
+        if (quizAdminSessionFilter === 'all' || sessKey === quizAdminSessionFilter) {
+          result.push({ q, origIdx: idx, sessKey });
+        }
+      });
+      return result;
+    }
+
+    function getQuizLectureSessionsList() {
+      if (!scheduleData) initScheduleSystem();
+      const sessions = (scheduleData && scheduleData.sessions) || [];
+      const lectures = sessions.filter(s =>
+        s.type === 'session' && !(s.sublabel || '').includes('Opening') && !(s.title || '').includes('오프닝') && s.title !== 'Opening'
+      );
+      if (lectures.length > 0) return lectures;
+      return (DEFAULT_SCHEDULE_DATA.sessions || []).filter(s => s.type === 'session' && !(s.sublabel || '').includes('Opening'));
+    }
+
+    function renderQuizAdminSessionFilterBar() {
+      const barEl = document.getElementById('quizAdminSessionFilterBar');
+      if (!barEl) return;
+
+      const lectures = getQuizLectureSessionsList();
+
+      // 각 세션별 문항 수 카운트 계산
+      const counts = { all: (quizConfigList || []).length };
+      (quizConfigList || []).forEach((q, idx) => {
+        const k = getQuizItemSessionKey(q, idx);
+        counts[k] = (counts[k] || 0) + 1;
+      });
+
+      const tabs = [
+        { key: 'all', label: '전체 세션' },
+        { key: '0', label: '오프닝 · 오프닝 퀴즈' }
+      ];
+
+      lectures.forEach((s, idx) => {
+        const key = String(idx + 1); // 1, 2, 3, 4, 5, 6
+        const shortTitle = (s.title || '').length > 14 ? s.title.slice(0, 14) + '…' : (s.title || `세션 ${idx + 1}`);
+        const sub = s.sublabel || (idx < 3 ? `Keynote Session ${idx + 1}` : (idx < 5 ? `Insight Session ${idx - 2}` : 'Special Lecture'));
+        tabs.push({
+          key: key,
+          label: `${sub} · ${shortTitle}`
+        });
+      });
+
+      barEl.innerHTML = tabs.map(t => {
+        const isActive = quizAdminSessionFilter === t.key;
+        const cnt = counts[t.key] || 0;
+        const countBadge = (t.key === 'all') ? ` (${cnt})` : (cnt > 0 ? ` (${cnt})` : ' (0)');
+        return `
+          <button type="button" 
+                  class="btn-tbl ${isActive ? 'active' : ''}" 
+                  data-quiz-sess="${t.key}" 
+                  onclick="filterQuizAdminSession('${t.key}')" 
+                  style="white-space: nowrap; flex-shrink: 0; padding: 7px 14px; font-size: 12px; display: inline-flex; align-items: center; gap: 6px;">
+            <span>${escapeHtml(t.label)}</span>
+            <span style="font-size: 11px; opacity: ${cnt > 0 ? '0.9' : '0.45'}; font-weight: 850; color: ${isActive ? '#34d399' : 'var(--gold-light)'};">${countBadge}</span>
+          </button>
+        `;
+      }).join('');
+    }
+
     function renderQuizAdminList() {
       const container = document.getElementById('quizAdminList') || document.getElementById('adminQuizCardList');
       if (!container) return;
+
+      renderQuizAdminSessionFilterBar();
 
       if (!quizConfigList || quizConfigList.length === 0) {
         container.innerHTML = `
@@ -9292,7 +9409,38 @@ ${link}
         return;
       }
 
-      container.innerHTML = quizConfigList.map((q, idx) => {
+      const filteredItems = getFilteredQuizItems();
+
+      if (filteredItems.length === 0) {
+        container.innerHTML = `
+          <div style="text-align: center; padding: 36px 20px; color: var(--text-muted); background: rgba(255,255,255,0.02); border-radius: 12px; border: 1px dashed var(--card-border);">
+            해당 세션에 등록된 퀴즈 문항이 없습니다.
+            <div style="margin-top: 12px; display: flex; gap: 8px; justify-content: center;">
+              <button type="button" class="btn-act primary" onclick="openAddQuizModal()">+ 이 세션에 새 퀴즈 문항 추가</button>
+              <button type="button" class="btn-act" onclick="filterQuizAdminSession('all')">📋 전체 세션 문항 보기</button>
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      const headerSummary = `
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px; padding: 0 4px;">
+          <span style="font-size: 12.5px; color: var(--text-muted);">
+            세션 필터 적용: <strong style="color: #fff;">${quizAdminSessionFilter === 'all' ? '전체 세션' : (quizAdminSessionFilter === '0' ? '오프닝 세션' : `세션 ${quizAdminSessionFilter}`)}</strong> 
+            <span style="color: var(--gold-bright); font-weight: 800; margin-left: 4px;">(총 ${filteredItems.length}문항 표시 중)</span>
+          </span>
+          ${quizAdminSessionFilter !== 'all' ? `
+            <button type="button" class="btn-tbl" onclick="filterQuizAdminSession('all')" style="font-size: 11px;">
+              📋 전체 세션 문항 보기
+            </button>
+          ` : ''}
+        </div>
+      `;
+
+      const cardsHtml = filteredItems.map((item, fIdx) => {
+        const q = item.q;
+        const origIdx = item.origIdx;
         const opts = Array.isArray(q.options) ? q.options : [];
         const correctIdx = Number(q.correct) || 0;
         return `
@@ -9300,15 +9448,15 @@ ${link}
             <div class="session-card-header">
               <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
                 <div style="display: flex; gap: 2px;">
-                  <button type="button" class="btn-tbl" onclick="moveQuizOrder(${idx}, -1)" ${idx === 0 ? 'disabled style="opacity:0.3;"' : ''}>▲</button>
-                  <button type="button" class="btn-tbl" onclick="moveQuizOrder(${idx}, 1)" ${idx === quizConfigList.length - 1 ? 'disabled style="opacity:0.3;"' : ''}>▼</button>
+                  <button type="button" class="btn-tbl" onclick="moveQuizOrderInFilter(${fIdx}, -1)" ${fIdx === 0 ? 'disabled style="opacity:0.3;"' : ''} title="문항 위로 이동">▲</button>
+                  <button type="button" class="btn-tbl" onclick="moveQuizOrderInFilter(${fIdx}, 1)" ${fIdx === filteredItems.length - 1 ? 'disabled style="opacity:0.3;"' : ''} title="문항 아래로 이동">▼</button>
                 </div>
-                <strong style="color: var(--gold-bright); font-size: 14px;">Q${idx + 1}</strong>
-                <span class="session-type-badge session">${escapeHtml(q.tag || `세션 퀴즈 ${idx + 1}`)}</span>
+                <strong style="color: var(--gold-bright); font-size: 14px;">Q${origIdx + 1}</strong>
+                <span class="session-type-badge session">${escapeHtml(q.tag || `세션 퀴즈 ${origIdx + 1}`)}</span>
               </div>
               <div style="display: flex; gap: 6px;">
-                <button type="button" class="btn-tbl" onclick="openEditQuizModal(${idx})">✏️ 문항 수정</button>
-                <button type="button" class="btn-tbl" onclick="deleteQuizItem(${idx})" style="color: #ff6b6b;">🗑️ 삭제</button>
+                <button type="button" class="btn-tbl" onclick="openEditQuizModal(${origIdx})">✏️ 문항 수정</button>
+                <button type="button" class="btn-tbl" onclick="deleteQuizItem(${origIdx})" style="color: #ff6b6b;">🗑️ 삭제</button>
               </div>
             </div>
             <div style="font-size: 15px; font-weight: 850; color: #fff; margin: 6px 0 8px;">
@@ -9327,6 +9475,21 @@ ${link}
           </div>
         `;
       }).join('');
+
+      container.innerHTML = headerSummary + cardsHtml;
+    }
+
+    function moveQuizOrderInFilter(filteredIdx, delta) {
+      const filtered = getFilteredQuizItems();
+      const targetFilteredIdx = filteredIdx + delta;
+      if (targetFilteredIdx < 0 || targetFilteredIdx >= filtered.length) return;
+      const currentOrigIdx = filtered[filteredIdx].origIdx;
+      const targetOrigIdx = filtered[targetFilteredIdx].origIdx;
+      const tmp = quizConfigList[currentOrigIdx];
+      quizConfigList[currentOrigIdx] = quizConfigList[targetOrigIdx];
+      quizConfigList[targetOrigIdx] = tmp;
+      saveQuizConfigToStorage(false);
+      renderQuizAdminList();
     }
 
     function getQuizLectureSessions() {
@@ -9347,7 +9510,7 @@ ${link}
 
       let matchedVal = '';
       const openingOpt = `<option value="0" data-tag="OPENING · 오프닝 퀴즈">[오프닝] 오프닝 퀴즈 (ES엔지니어링담당)</option>`;
-      if (currentSessionNum === 0 || (currentTag && (currentTag.includes('오프닝') || currentTag.toUpperCase().includes('OPENING')))) {
+      if (currentSessionNum === 0 || (currentTag && (currentTag.includes('오프닝') || currentTag.toUpperCase().includes('OPENING') || currentTag.includes('About 전문가 세미나')))) {
         matchedVal = '0';
       }
 
@@ -9409,7 +9572,10 @@ ${link}
     function openAddQuizModal() {
       document.getElementById('editQuizIndex').value = '-1';
       document.getElementById('modalQuizTitle').textContent = '+ 새 퀴즈 문항 추가';
-      const nextNum = Math.min(Math.ceil((quizConfigList.length) / 2), 5);
+      let nextNum = Math.min(Math.ceil((quizConfigList.length) / 2), 5);
+      if (quizAdminSessionFilter !== 'all' && !isNaN(parseInt(quizAdminSessionFilter, 10))) {
+        nextNum = parseInt(quizAdminSessionFilter, 10);
+      }
       populateQuizSessionDropdown('', nextNum);
       handleQuizSessionSelectChange();
       document.getElementById('mQuizQuestion').value = '';
@@ -9428,7 +9594,8 @@ ${link}
       const opts = Array.isArray(q.options) ? q.options : ['', '', '', ''];
       document.getElementById('editQuizIndex').value = idx;
       document.getElementById('modalQuizTitle').textContent = `✏️ Q${idx + 1} 퀴즈 문항 수정`;
-      const curSNum = (q.sessionNum !== undefined && q.sessionNum !== null) ? Number(q.sessionNum) : (idx === 0 ? 0 : Math.ceil(idx / 2));
+      const detectedSNum = parseInt(getQuizItemSessionKey(q, idx), 10);
+      const curSNum = !isNaN(detectedSNum) ? detectedSNum : ((q.sessionNum !== undefined && q.sessionNum !== null) ? Number(q.sessionNum) : (idx === 0 ? 0 : Math.ceil(idx / 2)));
       populateQuizSessionDropdown(q.tag || '', curSNum);
       document.getElementById('mQuizTag').value = q.tag || '';
       document.getElementById('mQuizQuestion').value = q.question || '';
