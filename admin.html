@@ -1942,6 +1942,7 @@
         <a class="btn-header" href="./game.html" target="_blank">🎮 미니게임 ↗</a>
         <a class="btn-header" href="./lunch-screen.html" target="_blank">🖥️ 전광판 ↗</a>
         <button class="btn-header" onclick="openPwdChangeModal()">🔑 암호 변경</button>
+        <button class="btn-header" onclick="openSuperAdminPwdModal()" style="border-color: rgba(239, 68, 68, 0.4); color: #fca5a5;">🛡️ 슈퍼관리자 암호</button>
         <button class="btn-header danger" onclick="handleLogout()">⏻ 로그아웃</button>
       </div>
     </div>
@@ -3315,6 +3316,23 @@
           </div>
         </div>
 
+        <!-- 2-2. 🛡️ 슈퍼관리자 2차 인증 암호 (크리티컬 작업 승인용) 카드 -->
+        <div class="settings-card" style="border: 1px solid rgba(239, 68, 68, 0.35);">
+          <div class="settings-card-head">
+            <h3 class="settings-title" style="color: #fca5a5;">🛡️ 슈퍼관리자 2차 인증 암호 (크리티컬 작업 승인용)</h3>
+            <div style="display: flex; gap: 8px;">
+              <button class="btn-act danger" onclick="openSuperAdminPwdModal()">🔑 슈퍼관리자 암호 변경</button>
+            </div>
+          </div>
+          <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 14px; line-height: 1.55;">
+            게임 참가자 전원 기록 및 도전 횟수 리셋, 출석부 200명 초기화, 럭키드로우 결과 초기화, 시스템 전체 데이터 리셋 등 <strong>비가역적인 크리티컬 작업 실행 시 요구되는 독립 2차 암호</strong>입니다. (초기 비밀번호: <strong style="color: #f87171;">00000000</strong>)
+          </p>
+          <div style="background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.25); border-radius: 10px; padding: 12px 16px; font-size: 12.5px; color: #fca5a5; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+            <span>🛡️ <strong>보안 정책:</strong> 일반 관리자 로그인 암호와 완전히 분리되어 독립적으로 동작하며, 중요 데이터 유실을 방지합니다.</span>
+            <button class="btn-tbl" onclick="openSuperAdminPwdModal()" style="border-color: rgba(239, 68, 68, 0.4); color: #fca5a5;">암호 설정 열기 ↗</button>
+          </div>
+        </div>
+
         <!-- 3. 웹사이트 테마 프리셋 & 컬러 커스터마이징 카드 -->
         <div class="settings-card">
           <div class="settings-card-head">
@@ -3904,6 +3922,84 @@
     </div>
   </div>
 
+  <!-- 7-2. 🛡️ 슈퍼관리자 2차 인증 모달 -->
+  <div class="modal-backdrop" id="modalSuperAdminAuth" style="z-index: 10000;">
+    <div class="modal-box" style="max-width: 480px; border: 1px solid rgba(239, 68, 68, 0.5); box-shadow: 0 20px 60px rgba(0, 0, 0, 0.85);">
+      <div class="modal-head" style="border-bottom: 1px solid rgba(239, 68, 68, 0.25); background: rgba(239, 68, 68, 0.08);">
+        <h3 class="modal-title" style="color: #f87171; display: flex; align-items: center; gap: 8px;">
+          <span>🛡️ 슈퍼관리자 2차 인증</span>
+        </h3>
+        <button class="modal-close" onclick="closeSuperAdminAuthModal()">&times;</button>
+      </div>
+      <form id="formSuperAdminAuth" onsubmit="handleSuperAdminAuthSubmit(event)">
+        <div class="modal-body" style="padding: 22px;">
+          <div id="superAdminActionBox" style="font-size: 13.5px; color: #fca5a5; background: rgba(239, 68, 68, 0.12); padding: 12px 14px; border-radius: 10px; border: 1px solid rgba(239, 68, 68, 0.3); margin-bottom: 16px; line-height: 1.5;">
+            ⚠️ <strong>크리티컬 작업 실행 승인</strong><br>
+            <span id="superAdminActionDesc">이 작업을 실행하려면 슈퍼관리자 2차 암호가 필요합니다.</span>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 8px;">
+            <label style="color: rgba(255, 255, 255, 0.85); font-weight: 700; margin-bottom: 6px; display: block;">
+              슈퍼관리자 비밀번호 (초기값: 00000000)
+            </label>
+            <input
+              type="password"
+              id="inputSuperAdminPwd"
+              class="form-control"
+              placeholder="슈퍼관리자 비밀번호 8자리 입력"
+              autocomplete="current-password"
+              required
+              style="font-size: 16px; letter-spacing: 2px;"
+            >
+          </div>
+          <div id="superAdminAuthMsg" style="font-size: 12px; font-weight: 700; color: #ef4444; min-height: 18px; margin-top: 4px;"></div>
+        </div>
+        <div class="modal-foot" style="border-top: 1px solid rgba(255, 255, 255, 0.1); justify-content: flex-end; gap: 10px;">
+          <button type="button" class="btn-act" onclick="closeSuperAdminAuthModal()">취소</button>
+          <button type="submit" class="btn-act danger" style="background: #dc2626; border-color: #ef4444; color: #fff;">
+            🔐 인증 및 실행
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 7-3. 🛡️ 슈퍼관리자 암호 변경 모달 -->
+  <div class="modal-backdrop" id="modalSuperAdminPwdChange" style="z-index: 10000;">
+    <div class="modal-box" style="max-width: 480px; border: 1px solid rgba(239, 68, 68, 0.4);">
+      <div class="modal-head" style="background: rgba(239, 68, 68, 0.08);">
+        <h3 class="modal-title" style="color: #f87171;">🛡️ 슈퍼관리자 2차 암호 변경</h3>
+        <button class="modal-close" onclick="closeModal('modalSuperAdminPwdChange')">&times;</button>
+      </div>
+      <form onsubmit="handleSuperAdminPwdChangeSubmit(event)">
+        <div class="modal-body" style="padding: 22px;">
+          <p style="font-size: 12.5px; color: var(--text-muted); margin-bottom: 16px; line-height: 1.5;">
+            게임 참가자 전원 기록 및 도전 횟수 리셋, 출석부 200명 초기화, 럭키드로우 결과 초기화, 시스템 전체 데이터 리셋 등 비가역적인 시스템 크리티컬 기능에 사용되는 독립 2차 암호입니다. (초기 암호: <strong style="color: #f87171;">00000000</strong>)
+          </p>
+          <div class="form-group" style="margin-bottom: 14px;">
+            <label style="display: block; font-size: 12.5px; font-weight: 700; margin-bottom: 6px;">현재 슈퍼관리자 비밀번호</label>
+            <input type="password" id="superPwdCurrent" class="form-control" required placeholder="현재 암호 (초기: 00000000)">
+          </div>
+          <div class="form-group" style="margin-bottom: 14px;">
+            <label style="display: block; font-size: 12.5px; font-weight: 700; margin-bottom: 6px;">새 슈퍼관리자 비밀번호 (4자 이상)</label>
+            <input type="password" id="superPwdNew" class="form-control" required minlength="4" placeholder="새 암호 입력">
+          </div>
+          <div class="form-group" style="margin-bottom: 14px;">
+            <label style="display: block; font-size: 12.5px; font-weight: 700; margin-bottom: 6px;">새 비밀번호 확인</label>
+            <input type="password" id="superPwdNewConfirm" class="form-control" required minlength="4" placeholder="새 암호 재입력">
+          </div>
+          <div id="superPwdChangeMsg" style="font-size: 12px; font-weight: 700; min-height: 18px;"></div>
+        </div>
+        <div class="modal-foot">
+          <button type="button" class="btn-act" onclick="closeModal('modalSuperAdminPwdChange')">취소</button>
+          <button type="submit" class="btn-act primary" style="background: linear-gradient(135deg, #b91c1c, #ef4444); border-color: #ef4444;">
+            🛡️ 암호 변경 저장
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- 8. 퀴즈 문항 추가/수정 모달 -->
   <div class="modal-backdrop" id="modalEditQuiz">
     <div class="modal-box" style="max-width: 620px;">
@@ -4095,6 +4191,20 @@
     // =========================================================
     // 관리자 인증용 기본 해시 (SHA-256)
     const DEFAULT_PWD_HASH = '4140f65e67e83230b73d00e204969fd4ed1b04b9b3baab565fa450062d693681';
+
+    // 🛡️ 슈퍼관리자 2차 인증용 기본 해시 (SHA-256 for "00000000")
+    const DEFAULT_SUPER_ADMIN_HASH = '7e071fd9b023ed8f18458a73613a0834f6220bd5cc50357ba3493c6040a9ea8c';
+
+    function getSuperAdminHash() {
+      return localStorage.getItem('hvac_super_admin_hash') || DEFAULT_SUPER_ADMIN_HASH;
+    }
+
+    async function verifySuperAdminPassword(inputPwd) {
+      if (!inputPwd) return false;
+      const hashed = await sha256(inputPwd);
+      const saved = getSuperAdminHash();
+      return hashed === saved || (saved === DEFAULT_SUPER_ADMIN_HASH && inputPwd === '00000000');
+    }
 
     async function sha256(message) {
       const msgBuffer = new TextEncoder().encode(message);
@@ -5580,9 +5690,10 @@ const DEFAULT_SCHEDULE_DATA = {
     }
 
     function resetDefaultRoster() {
-      if (confirm('기본 사전 등록 명부로 초기화하시겠습니까?')) {
+      requestSuperAdminAuth('📋 <strong>[출석부(사전 등록 명부 200명) 초기화]</strong><br>현재 등록된 출석부 데이터를 200명 기본 명부로 리셋합니다. 계속하시겠습니까?', () => {
         document.getElementById('rosterTextInput').value = DEFAULT_ROSTER.map(r => `${r.email}, ${r.name}`).join('\n');
-      }
+        showToast('📋 기본 사전 등록 명부로 복원되었습니다. [저장 및 동기화]를 눌러 완료하세요.');
+      });
     }
 
     // 세미나 운영진(Operator) 관리 모달 핸들러
@@ -6308,6 +6419,91 @@ ${s3.speaker}님의 '${s3.title}' 세션까지 오전 강연이 모두 종료되
       localStorage.setItem('hvac_admin_password_hash', newHash);
       closeModal('modalPwdChange');
       showToast('🔑 관리자 비밀번호가 성공적으로 변경되었습니다!');
+    }
+
+    // =========================================================
+    // 10-2. 🛡️ 슈퍼관리자 2차 인증 및 독립 암호 관리
+    // =========================================================
+    let superAdminAuthCallback = null;
+
+    function requestSuperAdminAuth(actionDesc, onVerified) {
+      superAdminAuthCallback = onVerified;
+      const descEl = document.getElementById('superAdminActionDesc');
+      if (descEl) descEl.innerHTML = actionDesc;
+      const input = document.getElementById('inputSuperAdminPwd');
+      if (input) input.value = '';
+      const msg = document.getElementById('superAdminAuthMsg');
+      if (msg) msg.textContent = '';
+      openModal('modalSuperAdminAuth');
+      setTimeout(() => { if (input) input.focus(); }, 120);
+    }
+
+    function closeSuperAdminAuthModal() {
+      closeModal('modalSuperAdminAuth');
+      superAdminAuthCallback = null;
+    }
+
+    async function handleSuperAdminAuthSubmit(e) {
+      e.preventDefault();
+      const input = document.getElementById('inputSuperAdminPwd');
+      const val = input ? input.value.trim() : '';
+      const msg = document.getElementById('superAdminAuthMsg');
+
+      const isOk = await verifySuperAdminPassword(val);
+      if (!isOk) {
+        if (msg) {
+          msg.textContent = '❌ 슈퍼관리자 비밀번호가 올바르지 않습니다. (초기값: 00000000)';
+        }
+        if (input) {
+          input.value = '';
+          input.focus();
+        }
+        return;
+      }
+
+      const cb = superAdminAuthCallback;
+      closeSuperAdminAuthModal();
+      showToast('🛡️ 슈퍼관리자 2차 인증 승인 완료');
+      if (typeof cb === 'function') {
+        cb();
+      }
+    }
+
+    function openSuperAdminPwdModal() {
+      document.getElementById('superPwdCurrent').value = '';
+      document.getElementById('superPwdNew').value = '';
+      document.getElementById('superPwdNewConfirm').value = '';
+      document.getElementById('superPwdChangeMsg').textContent = '';
+      openModal('modalSuperAdminPwdChange');
+    }
+
+    async function handleSuperAdminPwdChangeSubmit(e) {
+      e.preventDefault();
+      const current = document.getElementById('superPwdCurrent').value.trim();
+      const pwdNew = document.getElementById('superPwdNew').value.trim();
+      const pwdNewConfirm = document.getElementById('superPwdNewConfirm').value.trim();
+      const msgEl = document.getElementById('superPwdChangeMsg');
+
+      if (pwdNew !== pwdNewConfirm) {
+        msgEl.style.color = 'var(--red-bright)';
+        msgEl.textContent = '❌ 새 비밀번호가 서로 일치하지 않습니다.';
+        return;
+      }
+
+      const isCurValid = await verifySuperAdminPassword(current);
+      if (!isCurValid) {
+        msgEl.style.color = 'var(--red-bright)';
+        msgEl.textContent = '❌ 현재 슈퍼관리자 비밀번호가 올바르지 않습니다.';
+        return;
+      }
+
+      const newHash = await sha256(pwdNew);
+      localStorage.setItem('hvac_super_admin_hash', newHash);
+      if (window.HVAC && window.HVAC.cloud && typeof window.HVAC.cloud.pushConfig === 'function') {
+        window.HVAC.cloud.pushConfig('hvac_super_admin_hash', newHash);
+      }
+      closeModal('modalSuperAdminPwdChange');
+      showToast('🛡️ 슈퍼관리자 비밀번호가 성공적으로 변경되었습니다!');
     }
 
     // =========================================================
@@ -7846,7 +8042,7 @@ ${s3.speaker}님의 '${s3.title}' 세션까지 오전 강연이 모두 종료되
     }
 
     function resetCheckinTo200() {
-      if (confirm('출석자 목록을 200명 가상 출석 데이터로 전체 초기화하시겠습니까?')) {
+      requestSuperAdminAuth('⚡ <strong>[출석자 목록 200명 가상 출석 데이터로 전체 초기화]</strong><br>기존 출석 현황을 삭제하고 200명 가상 데이터로 새롭게 시딩합니다. 계속하시겠습니까?', () => {
         checkinList = generateMock200Attendees();
         saveCheckin();
         renderCheckinTable();
@@ -7854,7 +8050,7 @@ ${s3.speaker}님의 '${s3.title}' 세션까지 오전 강연이 모두 종료되
         renderStageView();
         updateAllStats();
         showToast('⚡ 가상 출석자 200명이 성공적으로 생성 및 저장되었습니다!');
-      }
+      });
     }
 
     // --- 관리자 테스트용 가상 출석자 시딩 ---
@@ -8018,7 +8214,7 @@ ${s3.speaker}님의 '${s3.title}' 세션까지 오전 강연이 모두 종료되
     }
 
     function resetLuckyDrawStateConfirm() {
-      if (confirm('⚠️ 럭키드로우 추첨 결과를 모두 초기화하시겠습니까?\n모든 등수의 추첨 결과가 리셋되며 처음부터 다시 추첨을 진행할 수 있습니다.')) {
+      requestSuperAdminAuth('🎁 <strong>[럭키드로우 추첨 결과 전체 초기화]</strong><br>모든 등수의 추첨 결과가 리셋되며 처음부터 다시 추첨을 진행할 수 있는 상태로 되돌아갑니다. 계속하시겠습니까?', () => {
         drawState = { drawnTiers: {}, confirmedTiers: {}, deliveredMilestones: {} };
         try {
           localStorage.setItem('hvac_luckydraw_state', JSON.stringify(drawState));
@@ -8028,7 +8224,7 @@ ${s3.speaker}님의 '${s3.title}' 세션까지 오전 강연이 모두 종료되
         renderAllWinnersTable();
         updateAllStats();
         showToast('🔄 럭키드로우 추첨 결과가 깨끗하게 초기화되었습니다.');
-      }
+      });
     }
 
     // =========================================================
@@ -9559,7 +9755,7 @@ ${link}
     }
 
     function resetOperationalDataConfirm() {
-      if (confirm('⚠️ 테스트용으로 쌓인 출석자 명단, Q&A 질문, 퀴즈 제출 점수, 럭키드로우 추첨 결과를 모두 초기화하시겠습니까?\n(Firebase 클라우드 DB와 로컬 데이터 모두 깨끗하게 초기화됩니다)')) {
+      requestSuperAdminAuth('🚨 <strong>[행사 운영 데이터 전체 리셋 (Factory Reset)]</strong><br>출석자 명단, Q&A 질문, 퀴즈 제출 점수, 설문 응답, 럭키드로우 추첨 결과 및 Firebase 클라우드 DB를 완전히 초기화합니다. 이 작업은 되돌릴 수 없습니다.', () => {
         checkinList = [];
         qnaList = [];
         quizSubmissionsMap = {};
@@ -9593,7 +9789,7 @@ ${link}
         if (activeTab === 'tabDraw') renderDrawTab();
         updateAllStats();
         showToast('🧹 출석 · Q&A · 퀴즈 · 만족도 설문 · 추첨 결과가 클라우드 및 로컬 모두 깨끗하게 초기화되었습니다.');
-      }
+      });
     }
 
     // 타 탭 또는 클라우드 브릿지에서 변경 발생 시 실시간 동기화
@@ -10474,21 +10670,27 @@ ${link}
     }
 
     function resetGamesDataPrompt() {
-      if (!confirm('⚠️ 경고: 모든 참가자의 10초 및 26℃ 미니게임 기록을 전체 초기화하시겠습니까?\n이 작업은 되돌릴 수 없습니다.')) return;
+      requestSuperAdminAuth('⚠️ <strong>[점심 미니게임 참가자 전체 기록 및 도전 횟수 초기화]</strong><br>모든 참가자의 10초 및 26℃ 도전 결과와 <strong>개별 도전 기회(1인 2회 제한)까지 전원 초기화</strong>되어 다시 2회 도전할 수 있게 됩니다. 이 작업은 되돌릴 수 없습니다.', async () => {
+        // 1) resetAt 타임스탬프를 갱신하여 모든 모바일 참가자의 도전 기회(userRecords)까지 전체 리셋 전파
+        const cfg = (window.HVAC && window.HVAC.getGameConfig) ? window.HVAC.getGameConfig() : {};
+        cfg.resetAt = Date.now();
+        if (window.HVAC && window.HVAC.saveGameConfig) {
+          window.HVAC.saveGameConfig(cfg);
+        } else {
+          localStorage.setItem('hvac_game_config', JSON.stringify(cfg));
+          window.dispatchEvent(new StorageEvent('storage', { key: 'hvac_game_config' }));
+        }
 
-      if (window.HVAC && window.HVAC.cloud && window.HVAC.cloud.resetGames) {
-        window.HVAC.cloud.resetGames().then(() => {
-          cachedGameSubmissions = [];
-          localStorage.removeItem('hvac_game_submissions');
-          renderGamesTab();
-          showToast('🗑️ 모든 미니게임 기록이 초기화되었습니다.');
-        });
-      } else {
+        // 2) 로컬 및 클라우드 제출 기록 전체 삭제
+        localStorage.removeItem('hvac_lunch_game_records');
+        if (window.HVAC && window.HVAC.cloud && window.HVAC.cloud.resetGames) {
+          await window.HVAC.cloud.resetGames();
+        }
         cachedGameSubmissions = [];
         localStorage.removeItem('hvac_game_submissions');
         renderGamesTab();
-        showToast('🗑️ 로컬 미니게임 기록이 초기화되었습니다.');
-      }
+        showToast('🗑️ 모든 참가자의 미니게임 기록 및 도전 횟수가 전체 초기화되었습니다!');
+      });
     }
 
     // 미니게임 클라우드 이벤트 리스너 등록

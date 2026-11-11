@@ -846,6 +846,9 @@
         }
       } catch (e) {}
 
+      // 관리자에 의한 전역 기록 초기화 여부 확인
+      checkAdminResetStatus();
+
       updateUserHeader();
       renderRecordsUI();
       if (!currentUser.name) {
@@ -853,7 +856,26 @@
       }
     }
 
+    // 🔄 관리자에 의한 전역 기록 초기화 감지 시 모든 참가자의 로컬 도전 기회(2회) 및 기록 리셋
+    function checkAdminResetStatus() {
+      try {
+        const cfg = (window.HVAC && window.HVAC.getGameConfig) ? window.HVAC.getGameConfig() : {};
+        const remoteResetAt = cfg.resetAt || 0;
+        const localResetAt = userRecords.resetAt || 0;
+        if (remoteResetAt > 0 && remoteResetAt > localResetAt) {
+          userRecords = {
+            resetAt: remoteResetAt,
+            game10s: { tries: [], bestTime: null, bestDiff: null, isPerfect: false },
+            game26c: { tries: [], bestTemp: null, bestDiff: null, isPerfect: false }
+          };
+          localStorage.setItem(STORAGE_KEY_RECORDS, JSON.stringify(userRecords));
+          renderRecordsUI();
+        }
+      } catch (e) {}
+    }
+
     function checkGameLockStatus() {
+      checkAdminResetStatus();
       const cfg = (window.HVAC && window.HVAC.getGameConfig) ? window.HVAC.getGameConfig() : { enabled: false, lockMessage: '' };
       const overlay = document.getElementById('gameLockOverlay');
       const msgEl = document.getElementById('lockOverlayMessage');
@@ -1458,10 +1480,23 @@
       checkGameLockStatus();
       setTimeout(loadMiniLeaderboard, 600);
       setInterval(loadMiniLeaderboard, 10000); // 10초마다 갱신
-      setInterval(checkGameLockStatus, 3000); // 3초마다 관리자 오픈 여부 실시간 확인
-      window.addEventListener('hvac:config-updated', checkGameLockStatus);
+      setInterval(() => {
+        checkGameLockStatus();
+        checkAdminResetStatus();
+      }, 3000); // 3초마다 관리자 오픈 여부 및 기록 리셋 실시간 확인
+      window.addEventListener('hvac:config-updated', () => {
+        checkGameLockStatus();
+        checkAdminResetStatus();
+      });
+      window.addEventListener('hvac:games-updated', () => {
+        checkAdminResetStatus();
+        loadMiniLeaderboard();
+      });
       window.addEventListener('storage', (e) => {
-        if (e.key === 'hvac_game_config') checkGameLockStatus();
+        if (e.key === 'hvac_game_config') {
+          checkGameLockStatus();
+          checkAdminResetStatus();
+        }
       });
     });
   </script>

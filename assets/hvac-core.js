@@ -788,7 +788,8 @@
   var DEFAULT_GAME_CONFIG = {
     enabled: false,
     lockMessage: '점심시간 미니게임은 12:30 오찬 시간에 맞춰 공식 오픈됩니다. 잠시 후 참여해 주세요!',
-    openedAt: null
+    openedAt: null,
+    resetAt: 0
   };
 
   function getGameConfig() {
