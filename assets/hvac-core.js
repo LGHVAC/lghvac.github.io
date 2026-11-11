@@ -1346,7 +1346,126 @@
     return payload;
   }
 
+  // =========================================================
+  // 커스텀 프리미엄 알림 모달 (브라우저 기본 alert의 'domain says' 제거 및 UI 고급화)
+  // =========================================================
+  var _nativeAlert = typeof window !== 'undefined' ? window.alert : null;
+
+  function showCustomAlert(message, customTitle, onConfirm) {
+    if (typeof document === 'undefined') return;
+    var text = String(message || '');
+    var title = customTitle || '2026 HVAC Expert Seminar';
+
+    // 메시지 첫 줄이 제목 형태(예: '📋 ...' 또는 '📢 ...')로 전달된 경우 자동 파싱 분리
+    if (!customTitle && text.indexOf('\n\n') > 0) {
+      var parts = text.split('\n\n');
+      var candidate = parts[0].trim();
+      if (candidate.length <= 40 && (candidate.indexOf('안내') >= 0 || candidate.indexOf('알림') >= 0 || candidate.indexOf('Q&A') >= 0 || candidate.indexOf('📋') >= 0 || candidate.indexOf('📢') >= 0 || candidate.indexOf('⚠️') >= 0 || candidate.indexOf('🎉') >= 0)) {
+        title = candidate;
+        text = parts.slice(1).join('\n\n').trim();
+      }
+    }
+
+    var existing = document.getElementById('hvacCustomAlertBackdrop');
+    if (existing) existing.remove();
+
+    var styleId = 'hvacCustomAlertStyle';
+    if (!document.getElementById(styleId)) {
+      var st = document.createElement('style');
+      st.id = styleId;
+      st.textContent =
+        '.hvac-alert-backdrop { position: fixed; inset: 0; z-index: 2147483640; background: rgba(0,0,0,0.78); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; padding: 20px; animation: hvacAlertFadeIn 0.2s ease-out; font-family: -apple-system, BlinkMacSystemFont, "Pretendard", "Segoe UI", Roboto, sans-serif; }\n' +
+        '@keyframes hvacAlertFadeIn { from { opacity: 0; } to { opacity: 1; } }\n' +
+        '@keyframes hvacAlertZoomIn { from { transform: scale(0.92); opacity: 0; } to { transform: scale(1); opacity: 1; } }\n' +
+        '.hvac-alert-card { background: #0e121a; border: 1px solid rgba(243, 196, 72, 0.35); box-shadow: 0 20px 50px rgba(0,0,0,0.65), 0 0 35px rgba(243, 196, 72, 0.12); border-radius: 20px; width: 100%; max-width: 390px; padding: 24px 20px 20px; text-align: left; animation: hvacAlertZoomIn 0.22s cubic-bezier(0.175, 0.885, 0.32, 1.275); color: #f3f4f6; box-sizing: border-box; }\n' +
+        '.hvac-alert-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }\n' +
+        '.hvac-alert-badge { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 800; padding: 3px 10px; border-radius: 99px; background: rgba(243,196,72,0.18); color: #f3c448; border: 1px solid rgba(243,196,72,0.35); letter-spacing: -0.01em; }\n' +
+        '.hvac-alert-close-x { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: rgba(255,255,255,0.7); width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; cursor: pointer; line-height: 1; transition: all 0.15s; }\n' +
+        '.hvac-alert-close-x:hover { background: rgba(255,255,255,0.18); color: #fff; }\n' +
+        '.hvac-alert-title { font-size: 18px; font-weight: 900; color: #fff; margin: 0 0 12px; line-height: 1.38; letter-spacing: -0.02em; }\n' +
+        '.hvac-alert-body { font-size: 13.5px; color: rgba(255, 255, 255, 0.82); line-height: 1.6; margin: 0 0 20px; white-space: pre-line; word-break: keep-all; }\n' +
+        '.hvac-alert-btn { width: 100%; height: 46px; background: linear-gradient(135deg, #f3c448 0%, #e5b338 100%); border: none; color: #050808; font-weight: 900; font-size: 14.5px; border-radius: 12px; cursor: pointer; box-shadow: 0 4px 16px rgba(243, 196, 72, 0.35); display: flex; align-items: center; justify-content: center; transition: transform 0.15s, opacity 0.15s; }\n' +
+        '.hvac-alert-btn:active { transform: scale(0.98); opacity: 0.9; }\n';
+      document.head.appendChild(st);
+    }
+
+    var backdrop = document.createElement('div');
+    backdrop.id = 'hvacCustomAlertBackdrop';
+    backdrop.className = 'hvac-alert-backdrop';
+    backdrop.setAttribute('role', 'dialog');
+    backdrop.setAttribute('aria-modal', 'true');
+
+    var card = document.createElement('div');
+    card.className = 'hvac-alert-card';
+
+    var topRow = document.createElement('div');
+    topRow.className = 'hvac-alert-top';
+    topRow.innerHTML =
+      '<span class="hvac-alert-badge">🔔 2026 HVAC SEMINAR</span>' +
+      '<button type="button" class="hvac-alert-close-x" aria-label="닫기">✕</button>';
+
+    var titleEl = document.createElement('h3');
+    titleEl.className = 'hvac-alert-title';
+    titleEl.textContent = title;
+
+    var bodyEl = document.createElement('div');
+    bodyEl.className = 'hvac-alert-body';
+    bodyEl.textContent = text;
+
+    var btnConfirm = document.createElement('button');
+    btnConfirm.type = 'button';
+    btnConfirm.className = 'hvac-alert-btn';
+    btnConfirm.textContent = '확인';
+
+    function closeAlert() {
+      backdrop.remove();
+      document.removeEventListener('keydown', onKeyDown);
+      if (typeof onConfirm === 'function') {
+        try { onConfirm(); } catch (e) {}
+      }
+    }
+
+    function onKeyDown(e) {
+      if (e.key === 'Escape' || e.key === 'Enter') {
+        closeAlert();
+      }
+    }
+
+    topRow.querySelector('.hvac-alert-close-x').addEventListener('click', closeAlert);
+    btnConfirm.addEventListener('click', closeAlert);
+    backdrop.addEventListener('click', function (e) {
+      if (e.target === backdrop) closeAlert();
+    });
+    document.addEventListener('keydown', onKeyDown);
+
+    card.appendChild(topRow);
+    card.appendChild(titleEl);
+    card.appendChild(bodyEl);
+    card.appendChild(btnConfirm);
+    backdrop.appendChild(card);
+
+    if (document.body) {
+      document.body.appendChild(backdrop);
+    } else {
+      document.addEventListener('DOMContentLoaded', function () {
+        document.body.appendChild(backdrop);
+      });
+    }
+    setTimeout(function () {
+      try { btnConfirm.focus(); } catch (e) {}
+    }, 50);
+  }
+
+  // 글로벌 window.alert를 커스텀 다크골드 모달로 바인딩
+  if (typeof window !== 'undefined') {
+    window._nativeAlert = _nativeAlert;
+    window.alert = function (message, title) {
+      showCustomAlert(message, title);
+    };
+  }
+
   window.HVAC = {
+    alert: showCustomAlert,
     buildPublishedConfig: buildPublishedConfig,
     CONFIG_KEYS: CONFIG_KEYS,
     read: read,
