@@ -1515,13 +1515,13 @@
                 type="text"
                 id="inputEmail"
                 class="app-input"
-                placeholder="아이디만 입력 (@lge.com 제외)"
+                placeholder="이메일 아이디 입력 (@lge.com 제외)"
                 autocomplete="off"
                 inputmode="email"
               >
             </div>
             <small style="display: block; margin-top: 6px; font-size: 11.5px; color: rgba(255, 255, 255, 0.6); letter-spacing: -0.01em;">
-              ※ @lge.com 을 제외한 사내 이메일 앞자리 아이디만 입력해 주세요.
+              ※ @lge.com 을 제외한 이메일 아이디만 입력해 주세요. (사외 초청자는 본인 이메일 입력)
             </small>
           </div>
 
@@ -2528,17 +2528,18 @@
     if (inputEmail) {
       inputEmail.addEventListener('input', () => {
         let val = inputEmail.value.trim();
-        if (val.includes('@')) {
-          val = val.split('@')[0].trim();
+        // @lge.com 입력 또는 붙여넣기 시에만 @lge.com 접미사 자동 제거 (사외 이메일 도메인은 온전히 유지)
+        if (val.toLowerCase().endsWith('@lge.com')) {
+          val = val.replace(/@lge\.com$/i, '').trim();
           inputEmail.value = val;
         }
 
         // 사전 등록 Roster 명부와 실시간 매칭하여 이름 자동 채우기
-        const cleanEmail = val.toLowerCase();
+        const cleanEmail = val.toLowerCase().replace(/@lge\.com$/i, '');
         if (cleanEmail.length >= 2) {
           const roster = (window.HVAC && window.HVAC.read && window.HVAC.read('hvac_roster_list'))
             || JSON.parse(localStorage.getItem('hvac_roster_list') || '[]');
-          const matched = roster.find(r => String(r.email || '').toLowerCase().replace('@lge.com', '').trim() === cleanEmail);
+          const matched = roster.find(r => String(r.email || '').toLowerCase().replace(/@lge\.com$/i, '').trim() === cleanEmail);
           if (matched && matched.name && inputName && !inputName.value) {
             inputName.value = matched.name;
           }
