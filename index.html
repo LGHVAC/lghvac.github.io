@@ -1143,57 +1143,6 @@
       min-width: 0;
     }
 
-    .venue-map-card {
-      grid-column: 1 / -1;
-      padding: 30px;
-      border: 1px solid var(--line);
-      border-radius: 18px;
-      background: #08130c;
-    }
-
-    .venue-map-card h2 {
-      font-size: clamp(18px, 4.2vw, 22px);
-      margin: 0 0 16px;
-      color: #fff;
-      display: flex;
-      align-items: baseline;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-
-    .venue-map-card .badge {
-      margin: 0;
-    }
-
-    .venue-map-card .title-sep {
-      color: rgba(255, 255, 255, 0.35);
-      font-weight: 300;
-      font-size: 15px;
-    }
-
-    .venue-map-image-button {
-      display: block;
-      width: 100%;
-      padding: 0;
-      overflow: hidden;
-      background: #fff;
-      border: 0;
-      border-radius: 15px;
-      cursor: zoom-in;
-    }
-
-    .venue-map-image {
-      display: block;
-      width: 100%;
-      height: auto;
-    }
-
-    .venue-map-card p {
-      margin-top: 10px;
-      font-size: 13px;
-      color: var(--muted);
-    }
-
     .map-modal {
       position: fixed;
       inset: 0;
@@ -1256,6 +1205,7 @@
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 22px;
+      align-items: stretch;
     }
 
     .venue-card,
@@ -1264,18 +1214,42 @@
       border: 1px solid var(--line);
       border-radius: 18px;
       background: #08130c;
+      display: flex;
+      flex-direction: column;
     }
 
-    .venue-card h3,
-    .route-card h3 {
-      margin: 0 0 12px;
-      font-size: 25px;
+    .venue-header-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 18px;
+      flex-wrap: wrap;
     }
 
-    .venue-name {
-      margin: 4px 0 18px;
-      font-size: 21px;
-      font-weight: 950;
+    .venue-tag {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4px 10px;
+      border-radius: 6px;
+      background: rgba(34, 197, 94, 0.15);
+      border: 1px solid rgba(34, 197, 94, 0.35);
+      color: #4ade80;
+      font-size: 13px;
+      font-weight: 850;
+      letter-spacing: 0.02em;
+      line-height: 1.2;
+      white-space: nowrap;
+    }
+
+    .venue-name,
+    .route-title {
+      margin: 0;
+      font-size: clamp(18px, 3.5vw, 22px);
+      font-weight: 900;
+      color: #fff;
+      letter-spacing: -0.01em;
+      line-height: 1.35;
     }
 
     .route-list {
@@ -1287,11 +1261,64 @@
       margin-top: 12px;
     }
 
+    .venue-map-preview-wrap {
+      margin-top: 18px;
+    }
+
+    .venue-map-image-button {
+      display: block;
+      width: 100%;
+      padding: 0;
+      overflow: hidden;
+      background: #000;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 14px;
+      cursor: zoom-in;
+      position: relative;
+      transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .venue-map-image-button:hover {
+      transform: translateY(-2px);
+      border-color: rgba(34, 197, 94, 0.45);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+    }
+
+    .venue-map-image {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    .map-zoom-badge {
+      position: absolute;
+      bottom: 10px;
+      right: 10px;
+      padding: 5px 11px;
+      border-radius: 999px;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(6px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #fff;
+      font-size: 11.5px;
+      font-weight: 750;
+      letter-spacing: -0.01em;
+      pointer-events: none;
+    }
+
+    .map-hint {
+      margin: 10px 0 0;
+      font-size: 12.5px;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+
     .venue-map-grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
       gap: 10px;
-      margin-top: 20px;
+      margin-top: auto;
+      padding-top: 22px;
     }
 
     .venue-map-grid .btn-map-nav {
@@ -2137,9 +2164,12 @@
         </div>
 
         <div class="venue-grid">
+          <!-- 1. 장소 & 대중교통/내비게이션 카드 -->
           <article class="venue-card reveal">
-            <h3>행사 장소</h3>
-            <p class="venue-name">국민대학교 본부관 (별관) 학술회의장</p>
+            <div class="venue-header-row">
+              <span class="venue-tag">장소</span>
+              <h3 class="venue-name">국민대학교 본부관 (별관) 학술회의장</h3>
+            </div>
             <ul class="route-list">
               <li>4호선 길음역 3번 출구 → 국민대학교 정문행 버스, 약 10분</li>
               <li>4호선 성신여대입구역 → 국민대학교행 버스, 약 15분</li>
@@ -2161,25 +2191,23 @@
             </div>
           </article>
 
+          <!-- 2. 캠퍼스 이동 동선 & 안내 약도 통합 카드 -->
           <article class="route-card reveal">
-            <h3>행사장 이용 동선</h3>
+            <div class="venue-header-row">
+              <span class="venue-tag" style="background: rgba(59, 130, 246, 0.15); border-color: rgba(59, 130, 246, 0.35); color: #60a5fa;">동선 안내</span>
+              <h3 class="route-title">캠퍼스 도보 동선 &amp; 안내 약도</h3>
+            </div>
             <ul class="route-list">
               <li>국민대학교 정문 → 본부관 별관 1층 대강당 (학술회의장), 도보 약 6분</li>
               <li>본부관 별관 → 법학관 5층 청향 (식당), 도보 약 2~3분</li>
             </ul>
-          </article>
-
-          <!-- 국민대학교 행사장 안내 약도 카드 -->
-          <article class="venue-map-card reveal">
-            <h2>
-              <span>국민대학교 행사장 안내 약도</span>
-              <span class="title-sep">/</span>
-              <span class="badge">CAMPUS ROUTE MAP</span>
-            </h2>
-            <button class="venue-map-image-button" id="openMapModal" type="button" title="약도 크게 보기">
-              <img class="venue-map-image" src="./assets/kookmin-venue-map.png" alt="국민대학교 행사장 안내 약도">
-            </button>
-            <p>🔍 약도를 누르면 크게 보실 수 있습니다.</p>
+            <div class="venue-map-preview-wrap">
+              <button class="venue-map-image-button" id="openMapModal" type="button" title="약도 크게 보기">
+                <img class="venue-map-image" src="./assets/kookmin-venue-map.png" alt="국민대학교 캠퍼스 안내 약도">
+                <span class="map-zoom-badge">🔍 터치하여 크게 보기</span>
+              </button>
+              <p class="map-hint">🔍 약도를 터치(클릭)하시면 고해상도 전체 화면으로 확인하실 수 있습니다.</p>
+            </div>
           </article>
         </div>
       </div>
