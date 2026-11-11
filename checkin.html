@@ -1038,9 +1038,92 @@
       background: rgba(255, 255, 255, 0.04);
       border: 1px solid rgba(255, 255, 255, 0.12);
       border-radius: 16px;
-      padding: 16px;
+      padding: 12px;
       text-align: center;
       margin-bottom: 16px;
+    }
+
+    .venue-map-image-button {
+      display: block;
+      width: 100%;
+      padding: 0;
+      overflow: hidden;
+      background: #ffffff;
+      border: 0;
+      border-radius: 12px;
+      cursor: zoom-in;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .venue-map-image-button:hover,
+    .venue-map-image-button:active {
+      transform: scale(0.99);
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
+    }
+
+    .venue-map-image {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    .map-zoom-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 5000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      background: rgba(0, 0, 0, 0.92);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+
+    .map-zoom-modal.open {
+      display: flex;
+    }
+
+    .map-zoom-modal-dialog {
+      max-width: 100%;
+      max-height: 88vh;
+      overflow: auto;
+      padding: 8px;
+      background: #ffffff;
+      border-radius: 16px;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.9);
+      position: relative;
+    }
+
+    .map-zoom-modal-dialog img {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    .map-zoom-modal-close {
+      position: fixed;
+      top: 18px;
+      right: 18px;
+      width: 44px;
+      height: 44px;
+      border: 0;
+      border-radius: 50%;
+      background: #222226;
+      color: #ffffff;
+      font-size: 24px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 5001;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.6);
+      transition: background 0.2s;
+    }
+
+    .map-zoom-modal-close:hover {
+      background: #333338;
     }
 
     .map-locations-list {
@@ -1831,11 +1914,20 @@
       </p>
 
       <div class="map-schematic-card">
-        <div style="font-size: 32px; margin-bottom: 6px;">🏛️</div>
-        <strong style="font-size: 15px;">국민대학교 캠퍼스 안내도</strong>
-        <small style="color: rgba(255,255,255,0.5); display: block; margin-top: 4px;">
-          정문 → 본부관 학술회의장 (도보 약 6분)
-        </small>
+        <button type="button" id="btnZoomCheckinMap" class="venue-map-image-button" title="약도 크게 보기">
+          <img class="venue-map-image" src="./assets/kookmin-venue-map.png" alt="국민대학교 행사장 안내 약도">
+        </button>
+        <div style="margin-top: 10px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px; padding: 2px 4px; text-align: left;">
+          <div>
+            <strong style="font-size: 14.5px; color: #ffffff; display: block;">국민대학교 캠퍼스 안내도</strong>
+            <small style="color: rgba(255, 255, 255, 0.65); display: block; margin-top: 2px; font-size: 12px;">
+              정문 → 본부관 학술회의장 (도보 약 6분)
+            </small>
+          </div>
+          <span style="font-size: 11.5px; color: #f3c448; background: rgba(243, 196, 72, 0.12); border: 1px solid rgba(243, 196, 72, 0.35); padding: 3px 8px; border-radius: 99px; font-weight: 700;">
+            🔍 탭하여 확대
+          </span>
+        </div>
       </div>
 
       <div class="map-locations-list">
@@ -1891,6 +1983,14 @@
       <div style="text-align: center; font-size: 11px; color: rgba(255, 255, 255, 0.45); padding: 14px 0 4px; border-top: 1px solid rgba(255, 255, 255, 0.08); margin-top: 16px;">
         주최: ES엔지니어링담당 · 운영: ES아카데미팀
       </div>
+    </div>
+  </div>
+
+  <!-- 국민대학교 약도 확대 모달 (체크인 화면) -->
+  <div class="map-zoom-modal" id="checkinMapZoomModal" role="dialog" aria-modal="true" aria-label="국민대학교 행사장 안내 약도 확대">
+    <button class="map-zoom-modal-close" id="btnCloseCheckinMapZoom" type="button" title="닫기">&times;</button>
+    <div class="map-zoom-modal-dialog">
+      <img src="./assets/kookmin-venue-map.png" alt="국민대학교 행사장 안내 약도 확대">
     </div>
   </div>
 
@@ -3077,13 +3177,44 @@
 
     // 약도 모달 열기 / 닫기
     const modalMap = document.getElementById('modalMap');
-    document.getElementById('menuItemMap').addEventListener('click', () => {
-      menuPopover.classList.remove('show');
-      modalMap.classList.add('show');
-    });
-    document.getElementById('btnCloseMap').addEventListener('click', () => {
-      modalMap.classList.remove('show');
-    });
+    if (document.getElementById('menuItemMap')) {
+      document.getElementById('menuItemMap').addEventListener('click', () => {
+        menuPopover.classList.remove('show');
+        modalMap.classList.add('show');
+      });
+    }
+    if (document.getElementById('btnCloseMap')) {
+      document.getElementById('btnCloseMap').addEventListener('click', () => {
+        modalMap.classList.remove('show');
+      });
+    }
+    if (modalMap) {
+      modalMap.addEventListener('click', (e) => {
+        if (e.target === modalMap) modalMap.classList.remove('show');
+      });
+    }
+
+    // 약도 이미지 확대 라이트박스 모달 연동
+    const btnZoomCheckinMap = document.getElementById('btnZoomCheckinMap');
+    const checkinMapZoomModal = document.getElementById('checkinMapZoomModal');
+    const btnCloseCheckinMapZoom = document.getElementById('btnCloseCheckinMapZoom');
+    if (btnZoomCheckinMap && checkinMapZoomModal) {
+      btnZoomCheckinMap.addEventListener('click', () => {
+        checkinMapZoomModal.classList.add('open');
+      });
+    }
+    if (btnCloseCheckinMapZoom && checkinMapZoomModal) {
+      btnCloseCheckinMapZoom.addEventListener('click', () => {
+        checkinMapZoomModal.classList.remove('open');
+      });
+    }
+    if (checkinMapZoomModal) {
+      checkinMapZoomModal.addEventListener('click', (e) => {
+        if (e.target === checkinMapZoomModal) {
+          checkinMapZoomModal.classList.remove('open');
+        }
+      });
+    }
 
     // 세션별 질문하기 바텀시트 모달 열기 / 닫기
     const modalSessionQna = document.getElementById('modalSessionQna');
