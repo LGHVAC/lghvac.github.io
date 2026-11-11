@@ -3,6 +3,25 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  
+  <!-- 카카오톡 인앱 브라우저 감지 시 스마트폰 기본 브라우저(크롬/사파리)로 즉시 자동 탈출 -->
+  <script>
+    (function () {
+      try {
+        var ua = navigator.userAgent || '';
+        if (/KAKAOTALK/i.test(ua)) {
+          var cur = window.location.href;
+          if (/Android/i.test(ua)) {
+            var raw = cur.replace(/^https?:\/\//i, '');
+            window.location.href = 'intent://' + raw + '#Intent;scheme=https;package=com.android.chrome;end;';
+          } else if (/iPhone|iPad|iPod/i.test(ua)) {
+            window.location.href = 'kakaotalk://web/openExternal?url=' + encodeURIComponent(cur);
+          }
+        }
+      } catch (e) {}
+    })();
+  </script>
+
   <meta name="description" content="2026 HVAC Engineering Expert Seminar 일정, 강사, 카카오톡 채널 및 세션별 안내">
   
   <!-- Open Graph / KakaoTalk 링크 미리보기 설정 -->

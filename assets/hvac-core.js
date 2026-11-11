@@ -18,6 +18,22 @@
 (function () {
   'use strict';
 
+  // -------------------------------------------------------------
+  // 카카오톡 인앱 브라우저 감지 시 스마트폰 기본 외부 브라우저(크롬 / 사파리)로 즉시 자동 탈출
+  // -------------------------------------------------------------
+  try {
+    var _ua = navigator.userAgent || '';
+    if (/KAKAOTALK/i.test(_ua)) {
+      var _curUrl = window.location.href;
+      if (/Android/i.test(_ua)) {
+        var _rawUrl = _curUrl.replace(/^https?:\/\//i, '');
+        window.location.href = 'intent://' + _rawUrl + '#Intent;scheme=https;package=com.android.chrome;end;';
+      } else if (/iPhone|iPad|iPod/i.test(_ua)) {
+        window.location.href = 'kakaotalk://web/openExternal?url=' + encodeURIComponent(_curUrl);
+      }
+    }
+  } catch (e) {}
+
   var CONFIG_KEYS = [
     'hvac_schedule_settings',
     'hvac_theme_settings',
