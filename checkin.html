@@ -1701,13 +1701,13 @@
         🟢 사전 등록 확인
       </div>
       <h3 id="modalConfirmTitle">체크인할까요?</h3>
-      <p class="sub" id="modalConfirmSub">아래 정보로 체크인합니다. 이름을 바꾸려면 수정을 누르세요.</p>
+      <p class="sub" id="modalConfirmSub">아래 정보로 체크인합니다. 정보를 수정하려면 수정을 누르세요.</p>
 
       <div class="field-box">
         <div class="lbl">이메일 아이디</div>
         <div class="val-row">
           <div class="val" id="modalValEmail">test</div>
-          <div class="badge-lock">변경 불가</div>
+          <div class="badge-lock" style="color: rgba(255,255,255,0.65);">변경 가능</div>
         </div>
       </div>
 
@@ -2648,10 +2648,10 @@
       modalConfirm.classList.add('show');
     });
 
-    // 팝업 내 [수정] 클릭 시: 모달 닫고 이름 입력 화면으로 복귀
+    // 팝업 내 [수정] 클릭 시: 모달 닫고 입력 화면으로 복귀
     btnModalEdit.addEventListener('click', () => {
       modalConfirm.classList.remove('show');
-      setTimeout(() => inputName.focus(), 200);
+      setTimeout(() => inputEmail.focus(), 200);
     });
 
     // 순번 당첨 모달 열기 헬퍼 (전체화면 축하 팝업)
