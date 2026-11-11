@@ -796,9 +796,129 @@
     }
 
     .mc-q-card.done {
-      opacity: 0.4;
+      opacity: 0.38;
       border-color: #16241b;
-      text-decoration: line-through;
+      filter: blur(0.4px);
+      text-decoration: none !important;
+      transition: all 0.25s ease;
+    }
+
+    .mc-q-card.done:hover {
+      opacity: 0.75;
+      filter: none;
+    }
+
+    .mc-q-card.is-new {
+      border-color: rgba(16, 185, 129, 0.7);
+      box-shadow: 0 0 25px rgba(16, 185, 129, 0.25);
+      animation: mcNewPulse 2s ease infinite alternate;
+    }
+
+    @keyframes mcNewPulse {
+      0% { border-color: rgba(16, 185, 129, 0.4); box-shadow: 0 0 15px rgba(16, 185, 129, 0.15); }
+      100% { border-color: rgba(16, 185, 129, 0.9); box-shadow: 0 0 30px rgba(16, 185, 129, 0.4); }
+    }
+
+    .mc-q-badge.new {
+      background: rgba(16, 185, 129, 0.25);
+      border: 1px solid #10b981;
+      color: #34d399;
+      font-weight: 900;
+      animation: mcBadgePulse 1.5s infinite alternate;
+    }
+
+    @keyframes mcBadgePulse {
+      0% { transform: scale(0.97); }
+      100% { transform: scale(1.04); }
+    }
+
+    /* 사회자 실시간 정렬 및 제어 툴바 */
+    .mc-sort-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 20px;
+      padding: 12px 18px;
+      background: rgba(9, 22, 14, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 12px;
+    }
+
+    .mc-live-indicator {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .mc-pulse-dot {
+      width: 9px;
+      height: 9px;
+      background-color: #10b981;
+      border-radius: 50%;
+      box-shadow: 0 0 10px #10b981;
+      animation: mcDotPulse 1.6s infinite;
+    }
+
+    @keyframes mcDotPulse {
+      0% { transform: scale(0.85); opacity: 0.6; }
+      50% { transform: scale(1.25); opacity: 1; }
+      100% { transform: scale(0.85); opacity: 0.6; }
+    }
+
+    .mc-sort-buttons {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .btn-mc-sort {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      color: rgba(255, 255, 255, 0.85);
+      padding: 7px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 750;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.2s ease;
+      user-select: none;
+    }
+
+    .btn-mc-sort:hover {
+      background: rgba(255, 255, 255, 0.16);
+      color: #fff;
+      transform: translateY(-1px);
+    }
+
+    .btn-mc-sort.active {
+      background: rgba(243, 196, 72, 0.18);
+      border-color: #f3c448;
+      color: #fef08a;
+      box-shadow: 0 0 12px rgba(243, 196, 72, 0.25);
+    }
+
+    .btn-mc-refresh {
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      color: #a7f3d0;
+      padding: 7px 13px;
+      border-radius: 8px;
+      font-size: 12.5px;
+      font-weight: 750;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-mc-refresh:hover {
+      background: rgba(16, 185, 129, 0.25);
+      color: #fff;
     }
 
     .mc-q-top {
@@ -2146,7 +2266,7 @@
         </div>
 
         <!-- 세션 탭 필터 (사회자용) -->
-        <div id="mcSessionFilterBar" style="display: flex; gap: 8px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 6px;">
+        <div id="mcSessionFilterBar" style="display: flex; gap: 8px; margin-bottom: 14px; overflow-x: auto; padding-bottom: 6px;">
           <button class="btn-tbl active" id="mcTabAll" data-mc-sess="all" onclick="filterMcSession('all')">전체 세션</button>
           <button class="btn-tbl" id="mcTabK1" data-mc-sess="k1" onclick="filterMcSession('k1')">Keynote 1 주거난방</button>
           <button class="btn-tbl" id="mcTabK2" data-mc-sess="k2" onclick="filterMcSession('k2')">Keynote 2 액체냉각</button>
@@ -2154,6 +2274,37 @@
           <button class="btn-tbl" id="mcTabI1" data-mc-sess="i1" onclick="filterMcSession('i1')">Insight 1 히트펌프</button>
           <button class="btn-tbl" id="mcTabI2" data-mc-sess="i2" onclick="filterMcSession('i2')">Insight 2 에너지</button>
           <button class="btn-tbl" id="mcTabSL" data-mc-sess="sl" onclick="filterMcSession('sl')">Special 과학인문학</button>
+        </div>
+
+        <!-- 사회자 실시간 상태 및 정렬/역정렬 제어 툴바 -->
+        <div class="mc-sort-toolbar" id="mcSortToolbar">
+          <!-- Left: 실시간 상태 및 질문 통계 -->
+          <div class="mc-live-indicator">
+            <span class="mc-pulse-dot"></span>
+            <span style="font-weight: 850; color: #a7f3d0; font-size: 13.5px;">실시간 질문 수신 중</span>
+            <span style="color: rgba(255,255,255,0.35);">|</span>
+            <span id="mcQuestionCountBadge" style="font-size: 13px; color: var(--gold-bright); font-weight: 850;">총 0건</span>
+            <span id="mcNewQuestionAlert" style="display: none; background: rgba(16, 185, 129, 0.25); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.5); font-size: 11.5px; padding: 2px 10px; border-radius: 99px; font-weight: 900;">
+              ✨ 신규 질문 도착!
+            </span>
+          </div>
+
+          <!-- Right: 공감순 / 최신순 정렬 / 역정렬 토글 버튼 -->
+          <div class="mc-sort-buttons">
+            <span style="font-size: 12.5px; color: var(--text-muted); font-weight: 750;">정렬:</span>
+            <button class="btn-mc-sort active" id="btnMcSortLikes" onclick="toggleMcSort('likes')" title="공감순 정렬 (클릭 시 오름차순/내림차순 역정렬)">
+              👍 공감 많은 순 ↓
+            </button>
+            <button class="btn-mc-sort" id="btnMcSortLatest" onclick="toggleMcSort('latest')" title="최신순 정렬 (클릭 시 신규순/등록순 역정렬)">
+              ⏱️ 최신순
+            </button>
+            <button class="btn-mc-sort active" id="btnMcPinStarred" onclick="toggleMcPinStarred()" title="사회자 추천 질문 상단 고정 토글">
+              ⭐ 추천 고정: ON
+            </button>
+            <button class="btn-mc-refresh" onclick="refreshMcData(true)" title="지금 실시간 질문 새로고침">
+              🔄 새로고침
+            </button>
+          </div>
         </div>
 
         <!-- 사회자 카드 목록 -->
@@ -4993,6 +5144,8 @@ const DEFAULT_SCHEDULE_DATA = {
       syncAdminSessionSelectors();
       renderQnaList();
       renderMcCards();
+      updateMcSortUi();
+      startMcAutoSync();
       renderCheckinTable();
       initKakaoPresets();
       loadSiteLinks();
@@ -5111,7 +5264,10 @@ const DEFAULT_SCHEDULE_DATA = {
       document.querySelectorAll('.tab-panel').forEach(panel => {
         panel.classList.toggle('active', panel.id === tabId);
       });
-      if (tabId === 'tabMc') renderMcCards();
+      if (tabId === 'tabMc') {
+        renderMcCards();
+        refreshMcData(false);
+      }
       if (tabId === 'tabDraw') renderDrawTab();
       if (tabId === 'tabSchedule') renderScheduleTab();
       if (tabId === 'tabQuiz' && typeof renderQuizTab === 'function') renderQuizTab();
@@ -5321,8 +5477,97 @@ const DEFAULT_SCHEDULE_DATA = {
     }
 
     // =========================================================
-    // 5. [TAB 2] 사회자(MC) 모더레이터 전용 뷰
+    // 5. [TAB 2] 사회자(MC) 모더레이터 전용 뷰 (실시간 리더보드형 수신 & 정렬 제어)
     // =========================================================
+    let mcSortKey = 'likes'; // 'likes' | 'latest'
+    let mcSortOrder = 'desc'; // 'desc' | 'asc'
+    let mcPinStarred = true; // 사회자 추천 질문 상단 고정 여부
+    let mcAutoPollTimer = null;
+
+    function toggleMcSort(key) {
+      if (mcSortKey === key) {
+        mcSortOrder = (mcSortOrder === 'desc') ? 'asc' : 'desc';
+      } else {
+        mcSortKey = key;
+        mcSortOrder = 'desc';
+      }
+      updateMcSortUi();
+      renderMcCards();
+    }
+
+    function toggleMcPinStarred() {
+      mcPinStarred = !mcPinStarred;
+      updateMcSortUi();
+      renderMcCards();
+    }
+
+    function updateMcSortUi() {
+      const btnLikes = document.getElementById('btnMcSortLikes');
+      const btnLatest = document.getElementById('btnMcSortLatest');
+      const btnPin = document.getElementById('btnMcPinStarred');
+
+      if (btnLikes) {
+        btnLikes.classList.toggle('active', mcSortKey === 'likes');
+        if (mcSortKey === 'likes') {
+          btnLikes.innerHTML = mcSortOrder === 'desc' ? '👍 공감 많은 순 ↓' : '👍 공감 적은 순 ↑';
+        } else {
+          btnLikes.innerHTML = '👍 공감순';
+        }
+      }
+
+      if (btnLatest) {
+        btnLatest.classList.toggle('active', mcSortKey === 'latest');
+        if (mcSortKey === 'latest') {
+          btnLatest.innerHTML = mcSortOrder === 'desc' ? '⏱️ 최신순 (신규 먼저) ↓' : '⏱️ 등록순 (과거 먼저) ↑';
+        } else {
+          btnLatest.innerHTML = '⏱️ 최신순';
+        }
+      }
+
+      if (btnPin) {
+        btnPin.classList.toggle('active', mcPinStarred);
+        btnPin.innerHTML = `⭐ 추천 고정: ${mcPinStarred ? 'ON' : 'OFF'}`;
+      }
+    }
+
+    function refreshMcData(showToastMsg) {
+      try {
+        const raw = localStorage.getItem('hvac_qna_list');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) {
+            const prevCount = qnaList.length;
+            const prevMaxId = qnaList.reduce((max, q) => Math.max(max, q.id || 0), 0);
+            const newMaxId = parsed.reduce((max, q) => Math.max(max, q.id || 0), 0);
+
+            // 새 질문 도착 감지 시 배지 및 토스트 표시
+            if (parsed.length > prevCount && prevCount > 0 && newMaxId > prevMaxId) {
+              const alertEl = document.getElementById('mcNewQuestionAlert');
+              if (alertEl) {
+                alertEl.style.display = 'inline-block';
+                setTimeout(() => { if (alertEl) alertEl.style.display = 'none'; }, 4000);
+              }
+              showToast('🔔 신규 질문이 실시간으로 수신되었습니다!');
+            }
+
+            qnaList = parsed;
+            renderMcCards();
+            updateAllStats();
+            if (showToastMsg) showToast('🔄 실시간 질문 목록이 최신 상태로 갱신되었습니다.');
+          }
+        }
+      } catch (e) {}
+    }
+
+    function startMcAutoSync() {
+      if (mcAutoPollTimer) clearInterval(mcAutoPollTimer);
+      mcAutoPollTimer = setInterval(() => {
+        if (activeTab === 'tabMc') {
+          refreshMcData(false);
+        }
+      }, 2500); // 2.5초 주기로 실시간 수신 체크
+    }
+
     function filterMcSession(sess) {
       mcFilter = sess;
       const mcBarEl = document.getElementById('mcSessionFilterBar');
@@ -5336,48 +5581,82 @@ const DEFAULT_SCHEDULE_DATA = {
 
     function renderMcCards() {
       const container = document.getElementById('mcCardsGrid');
+      if (!container) return;
+
       let filtered = qnaList.filter(q => {
         const qNorm = normalizeQnaSessionKey(q);
         return mcFilter === 'all' || qNorm === mcFilter || q.session === mcFilter;
       });
 
-      // 정렬 우선순위: 채택된 질문(isStarred) 먼저, 그 다음 공감수 많은 순
+      // 공감순 / 최신순 / 정렬 / 역정렬 엔진
       filtered.sort((a, b) => {
-        if (a.isStarred && !b.isStarred) return -1;
-        if (!a.isStarred && b.isStarred) return 1;
-        return (b.likes || 0) - (a.likes || 0);
+        // 1) 사회자 추천(채택) 질문 상단 고정 옵션
+        if (mcPinStarred) {
+          if (a.isStarred && !b.isStarred) return -1;
+          if (!a.isStarred && b.isStarred) return 1;
+        }
+
+        // 2) 선택된 기준 정렬
+        if (mcSortKey === 'likes') {
+          const diff = Number(b.likes || 0) - Number(a.likes || 0);
+          if (diff !== 0) {
+            return mcSortOrder === 'desc' ? diff : -diff;
+          }
+          return Number(b.id || 0) - Number(a.id || 0);
+        } else {
+          // 최신순 (id/타임스탬프 기준)
+          const diff = Number(b.id || 0) - Number(a.id || 0);
+          return mcSortOrder === 'desc' ? diff : -diff;
+        }
       });
+
+      // 총 질문 수 배지 갱신
+      const countEl = document.getElementById('mcQuestionCountBadge');
+      if (countEl) {
+        countEl.textContent = `총 ${filtered.length}건`;
+      }
 
       if (filtered.length === 0) {
         container.innerHTML = `
-          <div style="text-align: center; padding: 60px 20px; color: var(--text-muted);">
+          <div style="text-align: center; padding: 60px 20px; color: var(--text-muted); background: rgba(9, 22, 14, 0.45); border-radius: 16px; border: 1px dashed rgba(255,255,255,0.15);">
             <div style="font-size: 40px; margin-bottom: 12px;">✋</div>
             <div style="font-size: 18px; font-weight: 800; color: #fff;">현재 진행할 질문이 없습니다.</div>
-            <div style="font-size: 14px; margin-top: 6px;">[Q&A 관리] 탭에서 질문을 채택(⭐)해 보세요.</div>
+            <div style="font-size: 14px; margin-top: 6px;">참석자가 등록한 실시간 질문이 수신되면 자동으로 이곳에 표시됩니다.</div>
           </div>
         `;
         return;
       }
 
-      container.innerHTML = filtered.map((q, idx) => `
-        <div class="mc-q-card ${q.isStarred ? 'vip' : ''} ${q.isAnswered ? 'done' : ''}">
-          <div class="mc-q-top">
-            <span class="mc-q-badge">${q.isStarred ? '⭐ 사회자 추천 질문' : '일반 질문'} · ${q.sessionName}</span>
-            <span style="font-size: 14px; font-weight: 900; color: var(--gold-bright);">👍 공감 ${q.likes || 0}</span>
-          </div>
+      // 최근 5분 이내 신규 등록된 질문 감지
+      const fiveMinAgo = Date.now() - 5 * 60 * 1000;
 
-          <div class="mc-q-body">
-            "${escapeHtml(q.content)}"
-          </div>
+      container.innerHTML = filtered.map((q, idx) => {
+        const isRecent = (q.id && q.id > fiveMinAgo);
+        const newBadgeHtml = isRecent ? `<span class="mc-q-badge new">✨ NEW 신규</span>` : '';
 
-          <div class="mc-q-footer">
-            <span>질문자: <strong>${escapeHtml(q.author)}</strong> (${q.time})</span>
-            <button class="btn-mc-ask ${q.isAnswered ? 'done' : ''}" onclick="toggleAnsweredQna(${q.id})">
-              ${q.isAnswered ? '✔️ 질문 완료됨' : '🎙️ 이 질문 진행하기'}
-            </button>
+        return `
+          <div class="mc-q-card ${q.isStarred ? 'vip' : ''} ${q.isAnswered ? 'done' : ''} ${isRecent ? 'is-new' : ''}">
+            <div class="mc-q-top">
+              <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                ${newBadgeHtml}
+                <span class="mc-q-badge">${q.isStarred ? '⭐ 사회자 추천 질문' : '일반 질문'} · ${escapeHtml(q.sessionName || '')}</span>
+              </div>
+              <span style="font-size: 14px; font-weight: 900; color: var(--gold-bright);">👍 공감 ${q.likes || 0}</span>
+            </div>
+
+            <div class="mc-q-body">
+              "${escapeHtml(q.content)}"
+            </div>
+
+            <div class="mc-q-footer">
+              <span>질문자: <strong>${escapeHtml(q.author)}</strong> (${escapeHtml(q.time || '')})</span>
+              <button class="btn-mc-ask ${q.isAnswered ? 'done' : ''}" onclick="toggleAnsweredQna(${q.id})">
+                ${q.isAnswered ? '✔️ 질문 완료됨' : '🎙️ 이 질문 진행하기'}
+              </button>
+            </div>
           </div>
-        </div>
-      `).join('');
+        `;
+      }).join('');
     }
 
     // 사회자 타이머
