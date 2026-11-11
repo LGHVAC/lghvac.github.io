@@ -1794,10 +1794,16 @@
         ></textarea>
 
         <div class="qna-meta-row">
-          <div class="qna-user-tag">
-            <span style="font-size: 13px;">👤</span>
-            <strong id="modalQnaAuthorName" style="color: #fff; font-weight: 700;">홍길동</strong>
-            <span class="qna-realname-badge" style="font-size: 11px; color: #4ade80; background: rgba(34, 197, 94, 0.15); border: 1px solid rgba(34, 197, 94, 0.3); border-radius: 4px; padding: 2px 6px; font-weight: 700;">실명 질문</span>
+          <div class="qna-user-tag" style="display: flex; align-items: center; gap: 8px;">
+            <div style="display: flex; align-items: center; gap: 4px;">
+              <span style="font-size: 13px;">👤</span>
+              <strong id="modalQnaAuthorName" style="color: #fff; font-weight: 700;">홍길동</strong>
+            </div>
+            <label class="checkbox-anon" id="modalSessionAnonLabel" style="display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: rgba(255,255,255,0.7); background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); padding: 3px 8px; border-radius: 6px; cursor: pointer; user-select: none;" title="클릭 시 실명제 안내">
+              <input type="checkbox" id="modalSessionAnonCheck" disabled style="cursor: pointer; pointer-events: none; accent-color: #64748b;" />
+              <span>익명 질문</span>
+              <span style="font-size: 9.5px; color: #f87171; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); padding: 0 4px; border-radius: 3px; font-weight: 700;">불가</span>
+            </label>
           </div>
           <button class="btn-send-qna" id="btnSubmitSessionQna" type="button">질문 등록</button>
         </div>
@@ -3101,6 +3107,27 @@
       modalSessionQna.classList.remove('show');
     });
 
+    // 세션 Q&A 익명 체크박스 클릭 핸들러 및 실명제 안내 팝업
+    function handleSessionAnonNotice(e) {
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+      const check = document.getElementById('modalSessionAnonCheck');
+      if (check) check.checked = false;
+      alert('📢 이번 강연의 Q&A는 실명으로 진행됩니다.\n\n원활하고 신뢰성 있는 질의응답을 위해 체크인하신 참석자 실명으로 등록됩니다.');
+    }
+
+    const modalSessionAnonLabel = document.getElementById('modalSessionAnonLabel');
+    if (modalSessionAnonLabel) {
+      modalSessionAnonLabel.addEventListener('click', handleSessionAnonNotice);
+    }
+    const modalSessionAnonCheck = document.getElementById('modalSessionAnonCheck');
+    if (modalSessionAnonCheck) {
+      modalSessionAnonCheck.addEventListener('click', handleSessionAnonNotice);
+      modalSessionAnonCheck.addEventListener('change', handleSessionAnonNotice);
+    }
+
     // 현재 세션 질문 제출 (qna.html & admin.html 실시간 보드와 100% 호환 연동)
     function resolveQnaSessionKey(s, idx) {
       if (!s) return 'all';
@@ -3126,6 +3153,11 @@
       const author = (modalQnaAuthorName.textContent && modalQnaAuthorName.textContent.trim() !== '참가자')
         ? modalQnaAuthorName.textContent.trim()
         : ((window.currentUser && window.currentUser.name) ? window.currentUser.name : (document.getElementById('menuUserName')?.textContent || '참가자'));
+
+      if (!author || author === '익명' || author.includes('익명')) {
+        alert('📢 이번 강연의 Q&A는 실명으로 진행됩니다.\n체크인된 성명으로 질문을 등록해 주세요.');
+        return;
+      }
       const now = new Date();
       const timeStr = now.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
       const qSessionKey = resolveQnaSessionKey(s, currentIdx);

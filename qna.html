@@ -683,9 +683,11 @@
       <div class="ask-row-bottom">
         <div class="ask-meta-input">
           <input type="text" class="input-author" id="askAuthor" placeholder="성명 및 직급 (실명 필수)" />
-          <span class="badge-realname-lock" id="labelAnon" style="font-size: 11.5px; color: #4ade80; background: rgba(34, 197, 94, 0.15); border: 1px solid rgba(34, 197, 94, 0.35); padding: 7px 11px; border-radius: 8px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px; cursor: default;" title="2026 HVAC 세미나는 실명제로 운영됩니다">
-            🔒 실명 질문 (익명 불가)
-          </span>
+          <label class="checkbox-anon" id="labelAnon" style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer; user-select: none; font-size: 12px; color: rgba(255, 255, 255, 0.7); background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.15); padding: 7px 11px; border-radius: 8px; transition: background 0.2s;" title="클릭 시 실명제 안내">
+            <input type="checkbox" id="checkAnon" disabled style="cursor: pointer; pointer-events: none; accent-color: #64748b;" />
+            <span>익명 질문</span>
+            <span style="font-size: 10px; color: #f87171; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); padding: 1px 5px; border-radius: 4px; font-weight: 700;">불가</span>
+          </label>
         </div>
         <button class="btn-submit-q" id="btnSubmitQ" type="button">질문 등록</button>
       </div>
@@ -994,15 +996,27 @@
       });
     });
 
-    // 실명제 안내 뱃지 알림
+    // 익명 체크박스 클릭 핸들러 및 실명제 안내 팝업
     const inputAuthor = document.getElementById('askAuthor');
     const labelAnon = document.getElementById('labelAnon');
+    const checkAnon = document.getElementById('checkAnon');
+
+    function handleAnonNotice(e) {
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+      if (checkAnon) checkAnon.checked = false;
+      alert('📢 Q&A 실명제 안내\n\n이번 강연의 Q&A는 실명으로 진행됩니다.\n\n참석자 간의 신뢰성 있는 질의응답을 위해 모든 질문은 로그인한 실명(이름/직급)으로 등록됩니다.');
+      showToast('📢 이번 강연의 Q&A는 실명으로 진행됩니다.');
+    }
 
     if (labelAnon) {
-      labelAnon.addEventListener('click', (e) => {
-        e.preventDefault();
-        showToast('📢 이번 2026 HVAC 세미나의 모든 Q&A는 로그인한 실명으로 진행되며, 익명 질문은 지원되지 않습니다.');
-      });
+      labelAnon.addEventListener('click', handleAnonNotice);
+    }
+    if (checkAnon) {
+      checkAnon.addEventListener('click', handleAnonNotice);
+      checkAnon.addEventListener('change', handleAnonNotice);
     }
 
     // 질문 등록 버튼
@@ -1024,7 +1038,8 @@
       }
 
       if (!author || author === '익명' || author === '익명 참가자' || author.includes('익명')) {
-        showToast('⚠️ 성명(실명/직급)을 입력해 주세요. (모든 Q&A는 로그인 실명으로 진행됩니다)');
+        alert('📢 이번 강연의 Q&A는 실명으로 진행됩니다.\n성명 및 직급을 실명으로 입력해 주세요.');
+        showToast('⚠️ 이번 강연의 Q&A는 실명으로 진행됩니다.');
         document.getElementById('askAuthor').focus();
         return;
       }
