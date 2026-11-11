@@ -170,6 +170,11 @@
       (cfg.linkUrl && cfg.linkUrl.indexOf('quiz.html') >= 0) ||
       (cfg.text && (cfg.text.indexOf('퀴즈') >= 0 || cfg.text.indexOf('Quiz') >= 0)));
 
+    // 0) 체크인 전 메인 페이지(index)에서는 퀴즈 알림 팝업 배너 미표출
+    if (isQuizAlert && pageId() === 'index' && !read('hvac_user_checked')) {
+      return;
+    }
+
     var now = Date.now();
 
     // 1) 발송 시점 기준 만료 검사 (Global Expiration):
