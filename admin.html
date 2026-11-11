@@ -2739,13 +2739,13 @@
         </div>
       </div>
 
-      <!-- 0. 🎯 세션별 퀴즈 순차 공개 & 카톡 공지 제어기 (NEW) -->
+      <!-- 0. 🎯 세션별 퀴즈 순차 공개 & 공식 채널 공지 제어기 (NEW) -->
       <div class="card" style="margin-bottom: 24px; border: 1px solid rgba(243, 196, 72, 0.4); background: linear-gradient(145deg, #0b1a11, #08120c);">
         <div class="card-header">
           <div>
             <span class="badge" style="background: rgba(243,196,72,0.15); color: #f3c448; border: 1px solid rgba(243,196,72,0.3); font-size: 11px; padding: 3px 8px; border-radius: 999px;">QUIZ RELEASE CONTROLLER</span>
-            <h3 class="card-title" style="margin-top: 6px; color: #fff;">🎯 세션별 퀴즈 순차 공개 &amp; 카카오톡 공지 제어</h3>
-            <p class="card-sub">강연이 종료될 때마다 해당 세션을 <strong>[공개(오픈)]</strong>하고, <strong>[📢 카톡 공지 복사]</strong> 버튼을 눌러 오픈채팅방에 안내 링크를 즉시 송출하세요.</p>
+            <h3 class="card-title" style="margin-top: 6px; color: #fff;">🎯 세션별 퀴즈 순차 공개 &amp; 카카오톡 공식 채널 공지 제어</h3>
+            <p class="card-sub">강연이 종료될 때마다 해당 세션을 <strong>[공개(오픈)]</strong>하고, <strong>[📢 채널 공지 복사]</strong> 버튼을 눌러 카카오톡 공식 채널(@lghvac)에 안내 메시지와 링크를 즉시 송출하세요.</p>
           </div>
           <div style="display: flex; gap: 8px; flex-wrap: wrap;">
             <button class="btn-act primary" onclick="unlockAllQuizSessions()">🔓 전 퀴즈 일괄 오픈 (오프닝+1~5)</button>
@@ -9003,10 +9003,10 @@ ${s3.speaker}님의 '${s3.title}' 세션까지 오전 강연이 모두 종료되
               <button class="btn-tbl ${isOpen ? 'btn-kick' : 'btn-success'}" onclick="toggleQuizSessionRelease(${s.num})" style="flex: 1; padding: 7px 10px; font-weight: 800;">
                 ${isOpen ? '🔒 비공개로 잠금' : '🔓 지금 퀴즈 오픈'}
               </button>
-              <button class="btn-tbl" onclick="copyKakaoQuizNotice(${s.num})" style="background: rgba(254, 229, 0, 0.15); color: #ffd900; border-color: rgba(254, 229, 0, 0.35); font-weight: 800; padding: 7px 10px;" title="카톡 오픈채팅방 공지문 클립보드 복사">
-                📢 카톡 공지 복사
+              <button class="btn-tbl" onclick="copyKakaoQuizNotice(${s.num})" style="background: rgba(254, 229, 0, 0.15); color: #ffd900; border-color: rgba(254, 229, 0, 0.35); font-weight: 800; padding: 7px 10px;" title="카카오톡 공식 채널 알림 메시지 클립보드 복사">
+                📢 채널 공지 복사
               </button>
-              <button class="btn-tbl" onclick="openKakaoChatRoom()" style="padding: 7px 10px;" title="오픈채팅방 바로 열기">
+              <button class="btn-tbl" onclick="openKakaoChannelCenter()" style="padding: 7px 10px;" title="카카오톡 채널 관리자센터 열기">
                 💬
               </button>
             </div>
@@ -9095,35 +9095,38 @@ ${s3.speaker}님의 '${s3.title}' 세션까지 오전 강연이 모두 종료되
 
       let text = '';
       if (sNum === 0) {
-        text = `[📢 2026 HVAC 전문가 세미나 오프닝 아이스브레이킹 퀴즈 안내]
+        text = `[📢 2026 HVAC 전문가 세미나 공식 채널 알림 - 오프닝 퀴즈]
 
-오늘 2026 LG HVAC 전문가 세미나가 개회되었습니다!
-세미나 시작을 알리는 오프닝 아이스브레이킹 퀴즈가 오픈되었으니 지금 바로 도전해보세요!
+반갑습니다! 2026 LG HVAC 엔지니어링 전문가 세미나가 개회되었습니다.
+세미나의 시작을 알리는 오프닝 아이스브레이킹 퀴즈가 오픈되었으니 지금 바로 도전해보세요!
 
-💡 오프닝 퀴즈 풀고 만찬 럭키드로우 경품에 도전하세요!
+💡 오프닝 퀴즈 풀고 만찬 럭키드로우 경품 추첨권에 도전하세요!
 
-👉 오프닝 퀴즈 풀기:
+👉 오프닝 퀴즈 참여하기:
 ${link}
 
-(정답을 맞히시면 경품 추첨권이 부여됩니다!)`;
+(모바일 화면 [메뉴] > [세션 퀴즈]에서도 즉시 참여 가능합니다)
+✓ 카카오톡 공식 채널: @lghvac`;
       } else {
-        text = `[📢 2026 HVAC 전문가 세미나 실시간 퀴즈 안내]
+        text = `[📢 2026 HVAC 전문가 세미나 공식 채널 알림 - 세션 ${sNum} 퀴즈]
 
 방금 [세션 ${sNum}] ${s.speaker}님의
 '${s.title}' 강연이 종료되었습니다!
 
-💡 지금 바로 핵심 퀴즈를 풀고 만찬 럭키드로우 경품에 도전하세요!
+💡 지금 바로 핵심 퀴즈를 풀고 만찬 럭키드로우 경품 추첨권에 도전하세요!
 
-👉 세션 ${sNum} 퀴즈 풀기:
+👉 세션 ${sNum} 퀴즈 참여하기:
 ${link}
 
-(정답을 맞히시면 경품 추첨권이 부여됩니다!)`;
+(정답을 맞히시면 경품 추첨권이 부여됩니다!)
+(모바일 화면 [메뉴] > [세션 퀴즈]에서도 즉시 참여 가능합니다)
+✓ 카카오톡 공식 채널: @lghvac`;
       }
 
       const sName = sNum === 0 ? '오프닝' : `세션 ${sNum}`;
       if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(text).then(() => {
-          showToast(`📢 [${sName}] 카톡 공지문이 복사되었습니다! 카톡창에 바로 붙여넣기(Ctrl+V)하세요.`);
+          showToast(`📢 [${sName}] 공식 채널 공지문이 복사되었습니다! 채널 관리자센터에 바로 붙여넣기(Ctrl+V)하세요.`);
         }).catch(() => {
           copyFallbackText(text, sNum);
         });
@@ -9141,11 +9144,16 @@ ${link}
       ta.select();
       document.execCommand('copy');
       document.body.removeChild(ta);
-      showToast(`📢 [세션 ${sNum}] 카톡 공지문이 복사되었습니다! 카톡창에 바로 붙여넣기(Ctrl+V)하세요.`);
+      const sName = sNum === 0 ? '오프닝' : `세션 ${sNum}`;
+      showToast(`📢 [${sName}] 공식 채널 공지문이 복사되었습니다! 채널 관리자센터에 바로 붙여넣기(Ctrl+V)하세요.`);
+    }
+
+    function openKakaoChannelCenter() {
+      window.open('https://center-pf.kakao.com/', '_blank');
     }
 
     function openKakaoChatRoom() {
-      window.open('https://open.kakao.com/o/gfwiqxVi', '_blank');
+      openKakaoChannelCenter();
     }
 
     
