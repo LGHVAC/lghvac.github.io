@@ -1430,7 +1430,7 @@
     </section>
 
     <!-- =========================================================
-         SCREEN 2: 1단계 - 이메일 아이디 입력 (스크린샷 2와 100% 동일)
+         SCREEN 2: 1단계 - 현장 인증 비밀번호 입력 (숫자 4자리)
     ========================================================= -->
     <section class="screen" id="screenStep1">
       <div>
@@ -1445,21 +1445,36 @@
         </div>
 
         <div class="form-body">
-          <h2 class="form-title">이메일 아이디</h2>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <h2 class="form-title" style="margin-bottom: 0;">현장 인증 비밀번호</h2>
+            <span style="font-size: 11px; color: #f3c448; background: rgba(243,196,72,0.15); border: 1px solid rgba(243,196,72,0.3); padding: 2px 8px; border-radius: 99px; font-weight: 700;">당일 현장 표출</span>
+          </div>
+          <p style="font-size: 13px; color: rgba(255, 255, 255, 0.7); margin: 0 0 16px; line-height: 1.45;">
+            학술회의장 및 로비에 공개된 4자리 현장 암호를 입력해 주세요.
+          </p>
+
           <div class="input-wrapper">
             <input
-              type="text"
-              id="inputEmail"
+              type="password"
+              id="inputPin"
               class="app-input"
-              placeholder="아이디만 입력 (@lge.com 제외)"
+              placeholder="4자리 숫자 입력"
+              inputmode="numeric"
+              pattern="[0-9]*"
+              maxlength="4"
               autocomplete="off"
-              inputmode="email"
+              style="letter-spacing: 8px; font-size: 22px; font-weight: 800; text-align: center;"
               autofocus
             >
           </div>
-          <small style="display: block; margin-top: 8px; font-size: 12px; color: rgba(255, 255, 255, 0.65); letter-spacing: -0.01em;">
-            ※ @lge.com 을 제외한 사내 이메일 앞자리 아이디만 입력해 주세요.
-          </small>
+
+          <div style="margin-top: 12px; padding: 12px 14px; border-radius: 12px; background: rgba(243, 196, 72, 0.08); border: 1px solid rgba(243, 196, 72, 0.25); font-size: 12px; color: rgba(255, 255, 255, 0.88); line-height: 1.55; text-align: left;">
+            💡 <strong>비밀번호 안내:</strong> 세미나 당일 <strong>행사장 1층 로비 운영데스크</strong> 또는 <strong>학술회의장 메인 스크린 화면</strong>에 표출된 4자리 번호를 확인하신 후 입력해 주세요.
+          </div>
+
+          <div id="pinErrorMsg" style="display: none; margin-top: 10px; padding: 10px 14px; border-radius: 10px; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); font-size: 12px; color: #fca5a5; font-weight: 600; line-height: 1.45;">
+            ⚠️ 현장 인증 비밀번호가 일치하지 않습니다. 행사장 로비 운영데스크 또는 학술회의장 화면에 표출된 4자리 정보를 다시 확인해 주세요.
+          </div>
         </div>
       </div>
 
@@ -1471,7 +1486,7 @@
     </section>
 
     <!-- =========================================================
-         SCREEN 3: 2단계 - 이름 & 현장 인증 암호 입력 (숫자 4자리)
+         SCREEN 3: 2단계 - 이메일 아이디 & 성명 입력 (참석자 본인 확인)
     ========================================================= -->
     <section class="screen" id="screenStep2">
       <div>
@@ -1486,56 +1501,53 @@
         </div>
 
         <div class="form-body">
-          <h2 class="form-title">이름 & 현장 인증</h2>
-          <label style="display: block; font-size: 12.5px; font-weight: 700; color: rgba(255,255,255,0.85); margin-bottom: 6px;">
-            참석자 성명
-          </label>
-          <div class="input-wrapper">
-            <input
-              type="text"
-              id="inputName"
-              class="app-input"
-              placeholder="성명 (한글 또는 영문)"
-              autocomplete="name"
-            >
-          </div>
-          <small style="display: block; margin-top: 6px; font-size: 11.5px; color: rgba(255, 255, 255, 0.6); letter-spacing: -0.01em;">
-            ※ 사전 등록 명부의 한글 또는 영문 성명을 입력해 주세요.
-          </small>
+          <h2 class="form-title" style="margin-bottom: 6px;">참석자 본인 확인</h2>
+          <p style="font-size: 13px; color: rgba(255, 255, 255, 0.7); margin: 0 0 16px; line-height: 1.45;">
+            사전 등록 명부 확인을 위해 이메일과 성명을 입력해 주세요.
+          </p>
 
-          <div style="margin-top: 22px; padding-top: 16px; border-top: 1px dashed rgba(255,255,255,0.18);">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-              <label for="inputPin" style="font-size: 13px; font-weight: 700; color: #f3c448; display: flex; align-items: center; gap: 5px;">
-                🔐 현장 인증 비밀번호 (숫자 4자리)
-              </label>
-              <span style="font-size: 11px; color: #f3c448; background: rgba(243,196,72,0.15); border: 1px solid rgba(243,196,72,0.3); padding: 1px 7px; border-radius: 99px; font-weight: 700;">당일 현장 표출</span>
-            </div>
+          <div>
+            <label style="display: block; font-size: 12.5px; font-weight: 700; color: rgba(255,255,255,0.85); margin-bottom: 6px;">
+              이메일 아이디
+            </label>
             <div class="input-wrapper">
               <input
-                type="password"
-                id="inputPin"
+                type="text"
+                id="inputEmail"
                 class="app-input"
-                placeholder="4자리 숫자 입력"
-                inputmode="numeric"
-                pattern="[0-9]*"
-                maxlength="4"
+                placeholder="아이디만 입력 (@lge.com 제외)"
                 autocomplete="off"
-                style="letter-spacing: 8px; font-size: 20px; font-weight: 800; text-align: center;"
+                inputmode="email"
               >
             </div>
-            <div style="margin-top: 8px; padding: 10px 12px; border-radius: 10px; background: rgba(243, 196, 72, 0.08); border: 1px solid rgba(243, 196, 72, 0.22); font-size: 11.5px; color: rgba(255, 255, 255, 0.88); line-height: 1.5; text-align: left;">
-              💡 <strong>비밀번호 안내:</strong> 세미나 당일 <strong>행사장 1층 로비 운영데스크</strong> 또는 <strong>학술회의장 메인 스크린 화면</strong>에 표출된 4자리 번호를 확인하신 후 입력해 주세요.
+            <small style="display: block; margin-top: 6px; font-size: 11.5px; color: rgba(255, 255, 255, 0.6); letter-spacing: -0.01em;">
+              ※ @lge.com 을 제외한 사내 이메일 앞자리 아이디만 입력해 주세요.
+            </small>
+          </div>
+
+          <div style="margin-top: 18px;">
+            <label style="display: block; font-size: 12.5px; font-weight: 700; color: rgba(255,255,255,0.85); margin-bottom: 6px;">
+              참석자 성명
+            </label>
+            <div class="input-wrapper">
+              <input
+                type="text"
+                id="inputName"
+                class="app-input"
+                placeholder="성명 (한글 또는 영문)"
+                autocomplete="name"
+              >
             </div>
-            <div id="pinErrorMsg" style="display: none; margin-top: 8px; padding: 9px 12px; border-radius: 8px; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); font-size: 12px; color: #fca5a5; font-weight: 600; line-height: 1.45;">
-              ⚠️ 현장 인증 비밀번호가 일치하지 않습니다. 행사장 로비 운영데스크 또는 학술회의장 화면에 표출된 4자리 정보를 다시 확인해 주세요.
-            </div>
+            <small style="display: block; margin-top: 6px; font-size: 11.5px; color: rgba(255, 255, 255, 0.6); letter-spacing: -0.01em;">
+              ※ 사전 등록 명부의 한글 또는 영문 성명을 입력해 주세요.
+            </small>
           </div>
         </div>
       </div>
 
       <div>
         <button class="btn-bottom btn-light btn-disabled" id="btnOpenConfirmModal" type="button" disabled>
-          체크인
+          체크인 완료
         </button>
       </div>
     </section>
@@ -2402,11 +2414,11 @@
     function proceedToStep1() {
       showScreen('step1');
       setTimeout(() => {
-        if (inputEmail) inputEmail.focus();
+        if (inputPin) inputPin.focus();
       }, 250);
     }
 
-    // 1단계: 인트로 -> 이메일 입력 이동 (11/15일까지는 팝업, 11/16 당일은 직행)
+    // 1단계: 인트로 -> 현장 인증 비밀번호(PIN) 입력 이동 (11/15일까지는 팝업, 11/16 당일은 직행)
     btnGoStep1.addEventListener('click', () => {
       if (isPreEventPeriod()) {
         openPreEventModal();
@@ -2450,43 +2462,61 @@
       showScreen('intro');
     });
 
-    // 1단계 이메일 입력 검증 (@lge.com 입력 시 자동 제거 & 2글자 이상 시 활성화)
-    inputEmail.addEventListener('input', () => {
-      let val = inputEmail.value.trim();
-      if (val.includes('@')) {
-        val = val.split('@')[0].trim();
-        inputEmail.value = val;
-      }
-      if (val.length >= 2) {
-        btnGoStep2.classList.remove('btn-disabled');
-        btnGoStep2.removeAttribute('disabled');
-      } else {
-        btnGoStep2.classList.add('btn-disabled');
-        btnGoStep2.setAttribute('disabled', 'true');
-      }
-    });
+    // 1단계: 현장 인증 비밀번호(PIN) 4자리 입력 시 '다음' 버튼 활성화
+    if (inputPin) {
+      inputPin.addEventListener('input', () => {
+        inputPin.value = inputPin.value.replace(/[^0-9]/g, '').slice(0, 4);
+        if (pinErrorMsg) pinErrorMsg.style.display = 'none';
+        inputPin.style.borderColor = '';
+        if (inputPin.value.length === 4) {
+          btnGoStep2.classList.remove('btn-disabled');
+          btnGoStep2.removeAttribute('disabled');
+        } else {
+          btnGoStep2.classList.add('btn-disabled');
+          btnGoStep2.setAttribute('disabled', 'true');
+        }
+      });
 
-    inputEmail.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && !btnGoStep2.disabled) {
-        btnGoStep2.click();
-      }
-    });
+      inputPin.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !btnGoStep2.disabled) {
+          btnGoStep2.click();
+        }
+      });
+    }
 
-    // 1단계 -> 2단계(이름 & 현장 암호 입력) 이동
+    // 1단계(PIN) -> 2단계(이메일 & 성명) 이동 시 PIN 유효성 검증
     btnGoStep2.addEventListener('click', () => {
+      const enteredPin = (inputPin ? inputPin.value : '').trim();
+      const targetPin = getCheckinPasscode();
+      if (enteredPin !== targetPin) {
+        if (pinErrorMsg) pinErrorMsg.style.display = 'block';
+        if (inputPin) {
+          inputPin.style.borderColor = '#ef4444';
+          inputPin.focus();
+        }
+        return;
+      }
+      if (pinErrorMsg) pinErrorMsg.style.display = 'none';
+      if (inputPin) inputPin.style.borderColor = '';
+
       showScreen('step2');
-      setTimeout(() => inputName.focus(), 250);
+      setTimeout(() => {
+        if (inputEmail) inputEmail.focus();
+      }, 250);
     });
 
     btnBackToStep1.addEventListener('click', () => {
       showScreen('step1');
+      setTimeout(() => {
+        if (inputPin) inputPin.focus();
+      }, 250);
     });
 
-    // 2단계 이름 및 현장 암호(PIN) 입력 검증 (이름 2자 이상 & 암호 4자리 숫자 입력 시 활성화)
+    // 2단계: 이메일 & 성명 유효성 검사 (이메일 2자 이상 & 성명 2자 이상 시 '체크인 완료' 활성화)
     function validateStep2() {
-      const nameVal = inputName.value.trim();
-      const pinVal = inputPin ? inputPin.value.trim() : '';
-      if (nameVal.length >= 2 && pinVal.length === 4 && /^\d{4}$/.test(pinVal)) {
+      const emailVal = inputEmail ? inputEmail.value.trim() : '';
+      const nameVal = inputName ? inputName.value.trim() : '';
+      if (emailVal.length >= 2 && nameVal.length >= 2) {
         btnOpenConfirmModal.classList.remove('btn-disabled');
         btnOpenConfirmModal.removeAttribute('disabled');
       } else {
@@ -2495,22 +2525,39 @@
       }
     }
 
-    inputName.addEventListener('input', validateStep2);
-    inputName.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        if (inputPin) inputPin.focus();
-        else if (!btnOpenConfirmModal.disabled) btnOpenConfirmModal.click();
-      }
-    });
+    if (inputEmail) {
+      inputEmail.addEventListener('input', () => {
+        let val = inputEmail.value.trim();
+        if (val.includes('@')) {
+          val = val.split('@')[0].trim();
+          inputEmail.value = val;
+        }
 
-    if (inputPin) {
-      inputPin.addEventListener('input', () => {
-        inputPin.value = inputPin.value.replace(/[^0-9]/g, '').slice(0, 4);
-        if (pinErrorMsg) pinErrorMsg.style.display = 'none';
-        inputPin.style.borderColor = '';
+        // 사전 등록 Roster 명부와 실시간 매칭하여 이름 자동 채우기
+        const cleanEmail = val.toLowerCase();
+        if (cleanEmail.length >= 2) {
+          const roster = (window.HVAC && window.HVAC.read && window.HVAC.read('hvac_roster_list'))
+            || JSON.parse(localStorage.getItem('hvac_roster_list') || '[]');
+          const matched = roster.find(r => String(r.email || '').toLowerCase().replace('@lge.com', '').trim() === cleanEmail);
+          if (matched && matched.name && inputName && !inputName.value) {
+            inputName.value = matched.name;
+          }
+        }
+
         validateStep2();
       });
-      inputPin.addEventListener('keydown', (e) => {
+
+      inputEmail.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          if (inputName) inputName.focus();
+          else if (!btnOpenConfirmModal.disabled) btnOpenConfirmModal.click();
+        }
+      });
+    }
+
+    if (inputName) {
+      inputName.addEventListener('input', validateStep2);
+      inputName.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !btnOpenConfirmModal.disabled) {
           btnOpenConfirmModal.click();
         }
@@ -2521,10 +2568,11 @@
     let currentCheckinMeta = { type: 'walkin', position: '', dept: '', empNo: '', isOperator: false };
 
     btnOpenConfirmModal.addEventListener('click', () => {
-      // 🔐 현장 인증 암호(PIN) 검증
+      // 🔐 현장 인증 암호(PIN) 최종 검증 (안전장치)
       const enteredPin = (inputPin ? inputPin.value : '').trim();
       const targetPin = getCheckinPasscode();
       if (enteredPin !== targetPin) {
+        showScreen('step1');
         if (pinErrorMsg) pinErrorMsg.style.display = 'block';
         if (inputPin) {
           inputPin.style.borderColor = '#ef4444';
