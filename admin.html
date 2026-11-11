@@ -2467,6 +2467,16 @@
             <button class="btn-act primary" onclick="saveDrawConfigFromUi(true)">💾 럭키드로우 설정 저장</button>
           </div>
         </div>
+
+        <!-- 🛡️ 럭키드로우 크리티컬 보안 및 슈퍼관리자 암호 안내 -->
+        <div style="background: rgba(239, 68, 68, 0.08); border: 1.5px dashed rgba(239, 68, 68, 0.35); border-radius: 12px; padding: 14px 18px; margin-top: 18px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+          <div style="font-size: 13px; color: #fca5a5; line-height: 1.5;">
+            🛡️ <strong>크리티컬 기능 2차 보안 안내:</strong> 당첨자 롤백, 전체 재추첨, 추첨 결과 전체 초기화 등 비가역적 작업은 <strong>슈퍼관리자 비밀번호(초기값: 00000000)</strong> 인증을 요구합니다.
+          </div>
+          <button class="btn-act danger" onclick="openSuperAdminPwdModal()" style="font-size: 12.5px; padding: 8px 16px;">
+            🔑 슈퍼관리자 암호 변경
+          </button>
+        </div>
       </div>
 
       <!-- [SUB-TAB 3] N번째 체크인 당첨 이벤트 관리 -->
@@ -4046,11 +4056,16 @@
           </div>
           <div id="superAdminAuthMsg" style="font-size: 12px; font-weight: 700; color: #ef4444; min-height: 18px; margin-top: 4px;"></div>
         </div>
-        <div class="modal-foot" style="border-top: 1px solid rgba(255, 255, 255, 0.1); justify-content: flex-end; gap: 10px;">
-          <button type="button" class="btn-act" onclick="closeSuperAdminAuthModal()">취소</button>
-          <button type="submit" class="btn-act danger" style="background: #dc2626; border-color: #ef4444; color: #fff;">
-            🔐 인증 및 실행
+        <div class="modal-foot" style="border-top: 1px solid rgba(255, 255, 255, 0.1); justify-content: space-between; align-items: center; gap: 10px;">
+          <button type="button" onclick="closeSuperAdminAuthModal(); openSuperAdminPwdModal();" style="color: #fca5a5; font-size: 12px; background: none; border: none; text-decoration: underline; cursor: pointer; padding: 4px;">
+            🔑 슈퍼관리자 암호 변경 ↗
           </button>
+          <div style="display: flex; gap: 8px;">
+            <button type="button" class="btn-act" onclick="closeSuperAdminAuthModal()">취소</button>
+            <button type="submit" class="btn-act danger" style="background: #dc2626; border-color: #ef4444; color: #fff;">
+              🔐 인증 및 실행
+            </button>
+          </div>
         </div>
       </form>
     </div>
@@ -7690,20 +7705,18 @@ ${s3.speaker}님의 '${s3.title}' 세션까지 오전 강연이 모두 종료되
       if (!currentTier) return;
       const tierId = currentTier.id;
 
-      if (!confirm(`'${currentTier.title}'의 최종 확정 상태를 취소하시겠습니까?\n가발표(호명) 상태로 되돌아가며, 재추첨 및 롤백이 가능해집니다.`)) {
-        return;
-      }
+      requestSuperAdminAuth(`↩️ <strong>[${escapeHtml(currentTier.title)} 최종 확정 상태 롤백/취소]</strong><br>이미 공식 확정된 당첨 명부의 확정 상태를 해제하고 가발표(호명 대기) 상태로 되돌립니다. 재추첨 또는 롤백이 가능해집니다.<br><br>중요 변경 작업이므로 <strong>슈퍼관리자 2차 암호</strong> 인증이 필요합니다.`, () => {
+        if (!drawState.confirmedTiers) drawState.confirmedTiers = {};
+        drawState.confirmedTiers[tierId] = false;
+        try {
+          localStorage.setItem('hvac_luckydraw_state', JSON.stringify(drawState));
+        } catch (e) {}
 
-      if (!drawState.confirmedTiers) drawState.confirmedTiers = {};
-      drawState.confirmedTiers[tierId] = false;
-      try {
-        localStorage.setItem('hvac_luckydraw_state', JSON.stringify(drawState));
-      } catch (e) {}
-
-      renderStageView();
-      renderAllWinnersTable();
-      updateAllStats();
-      showToast(`↩️ [${currentTier.title}] 확정이 취소되었습니다. (재추첨/롤백 가능)`);
+        renderStageView();
+        renderAllWinnersTable();
+        updateAllStats();
+        showToast(`↩️ [${currentTier.title}] 확정이 취소되었습니다. (재추첨/롤백 가능)`);
+      });
     }
 
     function rollbackCurrentTierConfirm() {
@@ -7719,20 +7732,19 @@ ${s3.speaker}님의 '${s3.title}' 세션까지 오전 강연이 모두 종료되
         return;
       }
 
-      if (!confirm(`⚠️ '${currentTier.title}'의 추첨 결과를 모두 취소(롤백)하시겠습니까?\n\n• 현재 당첨된 ${drawState.drawnTiers[tierId].length}명의 명단이 삭제됩니다.\n• 초기 추첨 대기 상태(? ? ?)로 복원됩니다.\n• 후보자들은 다른 등수나 재추첨 대상 풀에 즉시 복귀됩니다.`)) {
-        return;
-      }
+      const winnerCount = drawState.drawnTiers[tierId].length;
+      requestSuperAdminAuth(`⚠️ <strong>[${escapeHtml(currentTier.title)} 추첨 결과 롤백 (당첨자 삭제)]</strong><br>현재 당첨된 <strong>${winnerCount}명</strong>의 당첨 정보가 삭제되고 초기 추첨 대기 상태(? ? ?)로 복원됩니다. 후보자들은 다른 등수나 재추첨 대상 풀로 즉시 복귀됩니다.<br><br>비가역적인 크리티컬 작업이므로 <strong>슈퍼관리자 2차 암호</strong> 인증이 필요합니다.`, () => {
+        delete drawState.drawnTiers[tierId];
+        if (drawState.confirmedTiers) delete drawState.confirmedTiers[tierId];
+        try {
+          localStorage.setItem('hvac_luckydraw_state', JSON.stringify(drawState));
+        } catch (e) {}
 
-      delete drawState.drawnTiers[tierId];
-      if (drawState.confirmedTiers) delete drawState.confirmedTiers[tierId];
-      try {
-        localStorage.setItem('hvac_luckydraw_state', JSON.stringify(drawState));
-      } catch (e) {}
-
-      renderStageView();
-      renderAllWinnersTable();
-      updateAllStats();
-      showToast(`↩️ [${currentTier.title}] 추첨 결과가 롤백되었습니다. 다시 추첨할 수 있습니다.`);
+        renderStageView();
+        renderAllWinnersTable();
+        updateAllStats();
+        showToast(`↩️ [${currentTier.title}] 추첨 결과가 롤백되었습니다. 다시 추첨할 수 있습니다.`);
+      });
     }
 
     function redrawCurrentTierConfirm() {
@@ -7742,39 +7754,37 @@ ${s3.speaker}님의 '${s3.title}' 세션까지 오전 강연이 모두 종료되
       if (!currentTier) return;
       const tierId = currentTier.id;
 
-      if (!confirm(`🔄 '${currentTier.title}'의 기존 결과를 취소하고 즉시 전체 재추첨하시겠습니까?\n새로운 공정 시드로 ${currentTier.count}명을 다시 추첨합니다.`)) {
-        return;
-      }
+      requestSuperAdminAuth(`🔄 <strong>[${escapeHtml(currentTier.title)} 이 등수 전체 재추첨]</strong><br>현재 당첨자 전원의 명단을 취소(삭제)하고 새로운 공정 시드로 <strong>${currentTier.count}명 전원 재추첨</strong>을 즉시 실행합니다.<br><br>기존 당첨 정보가 영구 삭제되므로 <strong>슈퍼관리자 2차 암호</strong> 인증이 필요합니다.`, () => {
+        delete drawState.drawnTiers[tierId];
+        if (drawState.confirmedTiers) delete drawState.confirmedTiers[tierId];
+        try {
+          localStorage.setItem('hvac_luckydraw_state', JSON.stringify(drawState));
+        } catch (e) {}
 
-      delete drawState.drawnTiers[tierId];
-      if (drawState.confirmedTiers) delete drawState.confirmedTiers[tierId];
-      try {
-        localStorage.setItem('hvac_luckydraw_state', JSON.stringify(drawState));
-      } catch (e) {}
-
-      renderStageView();
-      setTimeout(() => {
-        startCurrentTierDraw();
-      }, 120);
+        renderStageView();
+        setTimeout(() => {
+          startCurrentTierDraw();
+        }, 120);
+      });
     }
 
     function rollbackSpecificTier(tierId) {
       const currentTier = (drawConfig.tiers || []).find(t => t.id === tierId);
       const title = currentTier ? currentTier.title : tierId;
-      if (!confirm(`⚠️ [${title}] 추첨 결과를 취소(롤백)하시겠습니까?\n해당 등수의 당첨자가 삭제되고 다시 추첨할 수 있는 상태로 되돌아갑니다.`)) {
-        return;
-      }
+      const cnt = (drawState && drawState.drawnTiers && drawState.drawnTiers[tierId]) ? drawState.drawnTiers[tierId].length : 0;
 
-      if (drawState && drawState.drawnTiers) delete drawState.drawnTiers[tierId];
-      if (drawState && drawState.confirmedTiers) delete drawState.confirmedTiers[tierId];
-      try {
-        localStorage.setItem('hvac_luckydraw_state', JSON.stringify(drawState));
-      } catch (e) {}
+      requestSuperAdminAuth(`⚠️ <strong>[${escapeHtml(title)} 당첨자 롤백]</strong><br>종합 명부에서 해당 등수의 당첨자 <strong>${cnt}명</strong>이 삭제되고 초기 추첨 대기 상태로 되돌아갑니다.<br><br>비가역적인 크리티컬 작업이므로 <strong>슈퍼관리자 2차 암호</strong> 인증이 필요합니다.`, () => {
+        if (drawState && drawState.drawnTiers) delete drawState.drawnTiers[tierId];
+        if (drawState && drawState.confirmedTiers) delete drawState.confirmedTiers[tierId];
+        try {
+          localStorage.setItem('hvac_luckydraw_state', JSON.stringify(drawState));
+        } catch (e) {}
 
-      renderStageView();
-      renderAllWinnersTable();
-      updateAllStats();
-      showToast(`↩️ [${title}] 결과가 롤백되었습니다.`);
+        renderStageView();
+        renderAllWinnersTable();
+        updateAllStats();
+        showToast(`↩️ [${title}] 결과가 롤백되었습니다.`);
+      });
     }
 
     // --- 단계 이동 네비게이션 ---
