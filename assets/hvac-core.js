@@ -136,7 +136,7 @@
     (root || document).querySelectorAll('a[data-hvac-link]').forEach(function (a) {
       var key = a.getAttribute('data-hvac-link');
       var url = links[key];
-      if (!url && key === 'kakaoChat' && links.kakaoChannel) url = links.kakaoChannel.replace(/\/$/, '') + '/chat';
+      if (!url && key === 'kakaoChat' && links.kakaoChannel) url = links.kakaoChannel;
       if (url) a.setAttribute('href', url);
     });
   }

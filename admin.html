@@ -3131,12 +3131,7 @@
             <input type="url" id="linkKakaoChannel" class="form-control" placeholder="https://pf.kakao.com/_lmqNX">
             <button class="btn-tbl" onclick="testLink('linkKakaoChannel')">열기 ↗</button>
           </div>
-
-          <div class="link-row">
-            <div class="link-label">카카오톡 1:1 상담 채팅 URL</div>
-            <input type="url" id="linkKakaoChat" class="form-control" placeholder="https://pf.kakao.com/_lmqNX/chat">
-            <button class="btn-tbl" onclick="testLink('linkKakaoChat')">열기 ↗</button>
-          </div>
+          <input type="hidden" id="linkKakaoChat" value="">
 
           <div class="link-row">
             <div class="link-label">행사 만족도 설문 URL</div>
@@ -4402,13 +4397,13 @@ const DEFAULT_SCHEDULE_DATA = {
           type: "meal",
           sublabel: "Lunch Break",
           status: "예정",
-          location: "📍 교내 식당",
+          location: "📍 법학관 5층 청향",
           title: "🍱 기념촬영 및 점심 식사",
           speaker: "-",
-          note: "교내 식당",
+          note: "법학관 5층 청향",
           bullets: [
             "학술회의장 앞 로비에서 단체 기념촬영이 진행됩니다.",
-            "식권 또는 명찰을 패용하시고 교내 식당으로 이동해 주세요.",
+            "식권 또는 명찰을 패용하시고 법학관 5층 청향 식당으로 이동해 주세요.",
             "오후 세션은 14:00 정시에 시작합니다."
           ]
         },
@@ -5624,7 +5619,7 @@ const DEFAULT_SCHEDULE_DATA = {
 {{SITE_BASE_URL}}/quiz.html?session=3
 (정답을 맞히시면 경품 추첨권이 부여됩니다!)
 
-📸 단체 기념촬영(본부관 단상) 후 교내 식당(법학관 5층)에서 점심 식사가 진행됩니다.`
+📸 단체 기념촬영(본부관 단상) 후 청향 식당(법학관 5층)에서 점심 식사가 진행됩니다.`
         },
         {
           id: 'p3',
@@ -5636,7 +5631,7 @@ ${s3.speaker}님의 '${s3.title}' 세션까지 오전 강연이 모두 종료되
 
 📸 단체 기념촬영 및 점심 안내:
 - 기념촬영: 행사장 앞 단상 집결 후 단체 촬영
-- 식사장소: 법학관 5층 천하 식당 (도보 2~3분)
+- 식사장소: 법학관 5층 청향 식당 (도보 2~3분)
 - 식사시간: ${sMeal.time || '12:30 ~ 14:00'}${sMeal.minute ? ` (${sMeal.minute}분)` : ''}
 
 오후 ${pmStart}부터 ${s4.speaker}님의 '${s4.title}' 세션이 시작되오니 5분 전까지 착석 부탁드립니다.`
@@ -6220,7 +6215,7 @@ ${s3.speaker}님의 '${s3.title}' 세션까지 오전 강연이 모두 종료되
     const DEFAULT_SITE_LINKS = {
       siteBaseUrl: '',
       kakaoChannel: 'https://pf.kakao.com/_lmqNX',
-      kakaoChat: 'https://pf.kakao.com/_lmqNX/chat',
+      kakaoChat: '',
       surveyForm: 'https://forms.cloud.microsoft/Pages/ResponsePage.aspx?id=5M1pUCpkwEWAlNDC3sEL42ywEzOY3PNJr4qBXM_4T5dURDlOS1VaUFpXTVRPUTkzSFZXUDlBQlk1Vy4u',
       attendanceForm: 'https://forms.cloud.microsoft/r/kaugdHpUxh',
       mapUrl: 'https://map.naver.com/p/search/%EA%B5%AD%EB%AF%BC%EB%8C%80%ED%95%99%EA%B5%90%20%EB%B3%B8%EB%B6%80%EA%B4%80'
@@ -8276,12 +8271,13 @@ ${s3.speaker}님의 '${s3.title}' 세션까지 오전 강연이 모두 종료되
       ],
       routes: [
         '국민대학교 정문 → 본부관 별관 1층 대강당 (학술회의장), 도보 약 6분',
-        '본부관 별관 → 법학관 5층 천하 (식당), 도보 약 2~3분'
+        '본부관 별관 → 법학관 5층 청향 (식당), 도보 약 2~3분',
+        '주차 안내: 행사장 내 별도 주차가 지원되지 않으므로 대중교통 이용을 적극 권장합니다.'
       ],
       notices: [
         '일시: 2026년 11월 16일(월) 09:00 ~ 18:00 (오전 08:50까지 입실)',
         '현장 체크인: 당일 행사장 1층 로비 운영데스크 및 학술회의장 화면 표출 4자리 비밀번호 입력 후 완료',
-        '점심 & 기념촬영: 12:30 ~ 14:00 (법학관 5층 천하 식당)',
+        '점심 & 기념촬영: 12:30 ~ 14:00 (법학관 5층 청향 식당)',
         '세부 일정은 현장 운영 상황에 따라 유동적으로 조정될 수 있습니다.'
       ]
     };
