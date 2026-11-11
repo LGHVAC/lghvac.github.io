@@ -377,12 +377,39 @@
       display: flex;
       gap: 8px;
       overflow-x: auto;
-      padding-bottom: 4px;
-      scrollbar-width: none;
+      overflow-y: hidden;
+      padding-bottom: 8px;
+      -webkit-overflow-scrolling: touch;
+      touch-action: pan-x;
+      scroll-behavior: smooth;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(243, 196, 72, 0.45) rgba(255, 255, 255, 0.05);
+      cursor: grab;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .session-tabs.grabbing {
+      cursor: grabbing;
+      scroll-behavior: auto;
     }
 
     .session-tabs::-webkit-scrollbar {
-      display: none;
+      height: 4px;
+    }
+
+    .session-tabs::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 99px;
+    }
+
+    .session-tabs::-webkit-scrollbar-thumb {
+      background: rgba(243, 196, 72, 0.45);
+      border-radius: 99px;
+    }
+
+    .session-tabs::-webkit-scrollbar-thumb:hover {
+      background: rgba(243, 196, 72, 0.75);
     }
 
     .tab-btn {
@@ -1161,15 +1188,54 @@
       });
     }
 
-    // 탭 클릭 이벤트 위임
-    document.getElementById('sessionTabs').addEventListener('click', (e) => {
+    // 탭 클릭 이벤트 위임 및 중앙 스크롤
+    const sessionTabsEl = document.getElementById('sessionTabs');
+    sessionTabsEl.addEventListener('click', (e) => {
       const tab = e.target.closest('.tab-btn');
       if (!tab) return;
       document.querySelectorAll('#sessionTabs .tab-btn').forEach(t => t.classList.remove('active'));
       tab.classList.add('active');
       currentFilter = tab.getAttribute('data-filter');
+      try {
+        tab.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+      } catch (err) {}
       renderFeed();
     });
+
+    // 탭 바 마우스 드래그 & 휠 스크롤 지원
+    (function enableQnaTabsDrag() {
+      const slider = sessionTabsEl;
+      if (!slider) return;
+      let isDown = false;
+      let startX;
+      let scrollLeft;
+      slider.addEventListener('mousedown', (e) => {
+        isDown = true;
+        slider.classList.add('grabbing');
+        startX = e.pageX - slider.offsetLeft;
+        scrollLeft = slider.scrollLeft;
+      });
+      slider.addEventListener('mouseleave', () => {
+        isDown = false;
+        slider.classList.remove('grabbing');
+      });
+      slider.addEventListener('mouseup', () => {
+        isDown = false;
+        slider.classList.remove('grabbing');
+      });
+      slider.addEventListener('mousemove', (e) => {
+        if (!isDown) return;
+        e.preventDefault();
+        const x = e.pageX - slider.offsetLeft;
+        const walk = (x - startX) * 1.5;
+        slider.scrollLeft = scrollLeft - walk;
+      });
+      slider.addEventListener('wheel', (e) => {
+        if (Math.abs(e.deltaX) < Math.abs(e.deltaY)) {
+          slider.scrollLeft += e.deltaY * 0.7;
+        }
+      }, { passive: true });
+    })();
 
     // 검색 및 정렬 이벤트
     document.getElementById('qnaSearchBox').addEventListener('input', () => {

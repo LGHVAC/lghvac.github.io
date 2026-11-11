@@ -573,14 +573,39 @@
       display: flex;
       gap: 8px;
       overflow-x: auto;
-      padding: 6px 4px 14px;
+      overflow-y: hidden;
+      padding: 6px 4px 10px;
       margin-bottom: 18px;
       -webkit-overflow-scrolling: touch;
-      scrollbar-width: none;
+      touch-action: pan-x;
+      scroll-behavior: smooth;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(243, 196, 72, 0.45) rgba(255, 255, 255, 0.05);
+      cursor: grab;
+      user-select: none;
+      -webkit-user-select: none;
     }
-    .session-tab-bar::-webkit-scrollbar { display: none; }
+    .session-tab-bar.grabbing {
+      cursor: grabbing;
+      scroll-behavior: auto;
+    }
+    .session-tab-bar::-webkit-scrollbar {
+      height: 4px;
+    }
+    .session-tab-bar::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 99px;
+    }
+    .session-tab-bar::-webkit-scrollbar-thumb {
+      background: rgba(243, 196, 72, 0.45);
+      border-radius: 99px;
+    }
+    .session-tab-bar::-webkit-scrollbar-thumb:hover {
+      background: rgba(243, 196, 72, 0.75);
+    }
     .session-tab-pill {
       flex-shrink: 0;
+      white-space: nowrap;
       padding: 8px 16px;
       border-radius: 999px;
       background: rgba(255, 255, 255, 0.06);
@@ -1840,9 +1865,15 @@
       const unlocked = getUnlockedSessions();
       const isChecked = hasCheckinAccess();
 
-      // 탭 활성화 상태
+      // 탭 활성화 상태 및 선택된 탭 중앙 자동 스크롤
       document.querySelectorAll('.session-tab-pill').forEach(btn => {
-        btn.classList.toggle('active', btn.getAttribute('data-session') === String(sess));
+        const isCurrent = btn.getAttribute('data-session') === String(sess);
+        btn.classList.toggle('active', isCurrent);
+        if (isCurrent) {
+          try {
+            btn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+          } catch (e) {}
+        }
       });
 
       // 탭 도트 업데이트 (오프닝: 0, 세션 1~5)
@@ -1952,7 +1983,43 @@
       }
     }
 
+    function enableDragScroll(slider) {
+      if (!slider) return;
+      let isDown = false;
+      let startX;
+      let scrollLeft;
+      slider.addEventListener('mousedown', (e) => {
+        isDown = true;
+        slider.classList.add('grabbing');
+        startX = e.pageX - slider.offsetLeft;
+        scrollLeft = slider.scrollLeft;
+      });
+      slider.addEventListener('mouseleave', () => {
+        isDown = false;
+        slider.classList.remove('grabbing');
+      });
+      slider.addEventListener('mouseup', () => {
+        isDown = false;
+        slider.classList.remove('grabbing');
+      });
+      slider.addEventListener('mousemove', (e) => {
+        if (!isDown) return;
+        e.preventDefault();
+        const x = e.pageX - slider.offsetLeft;
+        const walk = (x - startX) * 1.5;
+        slider.scrollLeft = scrollLeft - walk;
+      });
+      slider.addEventListener('wheel', (e) => {
+        if (Math.abs(e.deltaX) < Math.abs(e.deltaY)) {
+          slider.scrollLeft += e.deltaY * 0.7;
+        }
+      }, { passive: true });
+    }
+
     function initSessionTabsAndRouting() {
+      // 탭 바 좌우 드래그 스크롤 활성화
+      enableDragScroll(document.getElementById('sessionTabBar'));
+
       // 체크인 미완료 시 접근 제어 게이트 팝업 노출
       if (!hasCheckinAccess()) {
         const gate = document.getElementById('checkinGateOverlay');
