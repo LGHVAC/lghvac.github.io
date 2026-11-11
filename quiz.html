@@ -1549,15 +1549,15 @@
     // =========================================================
     // 세션별 순차 공개(Unlock) & URL 파라미터(?session=N) 라우팅
     // =========================================================
-    const DEFAULT_UNLOCKED = [1]; // 기본값: 1세션 오픈
+    const DEFAULT_UNLOCKED = [1]; // 기본값: 1세션 오픈 (저장된 설정이 없을 때만)
     let currentFilterSession = 'all';
 
     function getUnlockedSessions() {
       try {
         const saved = localStorage.getItem('hvac_quiz_unlocked_sessions');
-        if (saved) {
+        if (saved !== null && saved !== undefined) {
           const arr = JSON.parse(saved);
-          if (Array.isArray(arr) && arr.length) return arr.map(Number);
+          if (Array.isArray(arr)) return arr.map(Number);
         }
       } catch (e) {}
       return DEFAULT_UNLOCKED;
@@ -1692,7 +1692,14 @@
           updateQuizSummary();
           applySessionFilter(currentFilterSession);
           if (e.key === 'hvac_quiz_unlocked_sessions') {
-            showToast('🔓 세션 퀴즈가 새로 오픈되었습니다! 지금 도전해 보세요. (15초)', 15000);
+            try {
+              const cur = JSON.parse(e.newValue || '[]');
+              if (Array.isArray(cur) && cur.length > 0) {
+                showToast('🔓 세션 퀴즈가 새로 오픈되었습니다! 지금 도전해 보세요. (15초)', 15000);
+              } else {
+                showToast('🔒 퀴즈가 비공개(잠금) 상태로 전환되었습니다.', 10000);
+              }
+            } catch (err) {}
           }
         }
       });
@@ -1864,7 +1871,12 @@
           updateQuizSummary();
           applySessionFilter(currentFilterSession);
           if (keys.includes('hvac_quiz_unlocked_sessions')) {
-            showToast('🔓 세션 퀴즈가 새로 오픈되었습니다! 지금 도전해 보세요. (15초)', 15000);
+            const cur = getUnlockedSessions();
+            if (Array.isArray(cur) && cur.length > 0) {
+              showToast('🔓 세션 퀴즈가 새로 오픈되었습니다! 지금 도전해 보세요. (15초)', 15000);
+            } else {
+              showToast('🔒 퀴즈가 비공개(잠금) 상태로 전환되었습니다.', 10000);
+            }
           }
         }
       });

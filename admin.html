@@ -2735,7 +2735,8 @@
           </div>
           <div style="display: flex; gap: 8px; flex-wrap: wrap;">
             <button class="btn-act primary" onclick="unlockAllQuizSessions()">🔓 전 세션 일괄 오픈</button>
-            <button class="btn-act danger" onclick="lockAllQuizSessionsExceptFirst()">🔒 1세션만 열고 리셋</button>
+            <button class="btn-act" onclick="lockAllQuizSessionsExceptFirst()">🔓 1세션만 열기</button>
+            <button class="btn-act danger" onclick="lockAllQuizSessions()">🔒 전 세션 일괄 잠금 (1세션 포함)</button>
           </div>
         </div>
         <div class="quiz-release-grid" id="quizReleaseGrid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 14px; margin-top: 16px;">
@@ -8429,9 +8430,9 @@ ${s3.speaker}님의 '${s3.title}' 세션까지 오전 강연이 모두 종료되
     function getUnlockedQuizSessions() {
       try {
         const raw = localStorage.getItem('hvac_quiz_unlocked_sessions');
-        if (raw) {
+        if (raw !== null && raw !== undefined) {
           const arr = JSON.parse(raw);
-          if (Array.isArray(arr) && arr.length) return arr.map(Number);
+          if (Array.isArray(arr)) return arr.map(Number);
         }
       } catch (e) {}
       return [1];
@@ -8443,6 +8444,7 @@ ${s3.speaker}님의 '${s3.title}' 세션까지 오전 강연이 모두 종료되
         if (window.HVAC && window.HVAC.cloud && window.HVAC.cloud.isActive()) {
           window.HVAC.cloud.pushConfig('hvac_quiz_unlocked_sessions', arr);
         }
+        window.dispatchEvent(new CustomEvent('hvac:config-updated', { detail: { keys: ['hvac_quiz_unlocked_sessions'] } }));
       } catch (e) {}
     }
 
@@ -8520,11 +8522,27 @@ ${s3.speaker}님의 '${s3.title}' 세션까지 오전 강연이 모두 종료되
       showToast('🔒 1세션만 열리고 2~6세션은 잠금 리셋되었습니다.', 15000);
     }
 
+    function lockAllQuizSessions() {
+      saveUnlockedQuizSessions([]);
+      renderQuizReleaseGrid();
+      try {
+        const cur = JSON.parse(localStorage.getItem('hvac_notice_banner') || '{}');
+        if (cur && (cur.isQuizAlert || (cur.text && cur.text.includes('퀴즈')))) {
+          cur.enabled = false;
+          cur.updatedAt = Date.now();
+          localStorage.setItem('hvac_notice_banner', JSON.stringify(cur));
+          if (window.HVAC && window.HVAC.cloud) window.HVAC.cloud.pushConfig('hvac_notice_banner', cur);
+          window.dispatchEvent(new CustomEvent('hvac:config-updated', { detail: { keys: ['hvac_notice_banner'] } }));
+        }
+      } catch (e) {}
+      showToast('🔒 1번 세션을 포함한 전체 세션 퀴즈가 비공개(잠금) 처리되었습니다.', 15000);
+    }
+
     function copyKakaoQuizNotice(sNum) {
       const s = QUIZ_SESSION_INFO.find(item => item.num === sNum) || QUIZ_SESSION_INFO[0];
       const siteBase = (window.HVAC && typeof window.HVAC.getSiteBaseUrl === 'function')
         ? window.HVAC.getSiteBaseUrl()
-        : 'https://lghvac.github.io';
+        : 'https://lghvac.app';
       const link = `${siteBase}/quiz.html?session=${sNum}`;
 
       const text = `[📢 2026 HVAC 전문가 세미나 실시간 퀴즈 안내]
