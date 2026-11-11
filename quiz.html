@@ -1935,17 +1935,49 @@
       showToast('🔄 퀴즈가 초기화되었습니다. 다시 도전해 보세요!');
     });
 
-    // 만족도 설문 상태 연동
+    // 만족도 설문 사전 오픈 체크 및 상태 연동
     const btnSurveySubmit = document.getElementById('btnSurveySubmit');
+
+    function isPreEventPeriod() {
+      try {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('admin_preview') === '1' || urlParams.get('survey_open') === '1') return false;
+        if (urlParams.get('survey_open') === '0') return true;
+        const testDateParam = urlParams.get('test_date');
+        const now = testDateParam ? new Date(testDateParam) : new Date();
+        const eventDayKst = new Date('2026-11-16T00:00:00+09:00');
+        return now.getTime() < eventDayKst.getTime();
+      } catch (e) {
+        return false;
+      }
+    }
+
     function syncSurveyBtnState() {
       const isDone = localStorage.getItem('hvac_survey_done') === 'true';
-      if (btnSurveySubmit && isDone) {
+      if (!btnSurveySubmit) return;
+      if (isDone) {
         btnSurveySubmit.textContent = '✅ 만족도 설문 제출 완료 (응모 완료)';
         btnSurveySubmit.style.background = '#10b981';
         btnSurveySubmit.style.color = '#ffffff';
         btnSurveySubmit.style.boxShadow = '0 0 20px rgba(16, 185, 129, 0.4)';
+      } else if (isPreEventPeriod()) {
+        btnSurveySubmit.textContent = '🔒 만족도 설문 (세미나 당일 11/16 오픈) ➔';
+        btnSurveySubmit.style.background = 'rgba(255, 255, 255, 0.08)';
+        btnSurveySubmit.style.color = 'rgba(255, 255, 255, 0.7)';
+        btnSurveySubmit.style.border = '1px solid rgba(255, 255, 255, 0.15)';
+        btnSurveySubmit.style.boxShadow = 'none';
       }
     }
+
+    if (btnSurveySubmit) {
+      btnSurveySubmit.addEventListener('click', (e) => {
+        if (isPreEventPeriod() && localStorage.getItem('hvac_survey_done') !== 'true') {
+          e.preventDefault();
+          alert('📋 만족도 설문 오픈 안내\n\n본 만족도 설문은 세미나 당일(11월 16일)에 오픈됩니다.\n모든 강연 세션이 종료된 후 클로징 럭키드로우 경품 추첨과 함께 진행되오니 행사 당일에 참여해 주시기 바랍니다.');
+        }
+      });
+    }
+
     syncSurveyBtnState();
 
     // 관리자 설정 변경 또는 배포 설정(site-config.json) 반영 시 갱신

@@ -306,6 +306,235 @@
       justify-content: center;
       margin-bottom: 10px;
     }
+
+    /* Modal Backdrop for Pre-event Notice */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.78);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.25s ease, visibility 0.25s ease;
+    }
+    .modal-backdrop.show {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .pre-survey-modal-card {
+      background: #10141d;
+      border: 1px solid rgba(243, 196, 72, 0.35);
+      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6), 0 0 32px rgba(243, 196, 72, 0.15);
+      border-radius: 20px;
+      width: 100%;
+      max-width: 400px;
+      padding: 24px 20px;
+      text-align: left;
+      transform: scale(0.95);
+      transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    .modal-backdrop.show .pre-survey-modal-card {
+      transform: scale(1);
+    }
+
+    .modal-top-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+
+    .modal-badge-gold {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11.5px;
+      font-weight: 800;
+      padding: 3px 10px;
+      border-radius: 99px;
+      background: rgba(243, 196, 72, 0.18);
+      color: #f3c448;
+      border: 1px solid rgba(243, 196, 72, 0.35);
+    }
+
+    .btn-modal-close-x {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: rgba(255, 255, 255, 0.7);
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      cursor: pointer;
+      line-height: 1;
+    }
+    .btn-modal-close-x:hover {
+      background: rgba(255, 255, 255, 0.15);
+      color: #fff;
+    }
+
+    .modal-pre-title {
+      font-size: 19px;
+      font-weight: 900;
+      color: #fff;
+      margin: 0 0 10px;
+      line-height: 1.35;
+      letter-spacing: -0.02em;
+    }
+
+    .modal-pre-desc {
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.78);
+      line-height: 1.55;
+      margin: 0 0 16px;
+    }
+
+    .modal-pre-info-box {
+      background: rgba(243, 196, 72, 0.08);
+      border: 1px solid rgba(243, 196, 72, 0.28);
+      border-radius: 12px;
+      padding: 13px 14px;
+      margin-bottom: 18px;
+      font-size: 12.5px;
+      color: #fef3c7;
+      line-height: 1.55;
+    }
+
+    .info-line {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+    }
+    .info-ico {
+      font-size: 14px;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .btn-modal-confirm-act {
+      width: 100%;
+      height: 48px;
+      background: linear-gradient(135deg, #f3c448 0%, #e5b338 100%);
+      border: none;
+      color: #050808;
+      font-weight: 900;
+      font-size: 14.5px;
+      border-radius: 12px;
+      cursor: pointer;
+      box-shadow: 0 4px 16px rgba(243, 196, 72, 0.35);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: transform 0.15s;
+    }
+    .btn-modal-confirm-act:active {
+      transform: scale(0.98);
+    }
+
+    /* Standby Card on the survey page */
+    .standby-card {
+      text-align: center;
+      padding: 40px 22px;
+      background: var(--card-bg);
+      border: 1px solid rgba(243, 196, 72, 0.25);
+      border-radius: 20px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+      margin-top: 10px;
+    }
+    .standby-icon {
+      font-size: 54px;
+      margin-bottom: 14px;
+    }
+    .standby-badge {
+      display: inline-block;
+      font-size: 12px;
+      font-weight: 800;
+      color: var(--gold-primary);
+      background: rgba(243, 196, 72, 0.12);
+      border: 1px solid rgba(243, 196, 72, 0.3);
+      padding: 4px 14px;
+      border-radius: 99px;
+      margin-bottom: 14px;
+    }
+    .standby-title {
+      font-size: 21px;
+      font-weight: 900;
+      color: #fff;
+      margin-bottom: 10px;
+      letter-spacing: -0.02em;
+    }
+    .standby-desc {
+      font-size: 13.5px;
+      color: var(--text-muted);
+      line-height: 1.6;
+      margin-bottom: 22px;
+    }
+    .standby-desc strong {
+      color: #fef08a;
+    }
+    .standby-box {
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 24px;
+      text-align: left;
+      font-size: 12.5px;
+      color: rgba(255, 255, 255, 0.82);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .standby-box-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+    }
+    .standby-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .btn-standby-primary {
+      width: 100%;
+      height: 48px;
+      background: linear-gradient(135deg, #f3c448 0%, #e5b338 100%);
+      border: none;
+      color: #050808;
+      font-weight: 900;
+      font-size: 14.5px;
+      border-radius: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 16px rgba(243, 196, 72, 0.3);
+    }
+    .btn-standby-secondary {
+      width: 100%;
+      height: 44px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: rgba(255, 255, 255, 0.85);
+      font-weight: 700;
+      font-size: 13.5px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+    }
   </style>
 </head>
 <body>
@@ -324,6 +553,35 @@
     <div class="user-pill-banner" id="userPillBanner">
       <span style="font-size: 16px;">👤</span>
       <span id="userPillText">참석자 확인 중...</span>
+    </div>
+
+    <!-- 사전 오픈 대기 안내 카드 (11/16 세미나 당일 이전 표출) -->
+    <div class="standby-card" id="surveyStandbyCard" style="display: none;">
+      <div class="standby-icon">📋</div>
+      <div class="standby-badge">🔒 11월 16일 세미나 당일 오픈</div>
+      <h2 class="standby-title">만족도 설문 오픈 준비 중</h2>
+      <p class="standby-desc">
+        2026 HVAC Engineering Expert Seminar에 참여해 주셔서 감사합니다.<br>
+        본 만족도 설문은 <strong>세미나 당일(11월 16일)</strong> 모든 세션이 완료된 후 공식 오픈됩니다.
+      </p>
+      <div class="standby-box">
+        <div class="standby-box-row">
+          <span style="font-size: 15px;">📅</span>
+          <div><strong>오픈 일시:</strong> 2026년 11월 16일(월) 당일</div>
+        </div>
+        <div class="standby-box-row" style="margin-top: 4px;">
+          <span style="font-size: 15px;">🎁</span>
+          <div><strong>참여 혜택:</strong> 설문 완료 시 <strong>클로징 럭키드로우 경품 추첨</strong> 자동 응모</div>
+        </div>
+      </div>
+      <div class="standby-actions">
+        <button type="button" class="btn-standby-primary" onclick="handlePreSurveyBack()">
+          📱 세미나 체크인 화면으로 이동
+        </button>
+        <a href="./index.html" class="btn-standby-secondary">
+          🏠 세미나 안내 메인 홈
+        </a>
+      </div>
     </div>
 
     <!-- 설문 작성 폼 본체 -->
@@ -629,18 +887,139 @@
       });
     }
 
-    // 초기 렌더링
-    showPage(0);
+    // -------------------------------------------------------------
+    // 행사 당일(2026-11-16 00:00:00 KST) 이전 설문 페이지 차단 및 오픈 안내
+    // - 11/15 23:59:59까지: 설문 작성 폼 숨김 및 당일 오픈 안내 팝업/대기 카드 표출
+    // - 11/16 00:00:00부터: 정상 오픈 및 설문 작성 가능
+    // - 관리자 미리보기 지원: ?admin_preview=1, ?survey_open=1, ?test_date=YYYY-MM-DD
+    // -------------------------------------------------------------
+    function isPreEventSurveyPeriod() {
+      try {
+        const urlParams = new URLSearchParams(window.location.search);
+        // 1) 관리자 미리보기/강제 오픈 파라미터는 상시 통과
+        if (urlParams.get('admin_preview') === '1') return false;
+        if (urlParams.get('survey_open') === '1') return false;
+        if (urlParams.get('survey_open') === '0') return true;
+
+        // 2) 설문 설정의 관리자 강제 상태 체크
+        if (typeof surveyConfig !== 'undefined' && surveyConfig) {
+          if (surveyConfig.forceOpen === true) return false;
+          if (surveyConfig.forceOpen === false) return true;
+        }
+
+        // 3) 테스트 날짜 파라미터 또는 현재 시각
+        const testDateParam = urlParams.get('test_date');
+        const now = testDateParam ? new Date(testDateParam) : new Date();
+
+        // 2026년 11월 16일 00:00:00 KST (한국 표준시)
+        const eventDayKst = new Date('2026-11-16T00:00:00+09:00');
+        return now.getTime() < eventDayKst.getTime();
+      } catch (e) {
+        return false;
+      }
+    }
+
+    function openSurveyPreNoticeModal() {
+      const modal = document.getElementById('modalSurveyPreNotice');
+      if (modal) modal.classList.add('show');
+    }
+
+    function closeSurveyPreNoticeModal() {
+      const modal = document.getElementById('modalSurveyPreNotice');
+      if (modal) modal.classList.remove('show');
+    }
+
+    function handlePreSurveyBack() {
+      if (document.referrer && document.referrer.includes(location.host) && !document.referrer.includes('survey.html')) {
+        history.back();
+      } else {
+        window.location.href = './checkin.html';
+      }
+    }
+
+    // 모달 배경 클릭 시 닫기
+    const modalPreNotice = document.getElementById('modalSurveyPreNotice');
+    if (modalPreNotice) {
+      modalPreNotice.addEventListener('click', (e) => {
+        if (e.target === modalPreNotice) {
+          closeSurveyPreNoticeModal();
+        }
+      });
+    }
+
+    // 초기 렌더링 & 당일 오픈 여부 분기
+    const isPreEvent = isPreEventSurveyPeriod();
+    if (isPreEvent) {
+      // 세미나 당일 이전: 설문지 폼 숨김, 대기 카드 표출, 안내 팝업 자동 오픈
+      document.getElementById('formSurvey').style.display = 'none';
+      document.getElementById('surveyNavTop').style.display = 'none';
+      document.getElementById('surveyProgressTrack').style.display = 'none';
+      document.getElementById('userPillBanner').style.display = 'none';
+      document.getElementById('surveyStandbyCard').style.display = 'block';
+      setTimeout(openSurveyPreNoticeModal, 150);
+    } else {
+      // 세미나 당일 (또는 미리보기): 기존 응답 완료 확인 후 폼 렌더링
+      if (localStorage.getItem('hvac_survey_done') === 'true') {
+        document.getElementById('formSurvey').style.display = 'none';
+        document.getElementById('surveyNavTop').style.display = 'none';
+        document.getElementById('surveyProgressTrack').style.display = 'none';
+        document.getElementById('userPillBanner').style.display = 'none';
+        document.getElementById('screenSuccess').style.display = 'block';
+      } else {
+        showPage(0);
+      }
+    }
 
     // 관리자에서 설문 문항 변경 시 실시간 반영
     if (window.HVAC) {
       HVAC.onConfigUpdated((keys) => {
         if (keys.includes('hvac_survey_config')) {
           surveyConfig = HVAC.getSurveyConfig();
-          showPage(currentPageIdx);
+          if (!isPreEventSurveyPeriod()) {
+            showPage(currentPageIdx);
+          }
         }
       });
     }
   </script>
+
+  <!-- =========================================================
+       MODAL: 사전 설문 접근 차단 및 당일 오픈 안내 팝업
+  ========================================================= -->
+  <div class="modal-backdrop" id="modalSurveyPreNotice" role="dialog" aria-modal="true" aria-labelledby="preSurveyTitle">
+    <div class="pre-survey-modal-card">
+      <div class="modal-top-row">
+        <div class="modal-badge-gold">
+          <span>📋</span> 설문 오픈 안내
+        </div>
+        <button type="button" class="btn-modal-close-x" onclick="closeSurveyPreNoticeModal()" aria-label="닫기">✕</button>
+      </div>
+
+      <h3 class="modal-pre-title" id="preSurveyTitle">
+        만족도 설문 오픈 안내
+      </h3>
+      <p class="modal-pre-desc">
+        본 만족도 설문은 <strong>세미나 당일(11월 16일)</strong>에 오픈됩니다.<br>
+        모든 강연 세션이 종료된 후 클로징 럭키드로우 경품 추첨과 함께 진행되오니 행사 당일에 참여해 주시기 바랍니다.
+      </p>
+
+      <div class="modal-pre-info-box">
+        <div class="info-line">
+          <span class="info-ico">📅</span>
+          <div><strong>오픈 일시:</strong> 2026년 11월 16일(월)</div>
+        </div>
+        <div class="info-line" style="margin-top: 8px;">
+          <span class="info-ico">🎁</span>
+          <div><strong>참여 혜택:</strong> 설문 제출 완료 시 <strong>클로징 럭키드로우 경품 추첨</strong> 자격이 자동 부여됩니다.</div>
+        </div>
+      </div>
+
+      <div class="modal-btn-wrap">
+        <button type="button" class="btn-modal-confirm-act" onclick="handlePreSurveyBack()">
+          확인 (세미나 화면으로 이동)
+        </button>
+      </div>
+    </div>
+  </div>
 </body>
 </html>
