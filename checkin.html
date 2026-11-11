@@ -2755,6 +2755,17 @@
       // 대시보드 화면 활성화
       showScreen('dash');
 
+      // redirect 지원: 퀴즈 또는 Q&A 등 원래 요청했던 페이지로 즉시 자동 복귀
+      try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const redirectTarget = urlParams.get('redirect');
+        if (redirectTarget && ['quiz.html', 'qna.html', 'survey.html', 'game.html'].includes(redirectTarget)) {
+          setTimeout(() => {
+            window.location.href = './' + redirectTarget;
+          }, isMilestoneWinner ? 2400 : 500);
+        }
+      } catch (e) {}
+
       // N번째 당첨자면 축하 모달 먼저 띄우기 (일반 참석자는 미션 팝업 없이 대시보드로 바로 진입)
       if (isMilestoneWinner) {
         setTimeout(() => {
@@ -3412,6 +3423,16 @@
 
             showScreen('dash');
             renderSession(0);
+
+            // 이미 체크인된 사용자가 redirect 파라미터와 함께 방문한 경우 자동 리디렉트
+            try {
+              const urlParams = new URLSearchParams(window.location.search);
+              const redirectTarget = urlParams.get('redirect');
+              if (redirectTarget && ['quiz.html', 'qna.html', 'survey.html', 'game.html'].includes(redirectTarget)) {
+                window.location.href = './' + redirectTarget;
+                return;
+              }
+            } catch (e) {}
             return;
           }
         }

@@ -889,9 +889,162 @@
       background: rgba(255, 255, 255, 0.22);
     }
 
+    /* ---------------------------------------------------------
+       체크인 필수 접근 제어 오버레이 (Check-in Required Gate)
+    --------------------------------------------------------- */
+    .checkin-gate-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 99999;
+      background: rgba(4, 9, 6, 0.94);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .checkin-gate-card {
+      max-width: 440px;
+      width: 100%;
+      background: linear-gradient(180deg, #0d1a12 0%, #08110b 100%);
+      border: 1px solid rgba(243, 196, 72, 0.35);
+      border-radius: 24px;
+      padding: 32px 24px 28px;
+      text-align: center;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8), 0 0 40px rgba(16, 133, 72, 0.2);
+      animation: gatePop 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes gatePop {
+      from { transform: scale(0.92); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    .checkin-gate-icon {
+      font-size: 46px;
+      line-height: 1;
+      margin-bottom: 12px;
+      filter: drop-shadow(0 4px 12px rgba(243, 196, 72, 0.4));
+    }
+
+    .checkin-gate-badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: 0.04em;
+      color: #f3c448;
+      background: rgba(243, 196, 72, 0.12);
+      border: 1px solid rgba(243, 196, 72, 0.35);
+      padding: 4px 12px;
+      border-radius: 99px;
+      margin-bottom: 12px;
+    }
+
+    .checkin-gate-title {
+      font-size: 20px;
+      font-weight: 900;
+      color: #ffffff;
+      margin-bottom: 12px;
+      line-height: 1.35;
+      letter-spacing: -0.02em;
+    }
+
+    .checkin-gate-desc {
+      font-size: 13.5px;
+      color: rgba(255, 255, 255, 0.72);
+      line-height: 1.6;
+      margin-bottom: 24px;
+      word-break: keep-all;
+    }
+
+    .checkin-gate-desc strong {
+      color: #f3c448;
+      font-weight: 850;
+    }
+
+    .checkin-gate-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .btn-gate-primary {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      width: 100%;
+      height: 52px;
+      background: linear-gradient(135deg, #108548, #0b6837);
+      color: #ffffff;
+      font-size: 15px;
+      font-weight: 900;
+      border: 1px solid rgba(74, 222, 128, 0.4);
+      border-radius: 14px;
+      text-decoration: none;
+      box-shadow: 0 6px 20px rgba(16, 133, 72, 0.4);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .btn-gate-primary:hover,
+    .btn-gate-primary:active {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 24px rgba(16, 133, 72, 0.55);
+    }
+
+    .btn-gate-secondary {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      height: 44px;
+      background: rgba(255, 255, 255, 0.06);
+      color: rgba(255, 255, 255, 0.75);
+      font-size: 13.5px;
+      font-weight: 750;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 12px;
+      text-decoration: none;
+      transition: background 0.15s;
+    }
+
+    .btn-gate-secondary:hover {
+      background: rgba(255, 255, 255, 0.12);
+      color: #ffffff;
+    }
+
+    .checkin-gate-hint {
+      font-size: 11.5px;
+      color: rgba(255, 255, 255, 0.45);
+      line-height: 1.45;
+      word-break: keep-all;
+    }
   </style>
 </head>
 <body>
+
+  <!-- 세미나 현장 모바일 체크인 접근 제어 게이트 -->
+  <div class="checkin-gate-overlay" id="checkinGateOverlay" role="dialog" aria-modal="true" aria-labelledby="gateTitle">
+    <div class="checkin-gate-card">
+      <div class="checkin-gate-icon">📱</div>
+      <div class="checkin-gate-badge">참석자 전용 서비스</div>
+      <h2 class="checkin-gate-title" id="gateTitle">세미나 현장 모바일 체크인이 필요합니다</h2>
+      <p class="checkin-gate-desc">
+        세션 퀴즈 챌린지 참여 및 럭키드로우 점수 집계는 <strong>세미나 현장 모바일 체크인을 완료하신 참석자만 이용</strong>하실 수 있습니다.<br><br>
+        관리자가 퀴즈를 오픈하더라도 체크인이 완료되지 않은 기기에서는 퀴즈 문항과 보기가 공개되지 않습니다.
+      </p>
+      <div class="checkin-gate-actions">
+        <a class="btn-gate-primary" href="./checkin.html?redirect=quiz.html">📱 지금 현장 모바일 체크인하기 ➔</a>
+        <a class="btn-gate-secondary" href="./index.html">🏠 세미나 상세 웹페이지 홈 가기</a>
+      </div>
+      <div class="checkin-gate-hint">
+        💡 행사장 1층 로비 운영데스크 및 스크린 화면의 4자리 현장 인증 비밀번호로 체크인을 완료해 주세요.
+      </div>
+    </div>
+  </div>
 
   <!-- 모바일 화면 캡처 방지 (DRM Blackout) 오버레이 -->
   <div id="captureBlackoutOverlay" class="capture-blackout-overlay" aria-hidden="true">
@@ -1417,8 +1570,12 @@
 
     // 옵션 클릭 처리 (재시도 & 패널티 점수 계산)
     function handleOptionClick(card, quizId, chosenOpt) {
-      if (card.classList.contains('card-locked')) {
-        showToast('🔒 해당 세션은 강연 종료 후 공개됩니다.');
+      if (card.classList.contains('card-locked') || !hasCheckinAccess()) {
+        showToast(!hasCheckinAccess() ? '📱 현장 모바일 체크인 후 응시하실 수 있습니다.' : '🔒 해당 세션은 강연 종료 후 공개됩니다.');
+        if (!hasCheckinAccess()) {
+          const gate = document.getElementById('checkinGateOverlay');
+          if (gate) gate.style.display = 'flex';
+        }
         return;
       }
 
@@ -1664,10 +1821,24 @@
       return null;
     }
 
+    function hasCheckinAccess() {
+      try {
+        const p = new URLSearchParams(window.location.search);
+        if (p.get('admin_preview') === '1' || p.get('preview') === '1') return true;
+        const raw = localStorage.getItem('hvac_user_checked') || localStorage.getItem('hvac_checkin_user');
+        if (!raw) return false;
+        const u = JSON.parse(raw);
+        return !!(u && (u.email || u.name));
+      } catch (e) {
+        return false;
+      }
+    }
+
     function applySessionFilter(sess) {
       currentFilterSession = sess;
       const cards = document.querySelectorAll('.quiz-card');
       const unlocked = getUnlockedSessions();
+      const isChecked = hasCheckinAccess();
 
       // 탭 활성화 상태
       document.querySelectorAll('.session-tab-pill').forEach(btn => {
@@ -1687,7 +1858,7 @@
         const isMatch = (sess === 'all' || sess === sNum);
         card.style.display = isMatch ? 'block' : 'none';
 
-        const isUnlocked = unlocked.includes(sNum);
+        const isUnlocked = isChecked && unlocked.includes(sNum);
         card.classList.toggle('card-locked', !isUnlocked);
 
         // 잠금 플레이스홀더 및 헤더 상태 필드 처리
@@ -1701,19 +1872,35 @@
             const tagEl = card.querySelector('.quiz-session-tag');
             const sessionTag = tagEl ? tagEl.textContent.trim() : (sNum === 0 ? '오프닝' : `세션 ${sNum}`);
             const tagLabel = sNum === 0 ? '오프닝 행사' : `세션 ${sNum} 강연`;
-            const timeHint = sNum === 0 ? '오프닝 세션 진행 중 퀴즈가 오픈됩니다' : '강연 종료 후 퀴즈가 오픈됩니다';
-            lockPlaceholder.innerHTML = `
-              <div class="lock-icon-wrap">🔒</div>
-              <span class="lock-tag">${tagLabel} 진행 중 · 퀴즈 비공개</span>
-              <h3>${timeHint}</h3>
-              <p>
-                공정한 퀴즈 참여 및 스포일러 방지를 위해 현장 진행에 맞춰 관리자가 오픈합니다.<br>
-                현장 강연 발표에 집중해 주시기 바랍니다.
-              </p>
-              <div class="lock-realtime-hint">
-                ⚡ 관리자가 오픈 시 실시간 자동 공개 (새로고침 불필요)
-              </div>
-            `;
+
+            if (!isChecked) {
+              lockPlaceholder.innerHTML = `
+                <div class="lock-icon-wrap" style="color: #f3c448;">📱</div>
+                <span class="lock-tag" style="background: rgba(243, 196, 72, 0.15); color: #f3c448; border-color: rgba(243, 196, 72, 0.35);">현장 모바일 체크인 필요</span>
+                <h3>체크인 완료 후 퀴즈가 공개됩니다</h3>
+                <p>
+                  본 세미나 퀴즈는 현장 모바일 체크인을 완료하신 참석자 전용입니다.<br>
+                  지금 체크인을 완료하시면 퀴즈가 실시간으로 오픈됩니다.
+                </p>
+                <div style="margin-top: 14px;">
+                  <a href="./checkin.html?redirect=quiz.html" style="display: inline-flex; align-items: center; gap: 6px; padding: 10px 18px; background: #108548; color: #fff; font-weight: 850; font-size: 13.5px; border-radius: 99px; text-decoration: none; box-shadow: 0 4px 14px rgba(16, 133, 72, 0.4);">📱 지금 모바일 체크인하기 ➔</a>
+                </div>
+              `;
+            } else {
+              const timeHint = sNum === 0 ? '오프닝 행사 시작 후 퀴즈가 오픈됩니다' : '해당 강연 종료 후 퀴즈가 오픈됩니다';
+              lockPlaceholder.innerHTML = `
+                <div class="lock-icon-wrap">🔒</div>
+                <span class="lock-tag">${tagLabel} 진행 전 · 퀴즈 비공개</span>
+                <h3>${timeHint}</h3>
+                <p>
+                  공정한 퀴즈 참여 및 스포일러 방지를 위해 현장 진행에 맞춰 관리자가 오픈합니다.<br>
+                  현장 강연 발표에 집중해 주시기 바랍니다.
+                </p>
+                <div class="lock-realtime-hint">
+                  ⚡ 관리자가 오픈 시 실시간 자동 공개 (새로고침 불필요)
+                </div>
+              `;
+            }
             const header = card.querySelector('.quiz-header');
             if (header && header.nextSibling) {
               card.insertBefore(lockPlaceholder, header.nextSibling);
@@ -1725,7 +1912,7 @@
           if (statusPill) {
             statusPill.style.display = 'inline-block';
             statusPill.className = 'quiz-status-pill pill-locked';
-            statusPill.textContent = '🔒 비공개 (오픈 대기 중)';
+            statusPill.textContent = !isChecked ? '🔒 체크인 필요 (비공개)' : '🔒 비공개 (오픈 대기 중)';
           }
         } else {
           if (lockPlaceholder) lockPlaceholder.remove();
@@ -1766,6 +1953,12 @@
     }
 
     function initSessionTabsAndRouting() {
+      // 체크인 미완료 시 접근 제어 게이트 팝업 노출
+      if (!hasCheckinAccess()) {
+        const gate = document.getElementById('checkinGateOverlay');
+        if (gate) gate.style.display = 'flex';
+      }
+
       // 탭 클릭 이벤트
       document.querySelectorAll('.session-tab-pill').forEach(btn => {
         btn.addEventListener('click', () => {
