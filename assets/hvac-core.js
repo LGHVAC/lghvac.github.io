@@ -29,7 +29,8 @@
     'hvac_notice_banner',
     'hvac_milestone_events',
     'hvac_survey_config',
-    'hvac_checkin_passcode'
+    'hvac_checkin_passcode',
+    'hvac_game_config'
   ];
   var APPLIED_MARKER = 'hvac_config_applied_at';
   var CLOUD_CFG_KEY = 'hvac_cloud_config';
@@ -768,6 +769,37 @@
     notifyUpdated(['hvac_survey_config']);
   }
 
+  var DEFAULT_GAME_CONFIG = {
+    enabled: false,
+    lockMessage: '점심시간 미니게임은 12:30 오찬 시간에 맞춰 공식 오픈됩니다. 잠시 후 참여해 주세요!',
+    openedAt: null
+  };
+
+  function getGameConfig() {
+    var saved = read('hvac_game_config');
+    if (!saved) return DEFAULT_GAME_CONFIG;
+    return Object.assign({}, DEFAULT_GAME_CONFIG, saved);
+  }
+
+  function saveGameConfig(newCfg) {
+    if (!newCfg || typeof newCfg !== 'object') return;
+    var current = getGameConfig();
+    var merged = Object.assign({}, current, newCfg);
+    writeLocalSilent('hvac_game_config', merged);
+    var c = getCloudConfig();
+    if (c && window.fetch) {
+      fetch(cloudPath('config/hvac_game_config'), {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(merged)
+      }).then(function () {
+        touchCloudMeta('config');
+      }).catch(function () {});
+    }
+    notifyUpdated(['hvac_game_config']);
+    return merged;
+  }
+
   function pushSurveyResponseToCloud(surveyData) {
     var c = getCloudConfig();
     if (!c || !window.fetch || !surveyData) return Promise.resolve(false);
@@ -1336,6 +1368,9 @@
     getSurveyConfig: getSurveyConfig,
     saveSurveyConfig: saveSurveyConfig,
     DEFAULT_SURVEY_CONFIG: DEFAULT_SURVEY_CONFIG,
+    getGameConfig: getGameConfig,
+    saveGameConfig: saveGameConfig,
+    DEFAULT_GAME_CONFIG: DEFAULT_GAME_CONFIG,
     cloud: {
       getConfig: getCloudConfig,
       poll: pollCloudChanges,

@@ -3005,6 +3005,34 @@
          [TAB 5-C] 🎮 점심시간 미니게임 현황 & 실시간 리더보드 (10초 / 26℃)
          ----------------------------------------------------- -->
     <section id="tabGames" class="tab-panel">
+      <!-- 1. 미니게임 활성화 / 비활성화 운영 제어 카드 -->
+      <div class="settings-card" id="adminGameControlCard" style="margin-bottom: 20px; border-left: 5px solid var(--gold); background: rgba(16, 28, 20, 0.95);">
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px;">
+          <div>
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
+              <h3 class="settings-title" style="margin: 0; font-size: 16px;">🎮 점심시간 미니게임 참가자 오픈 제어</h3>
+              <span id="adminGameStatusBadge" class="status-pill red" style="font-size: 13px; font-weight: 850; padding: 4px 10px;">
+                🔒 비활성화 (오픈 대기 중)
+              </span>
+            </div>
+            <p style="font-size: 13px; color: var(--text-muted); margin: 0; line-height: 1.45;">
+              점심시간 이전 참가자들의 사전 접속을 방지합니다. 활성화 전까지 참가자 화면(game.html)은 잠금 안내창이 표시되며 게임 참여가 차단됩니다.
+            </p>
+          </div>
+          <div style="display: flex; gap: 10px; align-items: center;">
+            <button type="button" class="btn-act primary" id="btnToggleGameStatus" onclick="toggleGameOpenStatus()" style="padding: 10px 18px; font-size: 14px; font-weight: 850;">
+              🔓 지금 게임 오픈하기 (활성화)
+            </button>
+          </div>
+        </div>
+
+        <div style="margin-top: 14px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+          <span style="font-size: 12px; font-weight: 800; color: var(--text-muted); white-space: nowrap;">🔒 잠금 시 참가자 안내 문구:</span>
+          <input type="text" id="inputGameLockMsg" class="form-control" style="flex: 1; min-width: 280px;" placeholder="점심시간 미니게임은 12:30 오찬 시간에 맞춰 공식 오픈됩니다. 잠시 후 참여해 주세요!">
+          <button type="button" class="btn-tbl" onclick="saveGameLockMsg()">문구 저장</button>
+        </div>
+      </div>
+
       <!-- 상단 요약 지표 -->
       <div class="stats-grid">
         <div class="stat-card">
@@ -10117,7 +10145,72 @@ ${link}
       });
     }
 
+    function renderGameControlStatus() {
+      const cfg = (window.HVAC && window.HVAC.getGameConfig) ? window.HVAC.getGameConfig() : { enabled: false, lockMessage: '' };
+      const badge = document.getElementById('adminGameStatusBadge');
+      const btn = document.getElementById('btnToggleGameStatus');
+      const inputMsg = document.getElementById('inputGameLockMsg');
+
+      if (badge && btn) {
+        if (cfg.enabled) {
+          badge.className = 'status-pill green';
+          badge.textContent = '🟢 활성화 (참여 진행 중)';
+          btn.className = 'btn-act danger';
+          btn.textContent = '🔒 게임 마감 / 잠금 (비활성화)';
+        } else {
+          badge.className = 'status-pill red';
+          badge.textContent = '🔒 비활성화 (오픈 대기 중)';
+          btn.className = 'btn-act primary';
+          btn.textContent = '🔓 지금 게임 오픈하기 (활성화)';
+        }
+      }
+
+      if (inputMsg && !inputMsg.value) {
+        inputMsg.value = cfg.lockMessage || '점심시간 미니게임은 12:30 오찬 시간에 맞춰 공식 오픈됩니다. 잠시 후 참여해 주세요!';
+      }
+    }
+
+    function toggleGameOpenStatus() {
+      const cfg = (window.HVAC && window.HVAC.getGameConfig) ? window.HVAC.getGameConfig() : { enabled: false };
+      const nextState = !cfg.enabled;
+
+      if (nextState) {
+        if (!confirm('🎮 점심 미니게임을 참가자들에게 지금 오픈(활성화)하시겠습니까?\n모든 참가자가 스마트폰에서 즉시 게임에 참여할 수 있게 됩니다.')) return;
+      } else {
+        if (!confirm('🔒 점심 미니게임을 마감(비활성화)하시겠습니까?\n참가자 화면이 즉시 잠금 상태로 전환됩니다.')) return;
+      }
+
+      cfg.enabled = nextState;
+      if (nextState) {
+        cfg.openedAt = new Date().toISOString();
+      }
+
+      if (window.HVAC && window.HVAC.saveGameConfig) {
+        window.HVAC.saveGameConfig(cfg);
+      } else {
+        localStorage.setItem('hvac_game_config', JSON.stringify(cfg));
+      }
+
+      renderGameControlStatus();
+      showToast(nextState ? '🔓 점심 미니게임이 참가자들에게 실시간 오픈되었습니다!' : '🔒 점심 미니게임이 마감(비활성화)되었습니다.');
+    }
+
+    function saveGameLockMsg() {
+      const inputMsg = document.getElementById('inputGameLockMsg');
+      const text = inputMsg ? inputMsg.value.trim() : '';
+      const cfg = (window.HVAC && window.HVAC.getGameConfig) ? window.HVAC.getGameConfig() : { enabled: false };
+      cfg.lockMessage = text || '점심시간 미니게임은 12:30 오찬 시간에 맞춰 공식 오픈됩니다. 잠시 후 참여해 주세요!';
+
+      if (window.HVAC && window.HVAC.saveGameConfig) {
+        window.HVAC.saveGameConfig(cfg);
+      } else {
+        localStorage.setItem('hvac_game_config', JSON.stringify(cfg));
+      }
+      showToast('💾 잠금 안내 문구가 성공적으로 저장 및 동기화되었습니다.');
+    }
+
     function renderGamesTab() {
+      renderGameControlStatus();
       // 1. 통계 카드 계산
       const list = cachedGameSubmissions || [];
       const totalUsers = list.length;

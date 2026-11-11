@@ -2818,11 +2818,19 @@
           btnBottomAction.style.color = '';
           btnBottomAction.innerHTML = '💬 강연 세션 질문하기 ∨';
         } else if (isMealSession) {
+          const gameCfg = (window.HVAC && window.HVAC.getGameConfig) ? window.HVAC.getGameConfig() : { enabled: false };
           btnBottomAction.style.display = 'flex';
-          btnBottomAction.style.background = 'linear-gradient(135deg, rgba(212, 160, 23, 0.95), rgba(16, 133, 72, 0.95))';
-          btnBottomAction.style.borderColor = 'rgba(243, 196, 72, 0.6)';
-          btnBottomAction.style.color = '#fff';
-          btnBottomAction.innerHTML = '🎮 점심 미니게임 (10초/26℃ 맞추기) ↗';
+          if (gameCfg.enabled) {
+            btnBottomAction.style.background = 'linear-gradient(135deg, rgba(212, 160, 23, 0.95), rgba(16, 133, 72, 0.95))';
+            btnBottomAction.style.borderColor = 'rgba(243, 196, 72, 0.6)';
+            btnBottomAction.style.color = '#fff';
+            btnBottomAction.innerHTML = '🎮 점심 미니게임 (10초/26℃ 맞추기) ↗';
+          } else {
+            btnBottomAction.style.background = 'rgba(255, 255, 255, 0.08)';
+            btnBottomAction.style.borderColor = 'rgba(255, 255, 255, 0.18)';
+            btnBottomAction.style.color = 'rgba(255, 255, 255, 0.7)';
+            btnBottomAction.innerHTML = '🔒 점심 미니게임 (12:30 오픈 예정)';
+          }
         } else {
           btnBottomAction.style.display = 'none';
         }
@@ -2988,6 +2996,11 @@
     if (menuItemMiniGame) {
       menuItemMiniGame.addEventListener('click', () => {
         menuPopover.classList.remove('show');
+        const gameCfg = (window.HVAC && window.HVAC.getGameConfig) ? window.HVAC.getGameConfig() : { enabled: false };
+        if (!gameCfg.enabled) {
+          alert(gameCfg.lockMessage || '점심시간 미니게임은 12:30 오찬 시간에 맞춰 공식 오픈됩니다. 잠시 후 참여해 주세요!');
+          return;
+        }
         window.location.href = './game.html';
       });
     }
@@ -3055,6 +3068,11 @@
       const s = sessions[currentIdx];
       const isMeal = s && (s.id === 's8' || s.type === 'meal' || (s.title || '').includes('점심'));
       if (isMeal) {
+        const gameCfg = (window.HVAC && window.HVAC.getGameConfig) ? window.HVAC.getGameConfig() : { enabled: false };
+        if (!gameCfg.enabled) {
+          alert(gameCfg.lockMessage || '점심시간 미니게임은 12:30 오찬 시간에 맞춰 공식 오픈됩니다. 잠시 후 참여해 주세요!');
+          return;
+        }
         window.location.href = './game.html';
         return;
       }
@@ -3247,6 +3265,7 @@
         }
         if (keys.includes('hvac_quiz_config')) syncMissionBadges();
         if (keys.includes('hvac_site_content')) applyCheckinSiteContent();
+        if (keys.includes('hvac_game_config')) renderSession(currentIdx);
       });
     }
 
