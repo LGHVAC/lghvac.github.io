@@ -789,7 +789,11 @@
     enabled: false,
     lockMessage: '점심시간 미니게임은 12:30 오찬 시간에 맞춰 공식 오픈됩니다. 잠시 후 참여해 주세요!',
     openedAt: null,
-    resetAt: 0
+    resetAt: 0,
+    stopwatchBlindSec: 3,
+    tempTarget: 20.0,
+    tempSeason: 'winter',
+    maxTries: 3
   };
 
   function getGameConfig() {

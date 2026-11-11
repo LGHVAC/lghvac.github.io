@@ -467,7 +467,7 @@
             <span>🎉 점심시간 미니게임 실시간 리더보드</span>
             <span id="screenGameStatusBadge" style="font-size: 13px; font-weight: 850; padding: 4px 12px; border-radius: 999px; background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239, 68, 68, 0.45); color: #f87171; vertical-align: middle;">🔒 오픈 대기 중</span>
           </h1>
-          <p>10회차 기념 10.00초 스톱워치 & 여름철 26.0℃ 적정온도 맞추기 현황판</p>
+          <p id="screenHeaderSub">10회차 기념 10.00초 스톱워치 & 겨울철 20.0℃ 적정온도 맞추기 현황판</p>
         </div>
       </div>
 
@@ -493,7 +493,7 @@
         <div class="col-header">
           <div class="col-title-wrap">
             <h2>⏱️ 10.00초 스톱워치 챌린지</h2>
-            <p>10.00초에 가장 근접한 참가자 순위 (1인 2회 중 Best)</p>
+            <p id="screenSub10s">10.00초에 가장 근접한 참가자 순위 (1인 3회 중 Best)</p>
           </div>
           <span class="col-count-badge" id="countBadge10s">참여 0명</span>
         </div>
@@ -533,12 +533,12 @@
         </table>
       </section>
 
-      <!-- 26.0℃ 맞추기 컬럼 -->
+      <!-- 적정온도 맞추기 컬럼 -->
       <section class="board-column col-26c">
         <div class="col-header">
           <div class="col-title-wrap">
-            <h2>🌡️ 26.0℃ 적정온도 챌린지</h2>
-            <p>26.0℃에 가장 근접한 참가자 순위 (1인 2회 중 Best)</p>
+            <h2 id="screenCol26cTitle">🌡️ 20.0℃ 적정온도 챌린지</h2>
+            <p id="screenSub26c">20.0℃에 가장 근접한 참가자 순위 (1인 3회 중 Best)</p>
           </div>
           <span class="col-count-badge" id="countBadge26c">참여 0명</span>
         </div>
@@ -626,6 +626,17 @@
           badge.textContent = '🔒 오픈 대기 중';
         }
       }
+
+      const targetTemp = (cfg.tempTarget !== undefined) ? Number(cfg.tempTarget) : 20.0;
+      const maxTries = cfg.maxTries || 3;
+      const headerSub = document.getElementById('screenHeaderSub');
+      if (headerSub) headerSub.textContent = `10회차 기념 10.00초 스톱워치 & 겨울철 ${targetTemp.toFixed(1)}℃ 적정온도 맞추기 현황판`;
+      const sub10s = document.getElementById('screenSub10s');
+      if (sub10s) sub10s.textContent = `10.00초에 가장 근접한 참가자 순위 (1인 ${maxTries}회 중 Best)`;
+      const title26c = document.getElementById('screenCol26cTitle');
+      if (title26c) title26c.textContent = `🌡️ ${targetTemp.toFixed(1)}℃ 적정온도 챌린지`;
+      const sub26c = document.getElementById('screenSub26c');
+      if (sub26c) sub26c.textContent = `${targetTemp.toFixed(1)}℃에 가장 근접한 참가자 순위 (1인 ${maxTries}회 중 Best)`;
     }
 
     function refreshLeaderboard() {
@@ -732,7 +743,9 @@
       // 새로운 1등 등장 시 축하 폭죽
       if (prevTop26cUser && prevTop26cUser !== top1.key) {
         triggerConfetti();
-        updateTicker(`🎉 [26℃ 맞추기] 새로운 1위 탄생! ${top1.name} 님이 ${top1.game26c.bestTemp.toFixed(1)}℃를 기록하여 1위에 등극했습니다!`);
+        const cfg = (window.HVAC && window.HVAC.getGameConfig) ? window.HVAC.getGameConfig() : {};
+        const targetTemp = (cfg.tempTarget !== undefined) ? Number(cfg.tempTarget) : 20.0;
+        updateTicker(`🎉 [${targetTemp.toFixed(1)}℃ 맞추기] 새로운 1위 탄생! ${top1.name} 님이 ${top1.game26c.bestTemp.toFixed(1)}℃를 기록하여 1위에 등극했습니다!`);
       }
       prevTop26cUser = top1.key;
 

@@ -351,8 +351,8 @@
     .tries-history-box {
       margin-top: 20px;
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
     }
 
     .try-card {
@@ -659,7 +659,7 @@
     <div class="title-banner">
       <span class="badge-sub">10TH ANNIVERSARY LUNCH SPECIAL</span>
       <h1>점심시간 미니게임 챌린지</h1>
-      <p>10회 기념 10초 & 여름철 26℃ 맞추기! 대형 전광판 1등에 도전하세요.</p>
+      <p id="gameMainDesc">10회 기념 10초 & 겨울철 20℃ 맞추기! 대형 전광판 1등에 도전하세요.</p>
     </div>
 
     <!-- 탭 전환 -->
@@ -668,7 +668,7 @@
         ⏱️ 10.00초 맞추기
       </button>
       <button class="game-tab-btn" id="tabBtn26c" onclick="switchGameTab('26c')">
-        🌡️ 26.0℃ 맞추기
+        🌡️ 20.0℃ 맞추기
       </button>
     </div>
 
@@ -678,10 +678,10 @@
     <section class="game-panel active" id="panel10s">
       <div class="game-card">
         <div class="try-indicator-wrap">
-          <span class="try-badge" id="tryBadge10s">도전 기회: 2회 남음</span>
+          <span class="try-badge" id="tryBadge10s">도전 기회: 3회 남음</span>
           <label class="mode-toggle">
             <input type="checkbox" id="chkHiddenMode10s" checked>
-            <span>3초 블라인드 모드 🙈</span>
+            <span id="lblHiddenMode10s">3초 블라인드 모드 🙈</span>
           </label>
         </div>
 
@@ -706,33 +706,38 @@
             <div class="try-card-score" id="score10sTry2">-</div>
             <div class="try-card-diff" id="diff10sTry2">오차 -</div>
           </div>
+          <div class="try-card" id="card10sTry3">
+            <div class="try-card-title">3차 시도</div>
+            <div class="try-card-score" id="score10sTry3">-</div>
+            <div class="try-card-diff" id="diff10sTry3">오차 -</div>
+          </div>
         </div>
       </div>
     </section>
 
     <!-- ========================================================
-         [GAME 2] 🌡️ 26.0℃ 적정온도 밸브 챌린지
+         [GAME 2] 🌡️ 적정온도 밸브 챌린지 (겨울철 20.0℃)
          ======================================================== -->
     <section class="game-panel" id="panel26c">
       <div class="game-card">
         <div class="try-indicator-wrap">
-          <span class="try-badge" id="tryBadge26c">도전 기회: 2회 남음</span>
-          <span style="font-size: 11.5px; color: var(--gold-light);">여름철 정부 권장 적정온도</span>
+          <span class="try-badge" id="tryBadge26c">도전 기회: 3회 남음</span>
+          <span style="font-size: 11.5px; color: var(--gold-light);" id="tempSeasonSubtitle">겨울철 정부 권장 적정온도</span>
         </div>
 
         <div class="display-screen">
-          <div class="target-tag">TARGET : EXACT 26.0 ℃</div>
-          <div class="big-number" id="tempDisplay26c">26.0℃</div>
+          <div class="target-tag" id="tempTargetTag">TARGET : EXACT 20.0 ℃</div>
+          <div class="big-number" id="tempDisplay26c">20.0℃</div>
 
           <!-- 시각적 온도계 게이지 -->
           <div class="gauge-wrapper">
-            <div class="gauge-target-line" title="목표 26.0℃"></div>
+            <div class="gauge-target-line" id="gaugeTargetLine" title="목표 20.0℃"></div>
             <div class="gauge-needle" id="gaugeNeedle"></div>
           </div>
           <div class="gauge-labels">
-            <span>18℃ (Cold)</span>
-            <span style="color: #facc15; font-weight: 800;">26.0℃</span>
-            <span>32℃ (Hot)</span>
+            <span id="gaugeMinLabel">12℃ (Cold)</span>
+            <span style="color: #facc15; font-weight: 800;" id="gaugeTargetLabel">20.0℃</span>
+            <span id="gaugeMaxLabel">28℃ (Warm)</span>
           </div>
 
           <div class="diff-status" id="diffStatus26c">스윙 시작 버튼을 누르면 온도가 빠르게 변합니다</div>
@@ -752,6 +757,11 @@
             <div class="try-card-title">2차 시도</div>
             <div class="try-card-score" id="score26cTry2">-</div>
             <div class="try-card-diff" id="diff26cTry2">오차 -</div>
+          </div>
+          <div class="try-card" id="card26cTry3">
+            <div class="try-card-title">3차 시도</div>
+            <div class="try-card-score" id="score26cTry3">-</div>
+            <div class="try-card-diff" id="diff26cTry3">오차 -</div>
           </div>
         </div>
       </div>
@@ -856,7 +866,7 @@
       }
     }
 
-    // 🔄 관리자에 의한 전역 기록 초기화 감지 시 모든 참가자의 로컬 도전 기회(2회) 및 기록 리셋
+    // 🔄 관리자에 의한 전역 기록 초기화 감지 시 모든 참가자의 로컬 도전 기회 및 기록 리셋
     function checkAdminResetStatus() {
       try {
         const cfg = (window.HVAC && window.HVAC.getGameConfig) ? window.HVAC.getGameConfig() : {};
@@ -874,8 +884,54 @@
       } catch (e) {}
     }
 
+    // 🎯 관리자 설정 기반 미니게임 세부 룰 (블라인드 초, 기준 온도, 도전 횟수)
+    function getGameRules() {
+      const cfg = (window.HVAC && window.HVAC.getGameConfig) ? window.HVAC.getGameConfig() : {};
+      const blindSec = (cfg.stopwatchBlindSec !== undefined) ? Number(cfg.stopwatchBlindSec) : 3;
+      const targetTemp = (cfg.tempTarget !== undefined) ? Number(cfg.tempTarget) : 20.0;
+      const maxTries = (cfg.maxTries !== undefined) ? Number(cfg.maxTries) : 3;
+      const season = cfg.tempSeason || (targetTemp >= 24.0 ? 'summer' : 'winter');
+      return { blindSec, targetTemp, maxTries, season };
+    }
+
+    function syncGameRulesUI() {
+      const rules = getGameRules();
+      const descEl = document.getElementById('gameMainDesc');
+      if (descEl) descEl.textContent = `10회 기념 10초 & ${rules.season === 'summer' ? '여름철' : '겨울철'} ${rules.targetTemp.toFixed(1)}℃ 맞추기! 대형 전광판 1등에 도전하세요.`;
+
+      const tabBtn = document.getElementById('tabBtn26c');
+      if (tabBtn) tabBtn.textContent = `🌡️ ${rules.targetTemp.toFixed(1)}℃ 맞추기`;
+
+      const lblBlind = document.getElementById('lblHiddenMode10s');
+      if (lblBlind) {
+        lblBlind.textContent = rules.blindSec > 0 ? `${rules.blindSec}초 블라인드 모드 🙈` : '블라인드 없음 (전체 노출)';
+      }
+
+      const seasonSub = document.getElementById('tempSeasonSubtitle');
+      if (seasonSub) seasonSub.textContent = `${rules.season === 'summer' ? '여름철' : '겨울철'} 정부 권장 적정온도`;
+
+      const targetTag = document.getElementById('tempTargetTag');
+      if (targetTag) targetTag.textContent = `TARGET : EXACT ${rules.targetTemp.toFixed(1)} ℃`;
+
+      const gaugeLine = document.getElementById('gaugeTargetLine');
+      if (gaugeLine) gaugeLine.title = `목표 ${rules.targetTemp.toFixed(1)}℃`;
+
+      const gaugeTargetLabel = document.getElementById('gaugeTargetLabel');
+      if (gaugeTargetLabel) gaugeTargetLabel.textContent = `${rules.targetTemp.toFixed(1)}℃`;
+
+      const minLabel = document.getElementById('gaugeMinLabel');
+      const maxLabel = document.getElementById('gaugeMaxLabel');
+      const minT = Math.round(rules.targetTemp - 8.0);
+      const maxT = Math.round(rules.targetTemp + 8.0);
+      if (minLabel) minLabel.textContent = `${minT}℃ (Cold)`;
+      if (maxLabel) maxLabel.textContent = `${maxT}℃ (${rules.season === 'summer' ? 'Hot' : 'Warm'})`;
+
+      renderRecordsUI();
+    }
+
     function checkGameLockStatus() {
       checkAdminResetStatus();
+      syncGameRulesUI();
       const cfg = (window.HVAC && window.HVAC.getGameConfig) ? window.HVAC.getGameConfig() : { enabled: false, lockMessage: '' };
       const overlay = document.getElementById('gameLockOverlay');
       const msgEl = document.getElementById('lockOverlayMessage');
@@ -1001,9 +1057,10 @@
         openUserModal();
         return;
       }
+      const rules = getGameRules();
       const tries = userRecords.game10s.tries || [];
-      if (tries.length >= 2 && !isRunning10s) {
-        alert('10초 맞추기 도전 기회(2회)를 모두 사용하셨습니다!\n최종 기록이 전광판에 등록되었습니다.');
+      if (tries.length >= rules.maxTries && !isRunning10s) {
+        alert(`10초 맞추기 도전 기회(${rules.maxTries}회)를 모두 사용하셨습니다!\n최종 기록이 전광판에 등록되었습니다.`);
         return;
       }
 
@@ -1017,6 +1074,7 @@
     function startTimer10s() {
       isRunning10s = true;
       startTime10s = performance.now();
+      const rules = getGameRules();
       const isHidden = document.getElementById('chkHiddenMode10s').checked;
       const display = document.getElementById('timerDisplay10s');
       const diffStatus = document.getElementById('diffStatus10s');
@@ -1025,7 +1083,9 @@
       display.classList.remove('blinded');
       display.textContent = '00.00';
       diffStatus.className = 'diff-status';
-      diffStatus.textContent = isHidden ? '🙈 3초 후 숫자가 가려집니다! 마음속으로 세세요!' : '10.00초에 맞춰 STOP을 누르세요!';
+      diffStatus.textContent = isHidden && rules.blindSec > 0
+        ? `🙈 ${rules.blindSec}초 후 숫자가 가려집니다! 마음속으로 세세요!`
+        : '10.00초에 맞춰 STOP을 누르세요!';
       btn.className = 'btn-game-action running';
       btn.innerHTML = '🛑 STOP!';
       playBeep(440, 'sine', 0.1);
@@ -1034,7 +1094,7 @@
         if (!isRunning10s) return;
         const elapsedSec = (performance.now() - startTime10s) / 1000;
 
-        if (isHidden && elapsedSec >= 3.00) {
+        if (isHidden && rules.blindSec > 0 && elapsedSec >= rules.blindSec) {
           display.classList.add('blinded');
           display.textContent = '?.??';
         } else {
@@ -1123,15 +1183,11 @@
     }
 
     /* =========================================================
-       5. GAME 2: 🌡️ 26.0℃ 맞추기 로직
+       5. GAME 2: 🌡️ 적정온도 맞추기 로직 (겨울철 20.0℃ 등)
        ========================================================= */
     let isRunning26c = false;
     let animId26c = null;
-    let currentTemp = 26.0;
-    let tempPhase = 0;
-    const TARGET_26C = 26.0;
-    const MIN_TEMP = 18.0;
-    const MAX_TEMP = 32.0;
+    let currentTemp = 20.0;
 
     function handleAction26c() {
       const cfg = (window.HVAC && window.HVAC.getGameConfig) ? window.HVAC.getGameConfig() : { enabled: false };
@@ -1143,9 +1199,10 @@
         openUserModal();
         return;
       }
+      const rules = getGameRules();
       const tries = userRecords.game26c.tries || [];
-      if (tries.length >= 2 && !isRunning26c) {
-        alert('26℃ 맞추기 도전 기회(2회)를 모두 사용하셨습니다!\n최종 기록이 전광판에 등록되었습니다.');
+      if (tries.length >= rules.maxTries && !isRunning26c) {
+        alert(`${rules.targetTemp.toFixed(1)}℃ 맞추기 도전 기회(${rules.maxTries}회)를 모두 사용하셨습니다!\n최종 기록이 전광판에 등록되었습니다.`);
         return;
       }
 
@@ -1158,20 +1215,24 @@
 
     function startTimer26c() {
       isRunning26c = true;
+      const rules = getGameRules();
+      const target = rules.targetTemp;
+      const minTemp = target - 8.0;
+      const maxTemp = target + 8.0;
+      const center = target;
+      const amp = 7.5;
+
       const display = document.getElementById('tempDisplay26c');
       const diffStatus = document.getElementById('diffStatus26c');
       const btn = document.getElementById('btnAction26c');
       const needle = document.getElementById('gaugeNeedle');
 
       diffStatus.className = 'diff-status';
-      diffStatus.textContent = '26.0℃에 맞춰 STOP을 누르세요!';
+      diffStatus.textContent = `${target.toFixed(1)}℃에 맞춰 STOP을 누르세요!`;
       btn.className = 'btn-game-action running';
-      btn.innerHTML = '❄️ 26.0℃에서 STOP!';
+      btn.innerHTML = `${rules.season === 'summer' ? '❄️' : '🔥'} ${target.toFixed(1)}℃에서 STOP!`;
       playBeep(480, 'sine', 0.1);
 
-      // 스윙 주기 및 진폭 (18℃ ~ 32℃ 사이 정현파)
-      const center = (MIN_TEMP + MAX_TEMP) / 2; // 25.0
-      const amp = (MAX_TEMP - MIN_TEMP) / 2;    // 7.0
       const startTime = performance.now();
       const speed = 0.0035; // 스피드
 
@@ -1184,7 +1245,7 @@
         display.textContent = `${rounded.toFixed(1)}℃`;
 
         // 게이지 바늘 위치 %
-        const pct = Math.max(0, Math.min(100, ((rounded - MIN_TEMP) / (MAX_TEMP - MIN_TEMP)) * 100));
+        const pct = Math.max(0, Math.min(100, ((rounded - minTemp) / (maxTemp - minTemp)) * 100));
         needle.style.left = `${pct}%`;
 
         animId26c = requestAnimationFrame(loop);
@@ -1197,6 +1258,11 @@
       isRunning26c = false;
       cancelAnimationFrame(animId26c);
 
+      const rules = getGameRules();
+      const target = rules.targetTemp;
+      const minTemp = target - 8.0;
+      const maxTemp = target + 8.0;
+
       const finalTemp = Math.round(currentTemp * 10) / 10;
       const display = document.getElementById('tempDisplay26c');
       const diffStatus = document.getElementById('diffStatus26c');
@@ -1204,7 +1270,7 @@
       const needle = document.getElementById('gaugeNeedle');
 
       display.textContent = `${finalTemp.toFixed(1)}℃`;
-      const pct = Math.max(0, Math.min(100, ((finalTemp - MIN_TEMP) / (MAX_TEMP - MIN_TEMP)) * 100));
+      const pct = Math.max(0, Math.min(100, ((finalTemp - minTemp) / (maxTemp - minTemp)) * 100));
       needle.style.left = `${pct}%`;
 
       if (!save) {
@@ -1213,13 +1279,13 @@
         return;
       }
 
-      const diff = Math.round(Math.abs(finalTemp - TARGET_26C) * 10) / 10;
+      const diff = Math.round(Math.abs(finalTemp - target) * 10) / 10;
       const isPerfect = (diff === 0);
 
       // 감탄사 & 사운드
       if (isPerfect) {
         diffStatus.className = 'diff-status perfect';
-        diffStatus.textContent = '🎯 PERFECT!! 정부 권장 26.0℃ 정확 달성!';
+        diffStatus.textContent = `🎯 PERFECT!! 정부 권장 ${target.toFixed(1)}℃ 정확 달성!`;
         playFanfare();
         triggerConfetti();
       } else if (diff <= 0.3) {
@@ -1232,7 +1298,7 @@
         playBeep(660, 'sine', 0.15);
       } else {
         diffStatus.className = 'diff-status normal';
-        diffStatus.textContent = `😅 ${finalTemp < TARGET_26C ? '조금 춥네요!' : '조금 덥습니다!'} (오차 ${diff.toFixed(1)}℃)`;
+        diffStatus.textContent = `😅 ${finalTemp < target ? '조금 춥네요!' : '조금 덥습니다!'} (오차 ${diff.toFixed(1)}℃)`;
         playBeep(320, 'sine', 0.15);
       }
 
@@ -1263,67 +1329,71 @@
     }
 
     /* =========================================================
-       6. UI 기록 렌더링 & 버튼 상태 제어
+       6. UI 기록 렌더링 & 버튼 상태 제어 (각자 3회 지원)
        ========================================================= */
     function renderRecordsUI() {
+      const rules = getGameRules();
+      const maxTries = rules.maxTries || 3;
+
       // 10초 게임
       const tries10s = userRecords.game10s.tries || [];
       const count10s = tries10s.length;
-      document.getElementById('tryBadge10s').textContent = `도전 기회: ${Math.max(0, 2 - count10s)}회 남음`;
+      const remain10s = Math.max(0, maxTries - count10s);
+      document.getElementById('tryBadge10s').textContent = `도전 기회: ${remain10s}회 남음`;
 
       const btn10s = document.getElementById('btnAction10s');
       if (count10s === 0) {
         btn10s.className = 'btn-game-action ready';
         btn10s.innerHTML = '⏱️ START (1차 시도)';
-      } else if (count10s === 1) {
+      } else if (count10s < maxTries) {
         btn10s.className = 'btn-game-action ready';
-        btn10s.innerHTML = '⏱️ 2차 시도 도전하기 (남은 기회 1회)';
+        btn10s.innerHTML = `⏱️ ${count10s + 1}차 시도 도전하기 (남은 기회 ${remain10s}회)`;
       } else {
         btn10s.className = 'btn-game-action finished';
-        btn10s.innerHTML = '✅ 2회 도전 완료 (전광판 반영됨)';
+        btn10s.innerHTML = `✅ ${maxTries}회 도전 완료 (전광판 반영됨)`;
       }
 
-      if (tries10s[0]) {
-        document.getElementById('score10sTry1').textContent = `${tries10s[0].time.toFixed(2)}초`;
-        document.getElementById('diff10sTry1').textContent = `오차: ${tries10s[0].diff.toFixed(2)}초`;
-      }
-      if (tries10s[1]) {
-        document.getElementById('score10sTry2').textContent = `${tries10s[1].time.toFixed(2)}초`;
-        document.getElementById('diff10sTry2').textContent = `오차: ${tries10s[1].diff.toFixed(2)}초`;
+      for (let i = 1; i <= 3; i++) {
+        const item = tries10s[i - 1];
+        const scoreEl = document.getElementById(`score10sTry${i}`);
+        const diffEl = document.getElementById(`diff10sTry${i}`);
+        const cardEl = document.getElementById(`card10sTry${i}`);
+        if (scoreEl) scoreEl.textContent = item ? `${item.time.toFixed(2)}초` : '-';
+        if (diffEl) diffEl.textContent = item ? `오차: ${item.diff.toFixed(2)}초` : '오차 -';
+        if (cardEl) {
+          cardEl.classList.toggle('best', !!(item && userRecords.game10s.bestTime === item.time));
+        }
       }
 
-      // Best 강조
-      document.getElementById('card10sTry1').classList.toggle('best', count10s >= 1 && userRecords.game10s.bestTime === tries10s[0]?.time);
-      document.getElementById('card10sTry2').classList.toggle('best', count10s >= 2 && userRecords.game10s.bestTime === tries10s[1]?.time);
-
-      // 26도 게임
+      // 20도 (적정온도) 게임
       const tries26c = userRecords.game26c.tries || [];
       const count26c = tries26c.length;
-      document.getElementById('tryBadge26c').textContent = `도전 기회: ${Math.max(0, 2 - count26c)}회 남음`;
+      const remain26c = Math.max(0, maxTries - count26c);
+      document.getElementById('tryBadge26c').textContent = `도전 기회: ${remain26c}회 남음`;
 
       const btn26c = document.getElementById('btnAction26c');
       if (count26c === 0) {
         btn26c.className = 'btn-game-action ready';
         btn26c.innerHTML = '🌡️ 온도 스윙 시작 (1차 시도)';
-      } else if (count26c === 1) {
+      } else if (count26c < maxTries) {
         btn26c.className = 'btn-game-action ready';
-        btn26c.innerHTML = '🌡️ 2차 시도 도전하기 (남은 기회 1회)';
+        btn26c.innerHTML = `🌡️ ${count26c + 1}차 시도 도전하기 (남은 기회 ${remain26c}회)`;
       } else {
         btn26c.className = 'btn-game-action finished';
-        btn26c.innerHTML = '✅ 2회 도전 완료 (전광판 반영됨)';
+        btn26c.innerHTML = `✅ ${maxTries}회 도전 완료 (전광판 반영됨)`;
       }
 
-      if (tries26c[0]) {
-        document.getElementById('score26cTry1').textContent = `${tries26c[0].temp.toFixed(1)}℃`;
-        document.getElementById('diff26cTry1').textContent = `오차: ${tries26c[0].diff.toFixed(1)}℃`;
+      for (let i = 1; i <= 3; i++) {
+        const item = tries26c[i - 1];
+        const scoreEl = document.getElementById(`score26cTry${i}`);
+        const diffEl = document.getElementById(`diff26cTry${i}`);
+        const cardEl = document.getElementById(`card26cTry${i}`);
+        if (scoreEl) scoreEl.textContent = item ? `${item.temp.toFixed(1)}℃` : '-';
+        if (diffEl) diffEl.textContent = item ? `오차: ${item.diff.toFixed(1)}℃` : '오차 -';
+        if (cardEl) {
+          cardEl.classList.toggle('best', !!(item && userRecords.game26c.bestTemp === item.temp));
+        }
       }
-      if (tries26c[1]) {
-        document.getElementById('score26cTry2').textContent = `${tries26c[1].temp.toFixed(1)}℃`;
-        document.getElementById('diff26cTry2').textContent = `오차: ${tries26c[1].diff.toFixed(1)}℃`;
-      }
-
-      document.getElementById('card26cTry1').classList.toggle('best', count26c >= 1 && userRecords.game26c.bestTemp === tries26c[0]?.temp);
-      document.getElementById('card26cTry2').classList.toggle('best', count26c >= 2 && userRecords.game26c.bestTemp === tries26c[1]?.temp);
     }
 
     function saveRecordsLocal() {

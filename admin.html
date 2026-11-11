@@ -3033,6 +3033,50 @@
           <input type="text" id="inputGameLockMsg" class="form-control" style="flex: 1; min-width: 280px;" placeholder="점심시간 미니게임은 12:30 오찬 시간에 맞춰 공식 오픈됩니다. 잠시 후 참여해 주세요!">
           <button type="button" class="btn-tbl" onclick="saveGameLockMsg()">문구 저장</button>
         </div>
+
+        <!-- ⚙️ 미니게임 룰 세부 제어 (블라인드 초 / 기준 온도 / 1인당 도전 횟수) -->
+        <div style="margin-top: 14px; padding-top: 14px; border-top: 1px dashed rgba(255,255,255,0.12); display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; align-items: end;">
+          <div>
+            <label style="display: block; font-size: 12px; font-weight: 800; color: var(--gold-light); margin-bottom: 5px;">
+              ⏱️ 10초 스톱워치 블라인드 시점
+            </label>
+            <select id="cfgGameBlindSec" class="form-control" onchange="saveGameDetailedConfig()">
+              <option value="3">3초 후 가림 (기본값)</option>
+              <option value="4">4초 후 가림</option>
+              <option value="5">5초 후 가림 (추천)</option>
+              <option value="6">6초 후 가림</option>
+              <option value="7">7초 후 가림 (난이도 높음)</option>
+              <option value="0">블라인드 없음 (전체 노출)</option>
+            </select>
+          </div>
+          <div>
+            <label style="display: block; font-size: 12px; font-weight: 800; color: #38bdf8; margin-bottom: 5px;" id="lblAdminGameTempTarget">
+              🌡️ 온도 맞추기 기준 온도 설정
+            </label>
+            <select id="cfgGameTempTarget" class="form-control" onchange="saveGameDetailedConfig()">
+              <option value="20.0" selected>겨울철 정부 권장 20.0℃ (기본값)</option>
+              <option value="19.0">겨울철 절전 19.0℃</option>
+              <option value="21.0">겨울철 쾌적 21.0℃</option>
+              <option value="26.0">여름철 정부 권장 26.0℃</option>
+            </select>
+          </div>
+          <div>
+            <label style="display: block; font-size: 12px; font-weight: 800; color: #4ade80; margin-bottom: 5px;">
+              🎯 1인당 도전 기회 설정
+            </label>
+            <select id="cfgGameMaxTries" class="form-control" onchange="saveGameDetailedConfig()">
+              <option value="3" selected>1인 3회 (기본값)</option>
+              <option value="2">1인 2회</option>
+              <option value="4">1인 4회</option>
+              <option value="5">1인 5회</option>
+            </select>
+          </div>
+          <div>
+            <button type="button" class="btn-act primary" style="width: 100%; height: 38px; font-size: 13px; font-weight: 850;" onclick="saveGameDetailedConfig(true)">
+              💾 게임 룰 설정 저장
+            </button>
+          </div>
+        </div>
       </div>
 
       <!-- 상단 요약 지표 -->
@@ -3042,7 +3086,7 @@
           <div>
             <div class="stat-label">총 참여 인원</div>
             <div class="stat-value" id="statGamesTotalUsers">0</div>
-            <div class="stat-sub">10초 / 26℃ 참여자</div>
+            <div class="stat-sub" id="statGamesUsersSub">10초 / 20℃ 참여자</div>
           </div>
         </div>
         <div class="stat-card">
@@ -3056,7 +3100,7 @@
         <div class="stat-card">
           <div class="stat-icon" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8;">🌡️</div>
           <div>
-            <div class="stat-label">26℃ 맞추기 1위</div>
+            <div class="stat-label" id="statGamesTempLabel">20℃ 맞추기 1위</div>
             <div class="stat-value" id="statGames26cBest" style="font-size: 20px;">-</div>
             <div class="stat-sub" id="statGames26cUser">도전자 대기 중</div>
           </div>
@@ -3066,7 +3110,7 @@
           <div>
             <div class="stat-label">PERFECT 달성자</div>
             <div class="stat-value" id="statGamesPerfectCount">0</div>
-            <div class="stat-sub">10.00초 / 26.0℃ 정타</div>
+            <div class="stat-sub" id="statGamesPerfectSub">10.00초 / 20.0℃ 정타</div>
           </div>
         </div>
       </div>
@@ -3076,7 +3120,7 @@
         <div class="toolbar-left">
           <button class="btn-filter-tag active" id="btnFilterGameAll" onclick="setGameFilterMode('all')">🏆 종합 명예의 전당</button>
           <button class="btn-filter-tag" id="btnFilterGame10s" onclick="setGameFilterMode('10s')">⏱️ 10.00초 맞추기</button>
-          <button class="btn-filter-tag" id="btnFilterGame26c" onclick="setGameFilterMode('26c')">🌡️ 26.0℃ 맞추기</button>
+          <button class="btn-filter-tag" id="btnFilterGame26c" onclick="setGameFilterMode('26c')">🌡️ 20.0℃ 맞추기</button>
         </div>
 
         <div class="toolbar-right">
@@ -3098,21 +3142,23 @@
           <table class="data-table">
             <thead>
               <tr>
-                <th style="width: 60px; text-align: center;">순위</th>
+                <th style="width: 55px; text-align: center;">순위</th>
                 <th>참가자 (이름 / 소속)</th>
                 <th style="text-align: center;">10초 1차</th>
                 <th style="text-align: center;">10초 2차</th>
+                <th style="text-align: center;">10초 3차</th>
                 <th style="text-align: center; color: var(--gold-light);">10초 Best</th>
-                <th style="text-align: center;">26℃ 1차</th>
-                <th style="text-align: center;">26℃ 2차</th>
-                <th style="text-align: center; color: #38bdf8;">26℃ Best</th>
+                <th style="text-align: center;" id="thGameTemp1">20℃ 1차</th>
+                <th style="text-align: center;" id="thGameTemp2">20℃ 2차</th>
+                <th style="text-align: center;" id="thGameTemp3">20℃ 3차</th>
+                <th style="text-align: center; color: #38bdf8;" id="thGameTempBest">20℃ Best</th>
                 <th style="text-align: center;">종합 오차합</th>
                 <th style="text-align: center; width: 90px;">달성 시각</th>
               </tr>
             </thead>
             <tbody id="gamesTableBody">
               <tr>
-                <td colspan="10" style="text-align: center; color: var(--text-muted); padding: 40px;">
+                <td colspan="12" style="text-align: center; color: var(--text-muted); padding: 40px;">
                   등록된 미니게임 참여 기록이 없습니다.
                 </td>
               </tr>
@@ -10370,10 +10416,13 @@ ${link}
       document.getElementById('btnFilterGame10s')?.classList.toggle('active', mode === '10s');
       document.getElementById('btnFilterGame26c')?.classList.toggle('active', mode === '26c');
 
+      const cfg = (window.HVAC && window.HVAC.getGameConfig) ? window.HVAC.getGameConfig() : {};
+      const targetTemp = (cfg.tempTarget !== undefined) ? Number(cfg.tempTarget) : 20.0;
+
       const titleMap = {
         all: '🏆 점심 미니게임 종합 순위표 (오차 합산)',
         '10s': '⏱️ 10.00초 스톱워치 챌린지 순위표',
-        '26c': '🌡️ 26.0℃ 적정온도 챌린지 순위표'
+        '26c': `🌡️ ${targetTemp.toFixed(1)}℃ 적정온도 챌린지 순위표`
       };
       const titleEl = document.getElementById('gameTableTitle');
       if (titleEl) titleEl.textContent = titleMap[mode] || titleMap.all;
@@ -10423,6 +10472,13 @@ ${link}
       if (inputMsg && !inputMsg.value) {
         inputMsg.value = cfg.lockMessage || '점심시간 미니게임은 12:30 오찬 시간에 맞춰 공식 오픈됩니다. 잠시 후 참여해 주세요!';
       }
+
+      const elBlind = document.getElementById('cfgGameBlindSec');
+      const elTemp = document.getElementById('cfgGameTempTarget');
+      const elTries = document.getElementById('cfgGameMaxTries');
+      if (elBlind && cfg.stopwatchBlindSec !== undefined) elBlind.value = String(cfg.stopwatchBlindSec);
+      if (elTemp && cfg.tempTarget !== undefined) elTemp.value = Number(cfg.tempTarget).toFixed(1);
+      if (elTries && cfg.maxTries !== undefined) elTries.value = String(cfg.maxTries);
     }
 
     function toggleGameOpenStatus() {
@@ -10464,8 +10520,56 @@ ${link}
       showToast('💾 잠금 안내 문구가 성공적으로 저장 및 동기화되었습니다.');
     }
 
+    function saveGameDetailedConfig(showToastMsg) {
+      const cfg = (window.HVAC && window.HVAC.getGameConfig) ? window.HVAC.getGameConfig() : {};
+      const elBlind = document.getElementById('cfgGameBlindSec');
+      const elTemp = document.getElementById('cfgGameTempTarget');
+      const elTries = document.getElementById('cfgGameMaxTries');
+
+      if (elBlind) cfg.stopwatchBlindSec = Number(elBlind.value);
+      if (elTemp) {
+        const tVal = Number(elTemp.value);
+        cfg.tempTarget = tVal;
+        cfg.tempSeason = tVal >= 24.0 ? 'summer' : 'winter';
+      }
+      if (elTries) cfg.maxTries = Number(elTries.value);
+
+      if (window.HVAC && window.HVAC.saveGameConfig) {
+        window.HVAC.saveGameConfig(cfg);
+      } else {
+        localStorage.setItem('hvac_game_config', JSON.stringify(cfg));
+      }
+
+      renderGamesTab();
+      if (showToastMsg) {
+        showToast(`💾 미니게임 룰(블라인드 ${cfg.stopwatchBlindSec}초, 기준 ${cfg.tempTarget}℃, 1인 ${cfg.maxTries}회)이 저장되었습니다.`);
+      }
+    }
+
     function renderGamesTab() {
       renderGameControlStatus();
+      const cfg = (window.HVAC && window.HVAC.getGameConfig) ? window.HVAC.getGameConfig() : {};
+      const targetTemp = (cfg.tempTarget !== undefined) ? Number(cfg.tempTarget) : 20.0;
+
+      // 동적 라벨 갱신
+      const btnFilter26 = document.getElementById('btnFilterGame26c');
+      if (btnFilter26) btnFilter26.textContent = `🌡️ ${targetTemp.toFixed(1)}℃ 맞추기`;
+      const statTempLabel = document.getElementById('statGamesTempLabel');
+      if (statTempLabel) statTempLabel.textContent = `${targetTemp.toFixed(1)}℃ 맞추기 1위`;
+      const statPerfectSub = document.getElementById('statGamesPerfectSub');
+      if (statPerfectSub) statPerfectSub.textContent = `10.00초 / ${targetTemp.toFixed(1)}℃ 정타`;
+      const statUsersSub = document.getElementById('statGamesUsersSub');
+      if (statUsersSub) statUsersSub.textContent = `10초 / ${Math.round(targetTemp)}℃ 참여자`;
+
+      const th1 = document.getElementById('thGameTemp1');
+      const th2 = document.getElementById('thGameTemp2');
+      const th3 = document.getElementById('thGameTemp3');
+      const thB = document.getElementById('thGameTempBest');
+      if (th1) th1.textContent = `${Math.round(targetTemp)}℃ 1차`;
+      if (th2) th2.textContent = `${Math.round(targetTemp)}℃ 2차`;
+      if (th3) th3.textContent = `${Math.round(targetTemp)}℃ 3차`;
+      if (thB) thB.textContent = `${Math.round(targetTemp)}℃ Best`;
+
       // 1. 통계 카드 계산
       const list = cachedGameSubmissions || [];
       const totalUsers = list.length;
@@ -10488,7 +10592,7 @@ ${link}
         if (stat10sUserEl) stat10sUserEl.textContent = '도전자 대기 중';
       }
 
-      // 26도 1위
+      // 온도 1위
       const valid26c = list.filter(it => it.game26c && it.game26c.bestDiff !== null && it.game26c.bestDiff !== undefined);
       valid26c.sort((a, b) => a.game26c.bestDiff - b.game26c.bestDiff);
       const stat26cBestEl = document.getElementById('statGames26cBest');
@@ -10522,9 +10626,12 @@ ${link}
       const list = cachedGameSubmissions || [];
 
       if (!list.length) {
-        tbody.innerHTML = `<tr><td colspan="10" style="text-align: center; color: var(--text-muted); padding: 40px;">등록된 미니게임 참여 기록이 없습니다.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="12" style="text-align: center; color: var(--text-muted); padding: 40px;">등록된 미니게임 참여 기록이 없습니다.</td></tr>`;
         return;
       }
+
+      const cfg = (window.HVAC && window.HVAC.getGameConfig) ? window.HVAC.getGameConfig() : {};
+      const targetTemp = (cfg.tempTarget !== undefined) ? Number(cfg.tempTarget) : 20.0;
 
       let sorted = [...list];
       if (currentGameFilterMode === '10s') {
@@ -10550,11 +10657,13 @@ ${link}
 
         const t1_10s = item.game10s?.tries?.[0]?.time !== undefined ? `${item.game10s.tries[0].time.toFixed(2)}s` : '-';
         const t2_10s = item.game10s?.tries?.[1]?.time !== undefined ? `${item.game10s.tries[1].time.toFixed(2)}s` : '-';
+        const t3_10s = item.game10s?.tries?.[2]?.time !== undefined ? `${item.game10s.tries[2].time.toFixed(2)}s` : '-';
         const best_10s = item.game10s?.bestTime !== null && item.game10s?.bestTime !== undefined
           ? `<strong>${item.game10s.bestTime.toFixed(2)}s</strong> (±${item.game10s.bestDiff.toFixed(2)}s)` : '-';
 
         const t1_26c = item.game26c?.tries?.[0]?.temp !== undefined ? `${item.game26c.tries[0].temp.toFixed(1)}℃` : '-';
         const t2_26c = item.game26c?.tries?.[1]?.temp !== undefined ? `${item.game26c.tries[1].temp.toFixed(1)}℃` : '-';
+        const t3_26c = item.game26c?.tries?.[2]?.temp !== undefined ? `${item.game26c.tries[2].temp.toFixed(1)}℃` : '-';
         const best_26c = item.game26c?.bestTemp !== null && item.game26c?.bestTemp !== undefined
           ? `<strong>${item.game26c.bestTemp.toFixed(1)}℃</strong> (±${item.game26c.bestDiff.toFixed(1)}℃)` : '-';
 
@@ -10573,13 +10682,15 @@ ${link}
               <strong>${escapeHtml(item.name)}</strong>
               <span style="font-size: 12px; color: var(--text-muted); margin-left: 6px;">${escapeHtml(item.dept || '')}</span>
               ${isPerfect10 ? '<span class="status-pill green" style="margin-left: 4px;">10s 🎯</span>' : ''}
-              ${isPerfect26 ? '<span class="status-pill green" style="margin-left: 4px;">26℃ 🎯</span>' : ''}
+              ${isPerfect26 ? `<span class="status-pill green" style="margin-left: 4px;">${Math.round(targetTemp)}℃ 🎯</span>` : ''}
             </td>
             <td style="text-align: center; font-family: var(--font-mono);">${t1_10s}</td>
             <td style="text-align: center; font-family: var(--font-mono);">${t2_10s}</td>
+            <td style="text-align: center; font-family: var(--font-mono);">${t3_10s}</td>
             <td style="text-align: center; font-family: var(--font-mono); color: var(--gold-light);">${best_10s}</td>
             <td style="text-align: center; font-family: var(--font-mono);">${t1_26c}</td>
             <td style="text-align: center; font-family: var(--font-mono);">${t2_26c}</td>
+            <td style="text-align: center; font-family: var(--font-mono);">${t3_26c}</td>
             <td style="text-align: center; font-family: var(--font-mono); color: #38bdf8;">${best_26c}</td>
             <td style="text-align: center; font-family: var(--font-mono); font-weight: 850;">${totalDiffText}</td>
             <td style="text-align: center; font-size: 12px; color: var(--text-muted);">${item.updatedAt || '-'}</td>
@@ -10589,23 +10700,32 @@ ${link}
     }
 
     function addDummyGameSubmissions() {
+      const cfg = (window.HVAC && window.HVAC.getGameConfig) ? window.HVAC.getGameConfig() : {};
+      const targetT = (cfg.tempTarget !== undefined) ? Number(cfg.tempTarget) : 20.0;
+
       const dummyNames = [
-        { name: '김태호', dept: '에너지엔지니어링팀', t10_1: 10.02, t10_2: 9.98, t26_1: 26.1, t26_2: 26.0 },
-        { name: '이수진', dept: '삼우설계 공조설계부', t10_1: 10.15, t10_2: 10.01, t26_1: 25.8, t26_2: 26.2 },
-        { name: '박민우', dept: 'LG전자 B2B솔루션팀', t10_1: 9.88, t10_2: 10.00, t26_1: 26.0, t26_2: 26.5 },
-        { name: '최현석', dept: '한일엠이씨 기계설비', t10_1: 10.22, t10_2: 9.95, t26_1: 26.4, t26_2: 25.9 },
-        { name: '정유라', dept: 'ES기술지원팀', t10_1: 10.05, t10_2: 10.03, t26_1: 26.3, t26_2: 26.1 }
+        { name: '김태호', dept: '에너지엔지니어링팀', t10: [10.02, 9.98, 10.01], t20: [targetT + 0.1, targetT, targetT - 0.1] },
+        { name: '이수진', dept: '삼우설계 공조설계부', t10: [10.15, 10.01, 10.05], t20: [targetT - 0.2, targetT + 0.2, targetT] },
+        { name: '박민우', dept: 'LG전자 B2B솔루션팀', t10: [9.88, 10.00, 10.04], t20: [targetT, targetT + 0.5, targetT - 0.3] },
+        { name: '최현석', dept: '한일엠이씨 기계설비', t10: [10.22, 9.95, 10.03], t20: [targetT + 0.4, targetT - 0.1, targetT + 0.1] },
+        { name: '정유라', dept: 'ES기술지원팀', t10: [10.05, 10.03, 9.99], t20: [targetT + 0.3, targetT + 0.1, targetT] }
       ];
 
       let promises = [];
       dummyNames.forEach((d, idx) => {
-        const diff10_1 = Math.abs(d.t10_1 - 10.00);
-        const diff10_2 = Math.abs(d.t10_2 - 10.00);
-        const best10 = diff10_1 < diff10_2 ? { time: d.t10_1, diff: diff10_1 } : { time: d.t10_2, diff: diff10_2 };
+        const tries10 = d.t10.map((val, tryIdx) => {
+          const diff = Math.round(Math.abs(val - 10.00) * 100) / 100;
+          return { attempt: tryIdx + 1, time: val, diff: diff, isPerfect: diff === 0, timestamp: `12:35:${10 + tryIdx * 20}` };
+        });
+        let best10 = tries10[0];
+        tries10.forEach(t => { if (t.diff < best10.diff) best10 = t; });
 
-        const diff26_1 = Math.abs(d.t26_1 - 26.0);
-        const diff26_2 = Math.abs(d.t26_2 - 26.0);
-        const best26 = diff26_1 < diff26_2 ? { temp: d.t26_1, diff: diff26_1 } : { temp: d.t26_2, diff: diff26_2 };
+        const tries20 = d.t20.map((val, tryIdx) => {
+          const diff = Math.round(Math.abs(val - targetT) * 10) / 10;
+          return { attempt: tryIdx + 1, temp: val, diff: diff, isPerfect: diff === 0, timestamp: `12:37:${10 + tryIdx * 20}` };
+        });
+        let best20 = tries20[0];
+        tries20.forEach(t => { if (t.diff < best20.diff) best20 = t; });
 
         const payload = {
           name: d.name,
@@ -10613,22 +10733,16 @@ ${link}
           phoneLast4: String(1000 + idx),
           email: `dummy_${idx + 1}@lge.com`,
           game10s: {
-            tries: [
-              { attempt: 1, time: d.t10_1, diff: Math.round(diff10_1 * 100) / 100, isPerfect: diff10_1 === 0, timestamp: '12:35:10' },
-              { attempt: 2, time: d.t10_2, diff: Math.round(diff10_2 * 100) / 100, isPerfect: diff10_2 === 0, timestamp: '12:36:20' }
-            ],
+            tries: tries10,
             bestTime: best10.time,
-            bestDiff: Math.round(best10.diff * 100) / 100,
+            bestDiff: best10.diff,
             isPerfect: best10.diff === 0
           },
           game26c: {
-            tries: [
-              { attempt: 1, temp: d.t26_1, diff: Math.round(diff26_1 * 10) / 10, isPerfect: diff26_1 === 0, timestamp: '12:37:05' },
-              { attempt: 2, temp: d.t26_2, diff: Math.round(diff26_2 * 10) / 10, isPerfect: diff26_2 === 0, timestamp: '12:38:15' }
-            ],
-            bestTemp: best26.temp,
-            bestDiff: Math.round(best26.diff * 10) / 10,
-            isPerfect: best26.diff === 0
+            tries: tries20,
+            bestTemp: best20.temp,
+            bestDiff: best20.diff,
+            isPerfect: best20.diff === 0
           }
         };
 
@@ -10638,7 +10752,7 @@ ${link}
       });
 
       Promise.all(promises).then(() => {
-        showToast('🧪 테스트 더미 5명의 게임 참여 기록이 추가되었습니다!');
+        showToast('🧪 테스트 더미 5명의 게임 참여 기록(3회 시도)이 추가되었습니다!');
         refreshGamesData(false);
       });
     }
@@ -10650,7 +10764,11 @@ ${link}
         return;
       }
 
-      let csv = '\uFEFF순위,이름,소속,전화번호뒷자리,10초_1차,10초_2차,10초_Best,10초_오차,26℃_1차,26℃_2차,26℃_Best,26℃_오차,달성시각\n';
+      const cfg = (window.HVAC && window.HVAC.getGameConfig) ? window.HVAC.getGameConfig() : {};
+      const targetT = (cfg.tempTarget !== undefined) ? Number(cfg.tempTarget) : 20.0;
+      const tStr = `${Math.round(targetT)}℃`;
+
+      let csv = `\uFEFF순위,이름,소속,전화번호뒷자리,10초_1차,10초_2차,10초_3차,10초_Best,10초_오차,${tStr}_1차,${tStr}_2차,${tStr}_3차,${tStr}_Best,${tStr}_오차,달성시각\n`;
       list.forEach((item, idx) => {
         const row = [
           idx + 1,
@@ -10659,10 +10777,12 @@ ${link}
           `"${item.phoneLast4 || ''}"`,
           item.game10s?.tries?.[0]?.time !== undefined ? item.game10s.tries[0].time : '',
           item.game10s?.tries?.[1]?.time !== undefined ? item.game10s.tries[1].time : '',
+          item.game10s?.tries?.[2]?.time !== undefined ? item.game10s.tries[2].time : '',
           item.game10s?.bestTime !== undefined ? item.game10s.bestTime : '',
           item.game10s?.bestDiff !== undefined ? item.game10s.bestDiff : '',
           item.game26c?.tries?.[0]?.temp !== undefined ? item.game26c.tries[0].temp : '',
           item.game26c?.tries?.[1]?.temp !== undefined ? item.game26c.tries[1].temp : '',
+          item.game26c?.tries?.[2]?.temp !== undefined ? item.game26c.tries[2].temp : '',
           item.game26c?.bestTemp !== undefined ? item.game26c.bestTemp : '',
           item.game26c?.bestDiff !== undefined ? item.game26c.bestDiff : '',
           `"${item.updatedAt || ''}"`
@@ -10680,7 +10800,10 @@ ${link}
     }
 
     function resetGamesDataPrompt() {
-      requestSuperAdminAuth('⚠️ <strong>[점심 미니게임 참가자 전체 기록 및 도전 횟수 초기화]</strong><br>모든 참가자의 10초 및 26℃ 도전 결과와 <strong>개별 도전 기회(1인 2회 제한)까지 전원 초기화</strong>되어 다시 2회 도전할 수 있게 됩니다. 이 작업은 되돌릴 수 없습니다.', async () => {
+      const cfgNow = (window.HVAC && window.HVAC.getGameConfig) ? window.HVAC.getGameConfig() : {};
+      const tTarget = (cfgNow.tempTarget !== undefined) ? Number(cfgNow.tempTarget) : 20.0;
+      const mTries = cfgNow.maxTries || 3;
+      requestSuperAdminAuth(`⚠️ <strong>[점심 미니게임 참가자 전체 기록 및 도전 횟수 초기화]</strong><br>모든 참가자의 10초 및 ${tTarget.toFixed(1)}℃ 도전 결과와 <strong>개별 도전 기회(1인 ${mTries}회 제한)까지 전원 초기화</strong>되어 다시 ${mTries}회 도전할 수 있게 됩니다. 이 작업은 되돌릴 수 없습니다.`, async () => {
         // 1) resetAt 타임스탬프를 갱신하여 모든 모바일 참가자의 도전 기회(userRecords)까지 전체 리셋 전파
         const cfg = (window.HVAC && window.HVAC.getGameConfig) ? window.HVAC.getGameConfig() : {};
         cfg.resetAt = Date.now();

@@ -2139,7 +2139,7 @@
         bullets: [
           "학술회의장 앞 로비에서 단체 기념촬영이 진행됩니다.",
           "식권 또는 명찰을 패용하시고 법학관 5층 청향 식당으로 이동해 주세요.",
-          "🎮 점심시간 미니게임 진행 중: 10초 & 26℃ 맞추고 대형 전광판 1등에 도전해 보세요!",
+          "🎮 점심시간 미니게임 진행 중: 10초 & 20℃ 맞추고 대형 전광판 1등에 도전해 보세요!",
           "오후 세션은 14:00 정시에 시작합니다."
         ]
       },
@@ -2307,6 +2307,15 @@
                   s.bullets[0] = '모바일 만족도 설문 안내: 현장에서 바로 작성해 주셔도 좋고, 귀가하시면서 편안하게 입력해 주셔도 좋습니다.';
                   migrated = true;
                 }
+              }
+              if (s.id === 's8' && Array.isArray(s.bullets)) {
+                s.bullets = s.bullets.map(b => {
+                  if (b.includes('26℃')) {
+                    migrated = true;
+                    return b.replace('26℃', '20℃');
+                  }
+                  return b;
+                });
               }
               if (s.type === 'break') {
                 if (s.title && s.title.includes('Break Time')) {
