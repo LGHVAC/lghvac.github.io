@@ -1962,7 +1962,7 @@
         📝 프로그램 & 세션 관리 <span class="tab-count" id="countBadgeSchedule">0</span>
       </button>
       <button class="tab-btn" data-tab="tabQuiz" onclick="switchTab('tabQuiz')">
-        💡 퀴즈 문항 & 점수 관리 <span class="tab-count" id="countBadgeQuiz">6</span>
+        💡 퀴즈 문항 & 점수 관리 <span class="tab-count" id="countBadgeQuiz">10</span>
       </button>
       <button class="tab-btn" data-tab="tabSurvey" onclick="switchTab('tabSurvey')">
         📋 만족도 설문 & 응답 <span class="tab-count" id="countBadgeSurvey">0</span>
@@ -2687,7 +2687,7 @@
           <div class="stat-icon">💡</div>
           <div>
             <div class="stat-label">등록된 퀴즈 문항</div>
-            <div class="stat-value" id="statQuizTotalCount">6</div>
+            <div class="stat-value" id="statQuizTotalCount">10</div>
             <div class="stat-sub">출제 문항 수</div>
           </div>
         </div>
@@ -2710,7 +2710,7 @@
         <div class="stat-card">
           <div class="stat-icon blue">🏆</div>
           <div>
-            <div class="stat-label">1차 만점자 (6.0점)</div>
+            <div class="stat-label">1차 전 문항 만점자</div>
             <div class="stat-value" id="statQuizPerfectCount">0명</div>
             <div class="stat-sub">패널티 없이 올킬</div>
           </div>
@@ -2846,7 +2846,7 @@
           <div style="display: flex; gap: 8px; flex-wrap: wrap;">
             <button class="btn-act primary" onclick="openAddQuizModal()">+ 새 퀴즈 문항 추가</button>
             <button class="btn-act" onclick="saveQuizConfigToStorage(true)">💾 퀴즈 전체 저장</button>
-            <button class="btn-act" onclick="resetQuizConfigToDefault()">🔄 기본 6문항 복원</button>
+            <button class="btn-act" onclick="resetQuizConfigToDefault()">🔄 기본 문항 복원 (10문항)</button>
             <a class="btn-act" href="./quiz.html" target="_blank">💡 퀴즈 페이지 미리보기 ↗</a>
           </div>
         </div>
@@ -5673,13 +5673,13 @@ ${s3.speaker}님의 '${s3.title}' 세션까지 오전 강연이 모두 종료되
 방금 [세션 5] ${s5.speaker}님의
 '${s5.title}' 강연이 종료되었습니다!
 
-💡 지금 바로 핵심 퀴즈를 풀고 만찬 럭키드로우 경품에 도전하세요!
+💡 세미나 마지막 퀴즈(세션 5)에 참여하시고 클로징 럭키드로우 경품에 도전하세요!
 
 👉 세션 5 퀴즈 풀기: 하기 링크 또는 모바일 앱 퀴즈 메뉴 이동
 {{SITE_BASE_URL}}/quiz.html?session=5
 (정답을 맞히시면 경품 추첨권이 부여됩니다!)
 
-☕ ${b4.minute || '20'}분간의 휴식 후 ${s6Start}부터 ${s6.speaker}님의 세션 6 특별 강연이 이어집니다.`
+☕ ${b4.minute || '20'}분간의 휴식 후 ${s6Start}부터 ${s6.speaker}님의 세션 6 특별 강연(인문학 특강)이 이어집니다.`
         },
         {
           id: 'p5',
@@ -5695,20 +5695,20 @@ ${s3.speaker}님의 '${s3.title}' 세션까지 오전 강연이 모두 종료되
         },
         {
           id: 'p_q6',
-          title: `💡 [${s6End} 세션 6 강연 종료 & 최종 퀴즈 마감]`,
+          title: `🎤 [${s6End} 특별강연 종료 & 전체 퀴즈 최종 마감]`,
           time: s6End,
-          content: `[📢 2026 HVAC 전문가 세미나 실시간 퀴즈 안내]
+          content: `[📢 2026 HVAC 전문가 세미나 특별강연 종료 안내]
 
 방금 [세션 6 특별강연] ${s6.speaker}님의
 '${s6.title}' 강연이 종료되었습니다!
 
-💡 마지막 세션 6 퀴즈를 완료하시고 경품 추첨 기회를 놓치지 마세요!
+💡 세션 1~5 퀴즈를 아직 완료하지 못하신 분들은 지금 바로 도전하세요!
+(잠시 후 퀴즈 풀이가 최종 마감됩니다)
 
-👉 세션 6 퀴즈 풀기: 하기 링크 또는 모바일 앱 퀴즈 메뉴 이동
-{{SITE_BASE_URL}}/quiz.html?session=6
-(모든 세션 퀴즈 풀이 시 럭키드로우 당첨 확률이 높아집니다!)
+👉 전체 퀴즈 풀기: 하기 링크 또는 모바일 앱 퀴즈 메뉴 이동
+{{SITE_BASE_URL}}/quiz.html
 
-✨ 잠시 후 만족도 설문 작성 및 대망의 클로징 경품 추첨이 진행됩니다!`
+✨ 잠시 후 만족도 설문 작성 및 대망의 클로징 럭키드로우 경품 추첨이 진행됩니다!`
         },
         {
           id: 'p6',
@@ -8353,61 +8353,103 @@ ${s3.speaker}님의 '${s3.title}' 세션까지 오전 강연이 모두 종료되
 
     // =========================================================
     // 14. [TAB 6] 💡 퀴즈 문항 & 실시간 참가자 점수 관리 시스템
+    //  - 세션 1~5 대상, 세션별 2문항씩 기본 10문항 구성 (세션 6 인문학 제외)
     // =========================================================
     const DEFAULT_QUIZ_CONFIG = [
+      // Session 1: 여명석 교수 (Keynote 1 · 주거난방)
       {
         id: 'q1',
         sessionNum: 1,
         tag: 'Keynote 1 · 여명석 교수 (서울대학교)',
-        question: '우리나라 공동주택의 표준 난방 방식으로, 온돌에서 발전하여 바닥 표면으로부터 복사열과 대류열을 통해 실내를 난방하는 시스템은 무엇입니까?',
-        options: ['천장형 패키지 에어컨 난방', '바닥 복사난방 (온수 온돌 시스템)', '증기 라디에이터 대류 난방', '벽걸이형 전기 컨벡터 난방'],
-        correct: 1,
-        explanation: '한국 주거난방은 전통 구들(온돌)에서 온수 배관을 매설한 현대식 바닥 복사난방 시스템으로 발전하여 높은 열적 쾌적성을 제공합니다.'
+        question: '우리나라 전통 온돌 난방에서 발전한 현대 바닥 복사난방 방식의 가장 큰 장점은 무엇입니까?',
+        options: ['바닥 전체를 축열체로 활용하여 높은 쾌적성과 실내 온도 안정성 유지', '공기만을 급격히 가열하여 실내 습도를 10% 이하로 낮춤', '24시간 동안 보일러를 최고 출력으로만 연속 가동해야 함', '천장 복사 난방 대비 설비비가 5배 이상 저렴함'],
+        correct: 0,
+        explanation: '바닥 복사난방은 바닥 구조체를 축열체로 활용해 균일하고 쾌적한 열환경을 제공하는 우리나라 고유의 친환경 난방 방식입니다.'
       },
       {
         id: 'q2',
-        sessionNum: 2,
-        tag: 'Keynote 2 · 이성혁 교수 (중앙대학교)',
-        question: '고밀도 AI 서버(GPU)의 발열 한계를 극복하기 위해 칩 표면에 직접 냉각판(Cold Plate)을 부착하거나 절연 유체에 서버를 담그는 차세대 데이터센터 열관리 기술은?',
-        options: ['자연 환기 냉각 (Natural Ventilation)', '액체냉각 (Liquid Cooling: D2C / 액침냉각)', '일반 팬코일 공랭식 (Air-cooled FCU)', '지하수 살수식 외기 냉방'],
+        sessionNum: 1,
+        tag: 'Keynote 1 · 여명석 교수 (서울대학교)',
+        question: '최근 고기밀·고단열 현대 공동주택에서 바닥난방과 함께 실내 쾌적성을 위해 필수적인 환기·제습 제어 기술은?',
+        options: ['창문 상시 개방을 통한 단순 자연 통풍에만 전적으로 의존', '열회수 환기장치(ERV) 및 제습 연계 통합 공조 환기 제어', '난방 가동 중에는 실내 열보존을 위해 환기 설비 전원 전면 차단', '강제 배기 전용 팬 단독 연속 운전'],
         correct: 1,
-        explanation: 'AI 데이터센터의 고발열 GPU 서버는 공랭식의 한계를 넘어 Direct-to-Chip(D2C) 액체냉각 및 액침냉각(Immersion Cooling) 기술이 필수적입니다.'
+        explanation: '고기밀 공동주택은 열손실을 방지하고 외기를 신선하게 도입하며 결로를 방지하는 전열교환 환기장치(ERV)와 습도 제어 기술이 필수적으로 연계됩니다.'
       },
+      // Session 2: 이성혁 교수 (Keynote 2 · 액체냉각)
       {
         id: 'q3',
-        sessionNum: 3,
-        tag: 'Keynote 3 · 조홍종 교수 (단국대학교)',
-        question: 'AI 데이터센터(AIDC) 급증으로 인한 수도권 전력망 포화 문제를 해결하기 위해, 수요지 인근에서 전력을 생산·소비하도록 유도하는 제도는?',
-        options: ['분산에너지 활성화 특별법 및 지역별 차등요금제', '석탄화력 발전소 도심 내 신규 증설', '전력 피크 시간대 데이터센터 강제 단전제', '전국 단일 디젤 비상발전기 상시 가동제'],
-        correct: 0,
-        explanation: 'AIDC의 안정적 전력 공급과 송전망 부하 완화를 위해 분산에너지 활성화 및 계통 유연성 확보가 핵심 과제로 추진되고 있습니다.'
+        sessionNum: 2,
+        tag: 'Keynote 2 · 이성혁 교수 (중앙대학교)',
+        question: '고밀도 AI 서버(GPU)의 막대한 발열 한계를 극복하기 위해 공랭식 대비 급부상한 차세대 냉각 기술은?',
+        options: ['대형 선풍기를 이용한 단순 자연 환기 방식', '칩 표면에 냉각판을 직접 부착하는 Direct-to-Chip(D2C) 액체냉각', '일반 팬코일 공랭식 (Air-cooled FCU)', '드라이아이스를 서버랙에 상시 투입하는 방식'],
+        correct: 1,
+        explanation: '고발열 AI 서버는 공기보다 열전달 계수가 월등히 높은 액체(냉각수)를 칩에 직접 순환시키는 D2C 액체냉각 및 액침냉각(Immersion) 기술이 필수적입니다.'
       },
       {
         id: 'q4',
-        sessionNum: 4,
-        tag: 'Insight 1 · 유정현 수석 (LHRI)',
-        question: '제로에너지건축물(ZEB) 및 탈탄소화를 위해 공동주택의 기존 가스보일러를 대체할 핵심 열원 설비로 주목받는 고효율 기기는?',
-        options: ['공기열원 히트펌프 (Air-to-Water Heat Pump)', '등유 보일러 (Oil Boiler)', '무연탄 온수 보일러', '직화식 가스 히터'],
+        sessionNum: 2,
+        tag: 'Keynote 2 · 이성혁 교수 (중앙대학교)',
+        question: '서버 전체를 비전도성 유체(유전체 액체)에 직접 담가 냉각하는 액침냉각(Immersion Cooling)의 주된 장점은?',
+        options: ['서버 팬(Fan) 소음과 냉각 팬 전력 소비를 없애고 PUE를 1.1 이하로 극대화', '서버 내부로 일반 수돗물을 직접 주입하여 비용 절감', '냉각탑 없이 실내 자연 통풍만으로 열을 완전 방출', '서버 가동 온도를 영하 50도 이하로 동결'],
         correct: 0,
-        explanation: "'헬로우 히트펌프, 굿바이 보일러' 세션에서 다루듯 공기열원 히트펌프(AWHP)는 공동주택 난방·급탕의 핵심 탈탄소 대안입니다."
+        explanation: '액침냉각은 비전도성 냉각유를 활용해 서버 쿨링팬의 기계적 소음과 팬 전력을 획기적으로 줄이며 PUE 1.0x 대의 초고효율을 달성합니다.'
       },
+      // Session 3: 조홍종 교수 (Keynote 3 · 전력시장)
       {
         id: 'q5',
-        sessionNum: 5,
-        tag: 'Insight 2 · 오영훈 팀장 (에너지컨설팅팀)',
-        question: '산업 플랜트 및 대형 빌딩 에너지컨설팅에서 실시간 운전 데이터를 분석하여 고효율 칠러·히트펌프 최적 제어로 달성하고자 하는 핵심 목표는?',
-        options: ['설비 가동 시간의 무조건적 최대화', '운영 비용(OPEX) 절감 및 탄소 배출량 감축', '냉각수 배관 압력의 무제한 상승', '실내 설정 온도의 고정화'],
-        correct: 1,
-        explanation: '정밀 에너지 진단(Audit)과 맞춤형 고효율 공조 솔루션을 통해 고객사의 OPEX(운영비) 절감과 온실가스 감축을 동시에 달성합니다.'
+        sessionNum: 3,
+        tag: 'Keynote 3 · 조홍종 교수 (단국대학교)',
+        question: 'AI 데이터센터(AIDC) 급증에 따른 수도권 전력망 포화 문제를 해결하기 위한 국가 전력 정책의 핵심 방향은?',
+        options: ['지역 분산형 전원 체계 구축 및 전력망(Grid) 유연성 강화', '수도권 1개 특정 변전소로 전력망을 모두 집중화', '신규 발전소 건설을 전면 중단하고 데이터센터 가동 축소', '전국 단일 디젤 비상발전기 상시 가동제'],
+        correct: 0,
+        explanation: 'AIDC의 안정적 전력 공급과 송전망 부하 완화를 위해 분산에너지 활성화 특별법 및 계통 유연성 확보가 핵심 과제로 추진되고 있습니다.'
       },
       {
         id: 'q6',
-        sessionNum: 6,
-        tag: 'Special Lecture · 이정모 관장 (과학커뮤니케이터)',
-        question: '이정모 관장의 특별강연 《테라포밍 또는 찬란한 멸종 - 그래도 우리는 지구에 살아야 한다》에서 강조하는 기후위기 시대 엔지니어와 시민의 올바른 자세는?',
-        options: ['지구의 환경 변화는 무시하고 화성 이주만 준비한다', '기후·생태계 위기를 직시하고 과학기술과 실천으로 지속가능한 지구를 지킨다', '모든 과학 기술 연구를 즉시 중단한다', '화석연료 사용량을 현재의 3배로 늘린다'],
+        sessionNum: 3,
+        tag: 'Keynote 3 · 조홍종 교수 (단국대학교)',
+        question: '데이터센터의 전력 사용 효율성을 나타내는 대표 지표인 PUE(Power Usage Effectiveness)에 대한 올바른 설명은?',
+        options: ['PUE 수치가 2.0 이상일수록 냉각 효율이 매우 우수함을 의미', 'PUE는 IT 장비 전력만을 나타내며 냉각 전력은 제외한 수치', 'PUE가 1.0에 가까울수록 냉각 및 보조설비 전력 낭비가 적은 친환경 센터', 'PUE는 데이터센터의 네트워크 대역폭 속도 지표'],
+        correct: 2,
+        explanation: 'PUE(전체 소비전력 / IT장비 소비전력)는 1.0에 근접할수록 냉각 및 공조 보조전력 손실이 적고 데이터센터 에너지 효율이 우수함을 나타냅니다.'
+      },
+      // Session 4: 유정현 수석 (Insight 1 · 히트펌프)
+      {
+        id: 'q7',
+        sessionNum: 4,
+        tag: 'Insight 1 · 유정현 수석 (LHRI)',
+        question: '공동주택 제로에너지건축물(ZEB) 구현 시 기존 화석연료 보일러를 대체/보완할 수 있는 친환경 고효율 열원설비는?',
+        options: ['공기열원 히트펌프 (Air-Source Heat Pump, AWHP)', '재래식 등유 보일러 (Oil Boiler)', '무연탄 온수 보일러', '직화식 가스 히터 코일'],
+        correct: 0,
+        explanation: "'헬로우 히트펌프, 굿바이 보일러' 세션에서 다루듯 공기열원 히트펌프(AWHP)는 대기열을 흡수하여 고효율 난방·급탕을 제공하는 탈탄소 핵심 대안입니다."
+      },
+      {
+        id: 'q8',
+        sessionNum: 4,
+        tag: 'Insight 1 · 유정현 수석 (LHRI)',
+        question: "'헬로우 히트펌프, 굿바이 보일러' 강연에서 강조하는 공동주택 AWHP의 한랭지(영하 15도 이하) 성능 유지를 위한 핵심 기술은?",
+        options: ['혹한기에는 히트펌프 가동을 멈추고 일반 전열기구 전면 사용', '한랭지 고출력 인버터 압축기 및 플래시 가스 인젝션(Flash Gas Injection) 사이클 적용', '냉매 배관 길이를 100m 이상으로 무제한 연장', '냉각수를 실내 바닥에 직접 살수하는 방식'],
         correct: 1,
-        explanation: '제2의 지구를 테라포밍하는 것보다 우리가 살고 있는 지구의 기후위기를 과학기술과 연대로 극복하는 것이 훨씬 현실적이고 시급한 과제입니다.'
+        explanation: '플래시 가스 인젝션 사이클과 한랭지 고성능 인버터 압축기를 통해 영하 20도 이하 혹한기에도 높은 난방 출력을 유지할 수 있습니다.'
+      },
+      // Session 5: 오영훈 팀장 (Insight 2 · 컨설팅)
+      {
+        id: 'q9',
+        sessionNum: 5,
+        tag: 'Insight 2 · 오영훈 팀장 (에너지컨설팅팀)',
+        question: '건물 및 산업 플랜트의 에너지 비용(OPEX) 절감과 최적 공조 설계를 위해 가장 먼저 선행되어야 하는 과정은?',
+        options: ['과거 10년 전 설계 도면만으로 어림짐작하기', '정밀 계측을 통한 실시간 에너지 사용 패턴 분석 및 에너지 진단(Audit)', '모든 공조기를 주간 시간대에 강제로 가동 중단하기', '실내 냉난방 설정 온도를 1년 내내 일정하게 고정하기'],
+        correct: 1,
+        explanation: '정밀 계측을 기반으로 한 실시간 부하 분석과 체계적인 종합 에너지 진단(Audit)이 선행되어야 맞춤형 고효율 공조 솔루션을 도출할 수 있습니다.'
+      },
+      {
+        id: 'q10',
+        sessionNum: 5,
+        tag: 'Insight 2 · 오영훈 팀장 (에너지컨설팅팀)',
+        question: '노후 흡수식/터보 냉동기를 LG 친환경 고효율 무급유 인버터 마그네틱 칠러 또는 히트펌프로 교체 시 기대되는 주된 효과는?',
+        options: ['연간 운전 에너지 비용 20~40% 절감 및 온실가스 감축', '공조실 전력 소비량이 기존 대비 2배 증가', '중앙 제어 시스템 폐지 및 수동 운전 전환', '냉각수 배관의 잦은 세척 필요'],
+        correct: 0,
+        explanation: '자기부상(Magnetic) 인버터 칠러 및 히트펌프는 부분부하 효율(IPLV)이 뛰어나 연간 20~40% 수준의 실질적 전력 비용 절감과 탄소 배출 저감 효과를 제공합니다.'
       }
     ];
 
@@ -8416,15 +8458,14 @@ ${s3.speaker}님의 '${s3.title}' 세션까지 오전 강연이 모두 종료되
 
     
     // =========================================================
-    // 세션별 퀴즈 순차 공개 & 카톡 공지 제어기
+    // 세션별 퀴즈 순차 공개 & 카톡 공지 제어기 (세션 1~5)
     // =========================================================
     const QUIZ_SESSION_INFO = [
       { num: 1, speaker: '여명석 교수 (서울대)', title: '국내주거난방의 변천과 현황', tag: 'KEYNOTE 1 · 주거난방' },
       { num: 2, speaker: '이성혁 교수 (중앙대)', title: '고밀도 AI 서버의 액체냉각 및 데이터센터 열관리 기술', tag: 'KEYNOTE 2 · 액체냉각' },
       { num: 3, speaker: '조홍종 교수 (단국대)', title: '국내 전력시장 현황 및 AIDC 전력공급 방안', tag: 'KEYNOTE 3 · 전력시장' },
       { num: 4, speaker: '유정현 수석 (LHRI)', title: '헬로우 히트펌프, 굿바이 보일러', tag: 'INSIGHT 1 · 히트펌프' },
-      { num: 5, speaker: '오영훈 팀장 (에너지컨설팅)', title: '에너지컨설팅 사례 발표', tag: 'INSIGHT 2 · 컨설팅' },
-      { num: 6, speaker: '이정모 관장 (과학커뮤니케이터)', title: '테라포밍 또는 찬란한 멸종-그래도 우리는 지구에 살아야 한다', tag: 'SPECIAL · 과학인문학' }
+      { num: 5, speaker: '오영훈 팀장 (에너지컨설팅)', title: '에너지컨설팅 사례 발표', tag: 'INSIGHT 2 · 컨설팅' }
     ];
 
     function getUnlockedQuizSessions() {
@@ -8500,10 +8541,10 @@ ${s3.speaker}님의 '${s3.title}' 세션까지 오전 강연이 모두 종료되
     }
 
     function unlockAllQuizSessions() {
-      const all = [1, 2, 3, 4, 5, 6];
+      const all = [1, 2, 3, 4, 5];
       saveUnlockedQuizSessions(all);
       renderQuizReleaseGrid();
-      showToast('🔓 1~6 전체 세션 퀴즈가 모두 오픈되었으며, 참석자 화면으로 실시간 알람이 전송되었습니다.', 15000);
+      showToast('🔓 1~5 전체 세션 퀴즈가 모두 오픈되었으며, 참석자 화면으로 실시간 알람이 전송되었습니다.', 15000);
     }
 
     function lockAllQuizSessionsExceptFirst() {
@@ -8519,7 +8560,7 @@ ${s3.speaker}님의 '${s3.title}' 세션까지 오전 강연이 모두 종료되
           window.dispatchEvent(new CustomEvent('hvac:config-updated', { detail: { keys: ['hvac_notice_banner'] } }));
         }
       } catch (e) {}
-      showToast('🔒 1세션만 열리고 2~6세션은 잠금 리셋되었습니다.', 15000);
+      showToast('🔒 1세션만 열리고 2~5세션은 잠금 리셋되었습니다.', 15000);
     }
 
     function lockAllQuizSessions() {
@@ -8786,11 +8827,11 @@ ${link}
       if (!scheduleData) initScheduleSystem();
       const sessions = (scheduleData && scheduleData.sessions) || [];
       const lectures = sessions.filter(s =>
-        (s.type === 'session' && !(s.sublabel || '').includes('Opening') && !(s.title || '').includes('오프닝') && s.title !== 'Opening') ||
-        (s.sublabel && (s.sublabel.includes('Keynote') || s.sublabel.includes('Insight') || s.sublabel.includes('Special')))
+        (s.type === 'session' && !(s.sublabel || '').includes('Opening') && !(s.title || '').includes('오프닝') && s.title !== 'Opening' && !(s.sublabel || '').includes('Special') && !(s.title || '').includes('테라포밍')) ||
+        (s.sublabel && (s.sublabel.includes('Keynote') || s.sublabel.includes('Insight')))
       );
-      if (lectures.length > 0) return lectures;
-      return (DEFAULT_SCHEDULE_DATA.sessions || []).filter(s => s.type === 'session');
+      if (lectures.length > 0) return lectures.slice(0, 5);
+      return (DEFAULT_SCHEDULE_DATA.sessions || []).filter(s => s.type === 'session' && !(s.sublabel || '').includes('Special')).slice(0, 5);
     }
 
     function populateQuizSessionDropdown(currentTag = '', currentSessionNum = null) {
@@ -8855,7 +8896,7 @@ ${link}
     function openAddQuizModal() {
       document.getElementById('editQuizIndex').value = '-1';
       document.getElementById('modalQuizTitle').textContent = '+ 새 퀴즈 문항 추가';
-      const nextNum = Math.min(quizConfigList.length + 1, 6);
+      const nextNum = Math.min(Math.ceil((quizConfigList.length + 1) / 2), 5);
       populateQuizSessionDropdown('', nextNum);
       handleQuizSessionSelectChange();
       document.getElementById('mQuizQuestion').value = '';
@@ -8964,12 +9005,12 @@ ${link}
     }
 
     function resetQuizConfigToDefault() {
-      if (confirm('6개 세션 기본 퀴즈 문항으로 복원하시겠습니까?')) {
+      if (confirm('5개 세션 기본 퀴즈 문항(총 10문항, 세션별 2문항)으로 복원하시겠습니까?')) {
         quizConfigList = JSON.parse(JSON.stringify(DEFAULT_QUIZ_CONFIG));
         saveQuizConfigToStorage(false);
         renderQuizAdminList();
         updateAllStats();
-        showToast('🔄 기본 퀴즈 문항으로 복원되었습니다.');
+        showToast('🔄 기본 퀴즈 10문항(세션별 2문항)으로 복원되었습니다.');
       }
     }
 
@@ -8982,7 +9023,7 @@ ${link}
         ? quizSubmissionsMap
         : Object.keys(quizSubmissionsMap).map(k => quizSubmissionsMap[k]).filter(Boolean);
 
-      const totalQ = (quizConfigList && quizConfigList.length) || 6;
+      const totalQ = (quizConfigList && quizConfigList.length) || 10;
       const participantCount = list.length;
       const completedCount = list.filter(s => (Number(s.solved) >= totalQ || Number(s.answeredCount) >= totalQ)).length;
       const perfectCount = list.filter(s => Number(s.score) >= totalQ).length;
@@ -9077,7 +9118,7 @@ ${link}
       list.forEach((s, idx) => {
         const solvedNum = Number(s.solved || s.answeredCount) || 0;
         const scoreNum = Number(s.score || 0);
-        csv += `${idx + 1},"${s.checkinId || ''}","${s.name || ''}","${s.empNo || s.email || ''}",${solvedNum},${scoreNum},${Number(s.firstTryCount) || 0},${Number(s.retryCount) || 0},${quizConfigList.length || 6},"${s.updatedAt || ''}"\n`;
+        csv += `${idx + 1},"${s.checkinId || ''}","${s.name || ''}","${s.empNo || s.email || ''}",${solvedNum},${scoreNum},${Number(s.firstTryCount) || 0},${Number(s.retryCount) || 0},${quizConfigList.length || 10},"${s.updatedAt || ''}"\n`;
       });
       downloadFile(csv, `hvac_quiz_scores_${new Date().toISOString().slice(0, 10)}.csv`, 'text/csv;charset=utf-8;');
       showToast('📥 퀴즈 참가자 성적표가 CSV 파일로 다운로드되었습니다.');

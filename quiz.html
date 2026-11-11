@@ -957,15 +957,14 @@
       </div>
     </div>
 
-    <!-- 세션별 전용 퀴즈 필터 탭 -->
+    <!-- 세션별 전용 퀴즈 필터 탭 (세션 1~5) -->
     <div class="session-tab-bar" id="sessionTabBar">
-      <button class="session-tab-pill active" type="button" data-session="all">전체 문항 (6)</button>
+      <button class="session-tab-pill active" type="button" data-session="all">전체 문항 (10)</button>
       <button class="session-tab-pill" type="button" data-session="1">세션 1 <span class="dot-status open" id="dotSession1"></span></button>
       <button class="session-tab-pill" type="button" data-session="2">세션 2 <span class="dot-status" id="dotSession2"></span></button>
       <button class="session-tab-pill" type="button" data-session="3">세션 3 <span class="dot-status" id="dotSession3"></span></button>
       <button class="session-tab-pill" type="button" data-session="4">세션 4 <span class="dot-status" id="dotSession4"></span></button>
       <button class="session-tab-pill" type="button" data-session="5">세션 5 <span class="dot-status" id="dotSession5"></span></button>
-      <button class="session-tab-pill" type="button" data-session="6">세션 6 <span class="dot-status" id="dotSession6"></span></button>
     </div>
 
     <!-- 단독 세션 안내 바 (파라미터 ?session=N 접근 시 노출) -->
@@ -975,7 +974,7 @@
     </div>
 
     <div id="quizList">
-    <!-- 퀴즈 1 (여명석 교수) -->
+    <!-- [세션 1: 여명석 교수] Q1 -->
     <article class="quiz-card" data-quiz-id="1" data-correct="1" data-session-num="1">
       <div class="quiz-header">
         <span class="quiz-session-tag">KEYNOTE 1 · 주거난방</span>
@@ -992,13 +991,30 @@
       </div>
     </article>
 
-    <!-- 퀴즈 2 (이성혁 교수) -->
-    <article class="quiz-card" data-quiz-id="2" data-correct="2" data-session-num="2">
+    <!-- [세션 1: 여명석 교수] Q2 -->
+    <article class="quiz-card" data-quiz-id="2" data-correct="2" data-session-num="1">
+      <div class="quiz-header">
+        <span class="quiz-session-tag">KEYNOTE 1 · 주거난방</span>
+        <span class="quiz-status-pill"></span>
+      </div>
+      <h2 class="quiz-question">Q2. 최근 고기밀·고단열 현대 공동주택에서 바닥난방과 함께 실내 쾌적성을 위해 필수적인 환기·제습 제어 기술은?</h2>
+      <div class="quiz-options">
+        <button class="quiz-option-btn" type="button" data-opt="1">① 창문 상시 개방을 통한 단순 자연 통풍에만 전적으로 의존</button>
+        <button class="quiz-option-btn" type="button" data-opt="2">② 열회수 환기장치(ERV) 및 제습 연계 통합 공조 환기 제어</button>
+        <button class="quiz-option-btn" type="button" data-opt="3">③ 난방 가동 중에는 실내 열보존을 위해 환기 설비 전원 전면 차단</button>
+      </div>
+      <div class="quiz-explanation">
+        <strong>[정답 해설: ②번]</strong> 고기밀 공동주택은 열손실을 방지하고 외기를 신선하게 도입하며 결로를 방지하는 전열교환 환기장치(ERV)와 습도 제어 기술이 필수적으로 연계됩니다.
+      </div>
+    </article>
+
+    <!-- [세션 2: 이성혁 교수] Q3 -->
+    <article class="quiz-card" data-quiz-id="3" data-correct="2" data-session-num="2">
       <div class="quiz-header">
         <span class="quiz-session-tag">KEYNOTE 2 · 데이터센터 액체냉각</span>
         <span class="quiz-status-pill"></span>
       </div>
-      <h2 class="quiz-question">Q2. 고밀도 AI GPU 서버의 막대한 발열을 해결하기 위해 공랭식 대비 급부상한 차세대 냉각 기술은?</h2>
+      <h2 class="quiz-question">Q3. 고밀도 AI GPU 서버의 막대한 발열을 해결하기 위해 공랭식 대비 급부상한 차세대 냉각 기술은?</h2>
       <div class="quiz-options">
         <button class="quiz-option-btn" type="button" data-opt="1">① 대형 선풍기를 이용한 자연 환기 방식</button>
         <button class="quiz-option-btn" type="button" data-opt="2">② 칩 표면에 냉각판을 직접 부착하는 Direct-to-Chip(D2C) 액체냉각</button>
@@ -1009,13 +1025,30 @@
       </div>
     </article>
 
-    <!-- 퀴즈 3 (조홍종 교수) -->
-    <article class="quiz-card" data-quiz-id="3" data-correct="1" data-session-num="3">
+    <!-- [세션 2: 이성혁 교수] Q4 -->
+    <article class="quiz-card" data-quiz-id="4" data-correct="1" data-session-num="2">
+      <div class="quiz-header">
+        <span class="quiz-session-tag">KEYNOTE 2 · 데이터센터 액체냉각</span>
+        <span class="quiz-status-pill"></span>
+      </div>
+      <h2 class="quiz-question">Q4. 서버 전체를 비전도성 유체(유전체 액체)에 직접 담가 냉각하는 '액침냉각(Immersion Cooling)'의 주된 장점은?</h2>
+      <div class="quiz-options">
+        <button class="quiz-option-btn" type="button" data-opt="1">① 서버 팬(Fan) 소음과 냉각 팬 전력 소비를 없애고 PUE를 1.1 이하로 극대화</button>
+        <button class="quiz-option-btn" type="button" data-opt="2">② 서버 내부로 일반 수돗물을 직접 주입하여 비용 절감</button>
+        <button class="quiz-option-btn" type="button" data-opt="3">③ 냉각탑 없이 실내 공기만으로 완전히 열을 방출</button>
+      </div>
+      <div class="quiz-explanation">
+        <strong>[정답 해설: ①번]</strong> 액침냉각은 비전도성 냉각유를 활용해 서버 쿨링팬의 기계적 소음과 팬 전력을 획기적으로 줄이며 PUE 1.0x 대의 초고효율을 달성합니다.
+      </div>
+    </article>
+
+    <!-- [세션 3: 조홍종 교수] Q5 -->
+    <article class="quiz-card" data-quiz-id="5" data-correct="1" data-session-num="3">
       <div class="quiz-header">
         <span class="quiz-session-tag">KEYNOTE 3 · 전력시장 & AIDC</span>
         <span class="quiz-status-pill"></span>
       </div>
-      <h2 class="quiz-question">Q3. AI 데이터센터 급증에 따른 전력 수급 이슈를 해결하기 위한 정부/시장의 핵심 정책 방향은?</h2>
+      <h2 class="quiz-question">Q5. AI 데이터센터 급증에 따른 전력 수급 이슈를 해결하기 위한 정부/시장의 핵심 정책 방향은?</h2>
       <div class="quiz-options">
         <button class="quiz-option-btn" type="button" data-opt="1">① 지역 분산형 전원 체계 구축 및 전력망(Grid) 유연성 강화</button>
         <button class="quiz-option-btn" type="button" data-opt="2">② 수도권 1개 특정 변전소로 전력망을 모두 집중화</button>
@@ -1026,13 +1059,30 @@
       </div>
     </article>
 
-    <!-- 퀴즈 4 (유정현 수석) -->
-    <article class="quiz-card" data-quiz-id="4" data-correct="3" data-session-num="4">
+    <!-- [세션 3: 조홍종 교수] Q6 -->
+    <article class="quiz-card" data-quiz-id="6" data-correct="3" data-session-num="3">
+      <div class="quiz-header">
+        <span class="quiz-session-tag">KEYNOTE 3 · 전력시장 & AIDC</span>
+        <span class="quiz-status-pill"></span>
+      </div>
+      <h2 class="quiz-question">Q6. 데이터센터의 전력 사용 효율성을 나타내는 대표적 지표로, 전체 소비전력을 IT 장비 전력으로 나눈 값(PUE)에 대한 올바른 설명은?</h2>
+      <div class="quiz-options">
+        <button class="quiz-option-btn" type="button" data-opt="1">① PUE 값이 2.0 이상일수록 냉각 설비가 매우 고효율임을 의미한다</button>
+        <button class="quiz-option-btn" type="button" data-opt="2">② PUE는 IT 장비 전력만을 나타내며 냉각 전력은 포함하지 않는다</button>
+        <button class="quiz-option-btn" type="button" data-opt="3">③ PUE가 1.0에 가까울수록 쿨링 및 보조설비 전력 낭비가 적은 친환경 센터이다</button>
+      </div>
+      <div class="quiz-explanation">
+        <strong>[정답 해설: ③번]</strong> PUE(Power Usage Effectiveness)는 1.0에 근접할수록 냉각 및 공조 보조전력 손실이 적고 데이터센터 에너지 효율이 우수함을 나타냅니다.
+      </div>
+    </article>
+
+    <!-- [세션 4: 유정현 수석] Q7 -->
+    <article class="quiz-card" data-quiz-id="7" data-correct="3" data-session-num="4">
       <div class="quiz-header">
         <span class="quiz-session-tag">INSIGHT 1 · 공기열원 히트펌프</span>
         <span class="quiz-status-pill"></span>
       </div>
-      <h2 class="quiz-question">Q4. 공동주택 제로에너지건축물(ZEB) 구현 시 보일러를 대체/보완할 수 있는 친환경 고효율 열원설비는?</h2>
+      <h2 class="quiz-question">Q7. 공동주택 제로에너지건축물(ZEB) 구현 시 보일러를 대체/보완할 수 있는 친환경 고효율 열원설비는?</h2>
       <div class="quiz-options">
         <button class="quiz-option-btn" type="button" data-opt="1">① 재래식 기름보일러</button>
         <button class="quiz-option-btn" type="button" data-opt="2">② 단순 전기 저항 히터 코일</button>
@@ -1043,13 +1093,30 @@
       </div>
     </article>
 
-    <!-- 퀴즈 5 (오영훈 팀장) -->
-    <article class="quiz-card" data-quiz-id="5" data-correct="2" data-session-num="5">
+    <!-- [세션 4: 유정현 수석] Q8 -->
+    <article class="quiz-card" data-quiz-id="8" data-correct="2" data-session-num="4">
+      <div class="quiz-header">
+        <span class="quiz-session-tag">INSIGHT 1 · 공기열원 히트펌프</span>
+        <span class="quiz-status-pill"></span>
+      </div>
+      <h2 class="quiz-question">Q8. '헬로우 히트펌프, 굿바이 보일러' 강연에서 강조하는 공동주택 AWHP의 한랭지(영하 15도 이하) 성능 유지를 위한 핵심 기술은?</h2>
+      <div class="quiz-options">
+        <button class="quiz-option-btn" type="button" data-opt="1">① 혹한기에는 히트펌프 가동을 멈추고 일반 전열기구 전면 사용</button>
+        <button class="quiz-option-btn" type="button" data-opt="2">② 한랭지 고출력 인버터 압축기 및 플래시 가스 인젝션(Flash Gas Injection) 사이클 적용</button>
+        <button class="quiz-option-btn" type="button" data-opt="3">③ 냉매 배관 길이를 100m 이상으로 무제한 연장</button>
+      </div>
+      <div class="quiz-explanation">
+        <strong>[정답 해설: ②번]</strong> 플래시 가스 인젝션 사이클과 한랭지 고성능 인버터 압축기를 통해 영하 20도 이하 혹한기에도 높은 난방 출력을 유지할 수 있습니다.
+      </div>
+    </article>
+
+    <!-- [세션 5: 오영훈 팀장] Q9 -->
+    <article class="quiz-card" data-quiz-id="9" data-correct="2" data-session-num="5">
       <div class="quiz-header">
         <span class="quiz-session-tag">INSIGHT 2 · 에너지컨설팅</span>
         <span class="quiz-status-pill"></span>
       </div>
-      <h2 class="quiz-question">Q5. 건물 및 플랜트의 에너지 비용 절감과 최적 효율 설계를 위해 가장 먼저 선행되어야 하는 과정은?</h2>
+      <h2 class="quiz-question">Q9. 건물 및 플랜트의 에너지 비용 절감과 최적 효율 설계를 위해 가장 먼저 선행되어야 하는 과정은?</h2>
       <div class="quiz-options">
         <button class="quiz-option-btn" type="button" data-opt="1">① 과거 10년 전 도면 데이터만으로 어림짐작하기</button>
         <button class="quiz-option-btn" type="button" data-opt="2">② 정밀 계측을 통한 실시간 에너지 사용 패턴 분석 및 에너지 진단(Audit)</button>
@@ -1060,20 +1127,20 @@
       </div>
     </article>
 
-    <!-- 퀴즈 6 (이정모 관장) -->
-    <article class="quiz-card" data-quiz-id="6" data-correct="1" data-session-num="6">
+    <!-- [세션 5: 오영훈 팀장] Q10 -->
+    <article class="quiz-card" data-quiz-id="10" data-correct="1" data-session-num="5">
       <div class="quiz-header">
-        <span class="quiz-session-tag">SPECIAL LECTURE · 과학 & 인문학</span>
+        <span class="quiz-session-tag">INSIGHT 2 · 에너지컨설팅</span>
         <span class="quiz-status-pill"></span>
       </div>
-      <h2 class="quiz-question">Q6. 급변하는 첨단 기술 및 AI 시대에 엔지니어와 사회 구성원 간의 소통을 위해 가장 필요한 태도는?</h2>
+      <h2 class="quiz-question">Q10. 에너지컨설팅을 통해 노후 흡수식/터보 냉동기를 LG 친환경 고효율 무급유 인버터 마그네틱 칠러 또는 히트펌프로 교체 시 기대 효과는?</h2>
       <div class="quiz-options">
-        <button class="quiz-option-btn" type="button" data-opt="1">① 당연한 것에 질문을 던지고, 오류를 두려워하지 않는 유연하고 열린 자세</button>
-        <button class="quiz-option-btn" type="button" data-opt="2">② 난해한 전문 용어만을 고집하여 설명하기</button>
-        <button class="quiz-option-btn" type="button" data-opt="3">③ 새로운 과학기술 변화에 일절 관심을 두지 않기</button>
+        <button class="quiz-option-btn" type="button" data-opt="1">① 연간 운전 에너지 비용 20~40% 절감 및 온실가스 배출 감축</button>
+        <button class="quiz-option-btn" type="button" data-opt="2">② 공조실 전력 사용량이 기존 대비 2배 증가</button>
+        <button class="quiz-option-btn" type="button" data-opt="3">③ 중앙 제어 시스템 폐기 및 수동 운전 전환</button>
       </div>
       <div class="quiz-explanation">
-        <strong>[정답 해설: ①번]</strong> 과학과 기술의 본질은 끊임없이 질문하고 협력하여 더 나은 답을 찾아가는 열린 탐구 정신에 있습니다.
+        <strong>[정답 해설: ①번]</strong> 자기부상(Magnetic) 인버터 칠러 및 히트펌프는 부분부하 효율(IPLV)이 뛰어나 연간 20~40% 수준의 실질적 전력 비용 절감과 탄소 배출 저감 효과를 제공합니다.
       </div>
     </article>
     </div>
@@ -1497,6 +1564,9 @@
       const cards = document.querySelectorAll('.quiz-card');
       totalQuizzes = cards.length;
 
+      const allTabPill = document.querySelector('.session-tab-pill[data-session="all"]');
+      if (allTabPill) allTabPill.textContent = `전체 문항 (${totalQuizzes})`;
+
       cards.forEach(card => {
         const quizId = card.getAttribute('data-quiz-id');
         const correctOpt = card.getAttribute('data-correct');
@@ -1525,14 +1595,17 @@
         if (!data || !Array.isArray(data.sessions)) return;
         const lectureSessions = data.sessions.filter(s =>
           s.type === 'session' && !(s.sublabel || '').includes('Opening') &&
-          !(s.title || '').includes('오프닝') && s.title !== 'Opening'
+          !(s.title || '').includes('오프닝') && s.title !== 'Opening' &&
+          !(s.sublabel || '').includes('Special') && !(s.title || '').includes('테라포밍')
         );
         const cards = document.querySelectorAll('.quiz-card');
-        lectureSessions.forEach((s, idx) => {
-          const tagEl = cards[idx] && cards[idx].querySelector('.quiz-session-tag');
-          if (tagEl && (s.sublabel || s.title)) {
+        cards.forEach(card => {
+          const sNum = parseInt(card.getAttribute('data-session-num'), 10);
+          const s = lectureSessions[sNum - 1];
+          const tagEl = card.querySelector('.quiz-session-tag');
+          if (tagEl && s && (s.sublabel || s.title)) {
             const shortTitle = (s.title || '').length > 18 ? s.title.slice(0, 18) + '…' : (s.title || '');
-            tagEl.textContent = `${(s.sublabel || 'SESSION ' + (idx + 1)).toUpperCase()} · ${shortTitle}`;
+            tagEl.textContent = `${(s.sublabel || 'SESSION ' + sNum).toUpperCase()} · ${shortTitle}`;
           }
         });
       } catch (e) {}
@@ -1566,7 +1639,7 @@
     function getTargetSessionParam() {
       try {
         const p = new URLSearchParams(window.location.search).get('session');
-        if (p && /^[1-6]$/.test(p.trim())) return parseInt(p.trim(), 10);
+        if (p && /^[1-5]$/.test(p.trim())) return parseInt(p.trim(), 10);
       } catch (e) {}
       return null;
     }
@@ -1581,8 +1654,8 @@
         btn.classList.toggle('active', btn.getAttribute('data-session') === String(sess));
       });
 
-      // 탭 도트 업데이트
-      for (let i = 1; i <= 6; i++) {
+      // 탭 도트 업데이트 (세션 1~5)
+      for (let i = 1; i <= 5; i++) {
         const dot = document.getElementById('dotSession' + i);
         if (dot) dot.classList.toggle('open', unlocked.includes(i));
       }

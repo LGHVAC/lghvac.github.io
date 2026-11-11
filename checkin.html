@@ -1726,8 +1726,8 @@
       <div class="m-item">
         <div class="m-num">02</div>
         <div class="m-info">
-          <small>INSIGHT & SPECIAL SESSION</small>
-          <strong>히트펌프·에너지·인문학 퀴즈</strong>
+          <small>INSIGHT SESSION</small>
+          <strong>히트펌프·에너지컨설팅 퀴즈</strong>
         </div>
         <span class="m-badge" id="missionBadge2">미완료</span>
       </div>
@@ -2650,16 +2650,14 @@
       // 대시보드 화면 활성화
       showScreen('dash');
 
-      // N번째 당첨자면 축하 모달 먼저 띄우기, 아니면 미션 모달
+      // N번째 당첨자면 축하 모달 먼저 띄우기 (일반 참석자는 미션 팝업 없이 대시보드로 바로 진입)
       if (isMilestoneWinner) {
         setTimeout(() => {
           openMilestonePrizeModal(seq, milestonePrize, checkinId, name);
         }, 300);
       } else {
-        setTimeout(() => {
-          syncMissionBadges();
-          document.getElementById('modalMission').classList.add('show');
-        }, 400);
+        // 체크인 시 오늘의 미션 팝업은 띄우지 않고 대시보드 화면 유지 (배지만 백그라운드 동기화)
+        syncMissionBadges();
       }
     });
 
@@ -2868,11 +2866,11 @@
     // =========================================================
     // 모달 및 메뉴 상호작용
     // =========================================================
-    // 퀴즈 문항 ID 목록 (관리자 퀴즈 관리(hvac_quiz_config)와 연동, 없으면 기본 6문항)
+    // 퀴즈 문항 ID 목록 (관리자 퀴즈 관리(hvac_quiz_config)와 연동, 없으면 기본 10문항)
     function getQuizIds() {
       try {
         const raw = localStorage.getItem('hvac_quiz_config');
-        if (!raw) return ['1', '2', '3', '4', '5', '6'];
+        if (!raw) return ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
         const cfg = JSON.parse(raw);
         if (cfg && Array.isArray(cfg.quizzes) && cfg.quizzes.length) {
           return cfg.quizzes.map((q, i) => String(q.id || (i + 1)));
@@ -2881,7 +2879,7 @@
           return cfg.map((q, i) => String(q.id || (i + 1)));
         }
       } catch (e) {}
-      return ['1', '2', '3', '4', '5', '6'];
+      return ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
     }
 
     // 미션 1 = 전반부 퀴즈, 미션 2 = 후반부 퀴즈
