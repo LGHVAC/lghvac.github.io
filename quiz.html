@@ -957,10 +957,11 @@
       </div>
     </div>
 
-    <!-- 세션별 전용 퀴즈 필터 탭 (세션 1~5) -->
+    <!-- 세션별 전용 퀴즈 필터 탭 (오프닝 + 세션 1~5) -->
     <div class="session-tab-bar" id="sessionTabBar">
-      <button class="session-tab-pill active" type="button" data-session="all">전체 문항 (10)</button>
-      <button class="session-tab-pill" type="button" data-session="1">세션 1 <span class="dot-status open" id="dotSession1"></span></button>
+      <button class="session-tab-pill active" type="button" data-session="all">전체 문항 (11)</button>
+      <button class="session-tab-pill" type="button" data-session="0">오프닝 <span class="dot-status" id="dotSession0"></span></button>
+      <button class="session-tab-pill" type="button" data-session="1">세션 1 <span class="dot-status" id="dotSession1"></span></button>
       <button class="session-tab-pill" type="button" data-session="2">세션 2 <span class="dot-status" id="dotSession2"></span></button>
       <button class="session-tab-pill" type="button" data-session="3">세션 3 <span class="dot-status" id="dotSession3"></span></button>
       <button class="session-tab-pill" type="button" data-session="4">세션 4 <span class="dot-status" id="dotSession4"></span></button>
@@ -974,6 +975,23 @@
     </div>
 
     <div id="quizList">
+    <!-- [오프닝 퀴즈: 아이스브레이킹] Q0 -->
+    <article class="quiz-card" data-quiz-id="0" data-correct="3" data-session-num="0">
+      <div class="quiz-header">
+        <span class="quiz-session-tag">OPENING · 오프닝 퀴즈</span>
+        <span class="quiz-status-pill"></span>
+      </div>
+      <h2 class="quiz-question">Q0. 오늘 개최되는 'LG HVAC 전문가 세미나(HVAC Engineering Expert Seminar)'는 올해로 몇 회째를 맞이하였을까요?</h2>
+      <div class="quiz-options">
+        <button class="quiz-option-btn" type="button" data-opt="1">① 제5회</button>
+        <button class="quiz-option-btn" type="button" data-opt="2">② 제7회</button>
+        <button class="quiz-option-btn" type="button" data-opt="3">③ 제10회</button>
+        <button class="quiz-option-btn" type="button" data-opt="4">④ 제15회</button>
+      </div>
+      <div class="quiz-explanation">
+        <strong>[정답 해설: ③번]</strong> 2026 LG HVAC 전문가 세미나는 국내 냉난방공조(HVAC) 산학연 엔지니어들과 미래 기술 비전을 선도해 온 뜻깊은 '제10회' 세미나입니다.
+      </div>
+    </article>
     <!-- [세션 1: 여명석 교수] Q1 -->
     <article class="quiz-card" data-quiz-id="1" data-correct="1" data-session-num="1">
       <div class="quiz-header">
@@ -1205,16 +1223,16 @@
           return {
             quizzes: cfg.quizzes.map((q, idx) => ({
               ...q,
-              sessionNum: q.sessionNum || (idx + 1)
+              sessionNum: (q.sessionNum !== undefined && q.sessionNum !== null) ? q.sessionNum : (idx === 0 ? 0 : idx)
             }))
           };
         }
         if (Array.isArray(cfg) && cfg.length) {
           return {
             quizzes: cfg.map((q, idx) => ({
-              id: q.id || String(idx + 1),
-              sessionNum: q.sessionNum || (idx + 1),
-              tag: q.tag || ('QUIZ ' + (idx + 1)),
+              id: q.id || String(idx),
+              sessionNum: (q.sessionNum !== undefined && q.sessionNum !== null) ? q.sessionNum : (idx === 0 ? 0 : idx),
+              tag: q.tag || (idx === 0 ? 'OPENING · 오프닝 퀴즈' : ('QUIZ ' + idx)),
               question: q.question || '',
               options: q.options || [],
               correct: typeof q.correct === 'number' ? String(q.correct + 1) : String(q.correct || '1'),
@@ -1234,14 +1252,14 @@
       list.innerHTML = cfg.quizzes.map((q, idx) => {
         const options = (q.options || []).filter(o => String(o).trim());
         const correct = String(q.correct || 1);
-        const sNum = q.sessionNum || (idx + 1);
+        const sNum = (q.sessionNum !== undefined && q.sessionNum !== null) ? q.sessionNum : (idx === 0 ? 0 : idx);
         return `
           <article class="quiz-card" data-quiz-id="${escapeHtml(q.id)}" data-correct="${escapeHtml(correct)}" data-session-num="${sNum}">
             <div class="quiz-header">
-              <span class="quiz-session-tag">${escapeHtml(q.tag || ('QUIZ ' + (idx + 1)))}</span>
+              <span class="quiz-session-tag">${escapeHtml(q.tag || (sNum === 0 ? 'OPENING · 오프닝 퀴즈' : ('QUIZ ' + idx)))}</span>
               <span class="quiz-status-pill"></span>
             </div>
-            <h2 class="quiz-question">Q${idx + 1}. ${escapeHtml(q.question)}</h2>
+            <h2 class="quiz-question">Q${sNum === 0 ? '0' : idx}. ${escapeHtml(q.question)}</h2>
             <div class="quiz-options">
               ${options.map((o, oi) => `
                 <button class="quiz-option-btn" type="button" data-opt="${oi + 1}">${CIRCLED[oi] || (oi + 1) + '.'} ${escapeHtml(o)}</button>
@@ -1600,7 +1618,9 @@
         );
         const cards = document.querySelectorAll('.quiz-card');
         cards.forEach(card => {
-          const sNum = parseInt(card.getAttribute('data-session-num'), 10);
+          const rawSNum = card.getAttribute('data-session-num');
+          const sNum = rawSNum !== null && !isNaN(parseInt(rawSNum, 10)) ? parseInt(rawSNum, 10) : 1;
+          if (sNum === 0) return; // 오프닝 퀴즈 태그는 유지
           const s = lectureSessions[sNum - 1];
           const tagEl = card.querySelector('.quiz-session-tag');
           if (tagEl && s && (s.sublabel || s.title)) {
@@ -1622,7 +1642,7 @@
     // =========================================================
     // 세션별 순차 공개(Unlock) & URL 파라미터(?session=N) 라우팅
     // =========================================================
-    const DEFAULT_UNLOCKED = [1]; // 기본값: 1세션 오픈 (저장된 설정이 없을 때만)
+    const DEFAULT_UNLOCKED = []; // 기본값: 세션 1 및 오프닝 포함 전체 퀴즈 잠금 (관리자가 오픈 시 실시간 공개)
     let currentFilterSession = 'all';
 
     function getUnlockedSessions() {
@@ -1639,7 +1659,7 @@
     function getTargetSessionParam() {
       try {
         const p = new URLSearchParams(window.location.search).get('session');
-        if (p && /^[1-5]$/.test(p.trim())) return parseInt(p.trim(), 10);
+        if (p && /^[0-5]$/.test(p.trim())) return parseInt(p.trim(), 10);
       } catch (e) {}
       return null;
     }
@@ -1654,15 +1674,16 @@
         btn.classList.toggle('active', btn.getAttribute('data-session') === String(sess));
       });
 
-      // 탭 도트 업데이트 (세션 1~5)
-      for (let i = 1; i <= 5; i++) {
+      // 탭 도트 업데이트 (오프닝: 0, 세션 1~5)
+      for (let i = 0; i <= 5; i++) {
         const dot = document.getElementById('dotSession' + i);
         if (dot) dot.classList.toggle('open', unlocked.includes(i));
       }
 
       // 카드 노출 및 잠금 처리
       cards.forEach((card, idx) => {
-        const sNum = parseInt(card.getAttribute('data-session-num'), 10) || (idx + 1);
+        const rawSNum = card.getAttribute('data-session-num');
+        const sNum = rawSNum !== null && !isNaN(parseInt(rawSNum, 10)) ? parseInt(rawSNum, 10) : (idx + 1);
         const isMatch = (sess === 'all' || sess === sNum);
         card.style.display = isMatch ? 'block' : 'none';
 
@@ -1678,13 +1699,15 @@
             lockPlaceholder = document.createElement('div');
             lockPlaceholder.className = 'card-lock-placeholder';
             const tagEl = card.querySelector('.quiz-session-tag');
-            const sessionTag = tagEl ? tagEl.textContent.trim() : `세션 ${sNum}`;
+            const sessionTag = tagEl ? tagEl.textContent.trim() : (sNum === 0 ? '오프닝' : `세션 ${sNum}`);
+            const tagLabel = sNum === 0 ? '오프닝 행사' : `세션 ${sNum} 강연`;
+            const timeHint = sNum === 0 ? '오프닝 세션 진행 중 퀴즈가 오픈됩니다' : '강연 종료 후 퀴즈가 오픈됩니다';
             lockPlaceholder.innerHTML = `
               <div class="lock-icon-wrap">🔒</div>
-              <span class="lock-tag">세션 ${sNum} 강연 진행 중 · 퀴즈 비공개</span>
-              <h3>강연 종료 후 퀴즈가 오픈됩니다</h3>
+              <span class="lock-tag">${tagLabel} 진행 중 · 퀴즈 비공개</span>
+              <h3>${timeHint}</h3>
               <p>
-                공정한 퀴즈 참여 및 스포일러 방지를 위해 강연이 완전히 종료된 후 관리자가 오픈합니다.<br>
+                공정한 퀴즈 참여 및 스포일러 방지를 위해 현장 진행에 맞춰 관리자가 오픈합니다.<br>
                 현장 강연 발표에 집중해 주시기 바랍니다.
               </p>
               <div class="lock-realtime-hint">
@@ -1702,7 +1725,7 @@
           if (statusPill) {
             statusPill.style.display = 'inline-block';
             statusPill.className = 'quiz-status-pill pill-locked';
-            statusPill.textContent = '🔒 비공개 (강연 종료 후 오픈)';
+            statusPill.textContent = '🔒 비공개 (오픈 대기 중)';
           }
         } else {
           if (lockPlaceholder) lockPlaceholder.remove();
@@ -1735,7 +1758,8 @@
       if (sess !== 'all' && noticeBar && noticeTitle) {
         noticeBar.style.display = 'flex';
         const isUnlocked = unlocked.includes(sess);
-        noticeTitle.textContent = `🎯 세션 ${sess} 강연 퀴즈 전용 모드 ${isUnlocked ? '(공개됨)' : '(🔒 준비 중)'}`;
+        const sessTitleText = sess === 0 ? '오프닝 퀴즈' : `세션 ${sess} 강연 퀴즈`;
+        noticeTitle.textContent = `🎯 ${sessTitleText} 전용 모드 ${isUnlocked ? '(공개됨)' : '(🔒 준비 중)'}`;
       } else if (noticeBar) {
         noticeBar.style.display = 'none';
       }

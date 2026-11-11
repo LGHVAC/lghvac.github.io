@@ -676,7 +676,7 @@
       <div class="ask-card-title">✍️ 질문 등록하기</div>
       
       <select class="select-session" id="askSession">
-        <option value="all">세션을 선택하세요 (공통/전체)</option>
+        <option value="" disabled selected>강연 세션을 선택해 주세요 (필수)</option>
         <option value="k1">Keynote 1: 국내주거난방의 변천과 현황 (여명석 교수)</option>
         <option value="k2">Keynote 2: AI 서버 액체냉각 및 데이터센터 (이성혁 교수)</option>
         <option value="k3">Keynote 3: 전력시장 현황 및 AIDC 전력공급 (조홍종 교수)</option>
@@ -815,7 +815,7 @@
         const tabsEl = document.getElementById('sessionTabs');
         if (!selectEl || !tabsEl) return;
 
-        selectEl.innerHTML = '<option value="all">세션을 선택하세요 (공통/전체)</option>';
+        selectEl.innerHTML = '<option value="" disabled selected>강연 세션을 선택해 주세요 (필수)</option>';
         tabsEl.innerHTML = `<button class="tab-btn ${currentFilter === 'all' ? 'active' : ''}" data-filter="all">전체 질문 (<span id="countAll">${questions.length}</span>)</button>`;
 
         lectureSessions.forEach((s, idx) => {
@@ -1017,6 +1017,12 @@
       const sessionKey = document.getElementById('askSession').value;
       let author = inputAuthor.value.trim();
 
+      if (!sessionKey || sessionKey === '' || sessionKey === 'all') {
+        showToast('⚠️ 질문하실 강연 세션을 선택해 주세요. (강연 세션만 질문 가능)');
+        document.getElementById('askSession').focus();
+        return;
+      }
+
       if (!content) {
         showToast('⚠️ 질문 내용을 입력해 주세요.');
         document.getElementById('askContent').focus();
@@ -1034,8 +1040,8 @@
 
       const newQ = {
         id: Date.now(),
-        session: sessionKey === 'all' ? 'k1' : sessionKey,
-        sessionName: sessionNames[sessionKey] || '공통 질의',
+        session: sessionKey,
+        sessionName: sessionNames[sessionKey] || '강연 질의',
         author: author,
         content: content,
         time: timeStr,

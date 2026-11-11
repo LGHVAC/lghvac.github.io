@@ -2800,6 +2800,25 @@
       // 우측 도트 인디케이터 갱신
       const allDots = document.querySelectorAll('#sideDots .dot');
       allDots.forEach((d, i) => d.classList.toggle('active', i === idx));
+
+      // 강연 세션만 질문 가능하도록 처리 (쉬는시간, 점심시간, 등록, 오프닝, 마무리 등 일반 세션 제외)
+      const isLectureSession = (s.type === 'session') &&
+        !(s.sublabel || '').includes('Opening') &&
+        !(s.title || '').includes('오프닝') &&
+        !(s.title || '').includes('개회사') &&
+        !(s.sublabel || '').includes('Registration') &&
+        !(s.sublabel || '').includes('Closing') &&
+        (s.speaker && s.speaker !== '-');
+
+      const btnBottomAction = document.getElementById('btnBottomAction');
+      if (btnBottomAction) {
+        if (isLectureSession) {
+          btnBottomAction.style.display = 'flex';
+          btnBottomAction.innerHTML = '💬 강연 세션 질문하기 ∨';
+        } else {
+          btnBottomAction.style.display = 'none';
+        }
+      }
     }
 
     // =========================================================
@@ -2866,20 +2885,20 @@
     // =========================================================
     // 모달 및 메뉴 상호작용
     // =========================================================
-    // 퀴즈 문항 ID 목록 (관리자 퀴즈 관리(hvac_quiz_config)와 연동, 없으면 기본 10문항)
+    // 퀴즈 문항 ID 목록 (오프닝 퀴즈 포함 11문항)
     function getQuizIds() {
       try {
         const raw = localStorage.getItem('hvac_quiz_config');
-        if (!raw) return ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
+        if (!raw) return ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
         const cfg = JSON.parse(raw);
         if (cfg && Array.isArray(cfg.quizzes) && cfg.quizzes.length) {
-          return cfg.quizzes.map((q, i) => String(q.id || (i + 1)));
+          return cfg.quizzes.map((q, i) => String(q.id || (i === 0 ? '0' : i)));
         }
         if (Array.isArray(cfg) && cfg.length) {
-          return cfg.map((q, i) => String(q.id || (i + 1)));
+          return cfg.map((q, i) => String(q.id || (i === 0 ? '0' : i)));
         }
       } catch (e) {}
-      return ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
+      return ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
     }
 
     // 미션 1 = 전반부 퀴즈, 미션 2 = 후반부 퀴즈

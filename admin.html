@@ -1962,7 +1962,7 @@
         📝 프로그램 & 세션 관리 <span class="tab-count" id="countBadgeSchedule">0</span>
       </button>
       <button class="tab-btn" data-tab="tabQuiz" onclick="switchTab('tabQuiz')">
-        💡 퀴즈 문항 & 점수 관리 <span class="tab-count" id="countBadgeQuiz">10</span>
+        💡 퀴즈 문항 & 점수 관리 <span class="tab-count" id="countBadgeQuiz">11</span>
       </button>
       <button class="tab-btn" data-tab="tabSurvey" onclick="switchTab('tabSurvey')">
         📋 만족도 설문 & 응답 <span class="tab-count" id="countBadgeSurvey">0</span>
@@ -2687,7 +2687,7 @@
           <div class="stat-icon">💡</div>
           <div>
             <div class="stat-label">등록된 퀴즈 문항</div>
-            <div class="stat-value" id="statQuizTotalCount">10</div>
+            <div class="stat-value" id="statQuizTotalCount">11</div>
             <div class="stat-sub">출제 문항 수</div>
           </div>
         </div>
@@ -2734,9 +2734,9 @@
             <p class="card-sub">강연이 종료될 때마다 해당 세션을 <strong>[공개(오픈)]</strong>하고, <strong>[📢 카톡 공지 복사]</strong> 버튼을 눌러 오픈채팅방에 안내 링크를 즉시 송출하세요.</p>
           </div>
           <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-            <button class="btn-act primary" onclick="unlockAllQuizSessions()">🔓 전 세션 일괄 오픈</button>
-            <button class="btn-act" onclick="lockAllQuizSessionsExceptFirst()">🔓 1세션만 열기</button>
-            <button class="btn-act danger" onclick="lockAllQuizSessions()">🔒 전 세션 일괄 잠금 (1세션 포함)</button>
+            <button class="btn-act primary" onclick="unlockAllQuizSessions()">🔓 전 퀴즈 일괄 오픈 (오프닝+1~5)</button>
+            <button class="btn-act" onclick="unlockOnlyOpeningQuiz()">🔓 오프닝 퀴즈만 오픈</button>
+            <button class="btn-act danger" onclick="lockAllQuizSessions()">🔒 전 퀴즈 일괄 잠금 (세션 1 포함)</button>
           </div>
         </div>
         <div class="quiz-release-grid" id="quizReleaseGrid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 14px; margin-top: 16px;">
@@ -2846,7 +2846,7 @@
           <div style="display: flex; gap: 8px; flex-wrap: wrap;">
             <button class="btn-act primary" onclick="openAddQuizModal()">+ 새 퀴즈 문항 추가</button>
             <button class="btn-act" onclick="saveQuizConfigToStorage(true)">💾 퀴즈 전체 저장</button>
-            <button class="btn-act" onclick="resetQuizConfigToDefault()">🔄 기본 문항 복원 (10문항)</button>
+            <button class="btn-act" onclick="resetQuizConfigToDefault()">🔄 기본 문항 복원 (11문항)</button>
             <a class="btn-act" href="./quiz.html" target="_blank">💡 퀴즈 페이지 미리보기 ↗</a>
           </div>
         </div>
@@ -3091,12 +3091,12 @@
               </div>
               <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
                 <select id="selectInAppQuizSession" class="form-control" style="width: auto; padding: 7px 10px; font-weight: 800; background: #08160f; color: #f3c448; border-color: rgba(243,196,72,0.45); font-size: 12.5px;">
+                  <option value="0">오프닝: 오프닝 퀴즈 (아이스브레이킹)</option>
                   <option value="1">세션 1: 여명석 교수</option>
                   <option value="2">세션 2: 이성혁 교수</option>
                   <option value="3">세션 3: 조홍종 교수</option>
                   <option value="4">세션 4: 유정현 수석</option>
                   <option value="5">세션 5: 오영훈 팀장</option>
-                  <option value="6">세션 6: 이정모 관장</option>
                 </select>
                 <button type="button" class="btn-tbl" style="background: var(--gold-primary); color: #040906; font-weight: 900; padding: 7px 14px;" onclick="triggerSelectedInAppQuizBanner()">
                   🚀 실시간 퀴즈 배너 팝업 발송 (15초)
@@ -4615,8 +4615,12 @@ const DEFAULT_SCHEDULE_DATA = {
 
       const quizBannerSel = document.getElementById('selectInAppQuizSession');
       if (quizBannerSel) {
-        const prevQuizVal = quizBannerSel.value || '1';
+        const prevQuizVal = quizBannerSel.value !== undefined && quizBannerSel.value !== null ? quizBannerSel.value : '0';
         quizBannerSel.innerHTML = '';
+        const opOpt = document.createElement('option');
+        opOpt.value = '0';
+        opOpt.textContent = '오프닝: 오프닝 퀴즈 (아이스브레이킹)';
+        quizBannerSel.appendChild(opOpt);
         lectureSessions.forEach((s, idx) => {
           const num = idx + 1;
           const cleanSp = (s.speaker || '').replace(/\s*\([^)]*\)\s*$/, '').trim();
@@ -5496,6 +5500,12 @@ const DEFAULT_SCHEDULE_DATA = {
     // 7. [TAB 6] 카카오톡 채널 세션 공지 멘트 전송 센터 (동적 일정 연동)
     // =========================================================
     function getLectureSessionByQuizNum(num = 1) {
+      if (num === 0) {
+        return {
+          speaker: 'ES엔지니어링담당',
+          title: '오프닝 및 개회사 (아이스브레이킹)'
+        };
+      }
       if (!scheduleData) initScheduleSystem();
       const sessions = (scheduleData && scheduleData.sessions) || [];
       const lectures = sessions.filter(s =>
@@ -5806,14 +5816,23 @@ ${s3.speaker}님의 '${s3.title}' 세션까지 오전 강연이 모두 종료되
 
     function triggerInAppQuizBanner(sessionId = 1) {
       if (!scheduleData) initScheduleSystem();
-      const sess = getLectureSessionByQuizNum(sessionId);
-      const speakerClean = (sess.speaker || '강사').replace(/\s*\([^)]*\)\s*$/, '').trim();
+      let bannerText = '';
+      let toastTitle = '';
+      if (sessionId === 0) {
+        bannerText = `💡 [오프닝 퀴즈 오픈] 2026 HVAC 전문가 세미나 개회 아이스브레이킹 퀴즈가 오픈되었습니다! 지금 퀴즈를 풀고 럭키드로우에 응모하세요!`;
+        toastTitle = '오프닝';
+      } else {
+        const sess = getLectureSessionByQuizNum(sessionId);
+        const speakerClean = (sess.speaker || '강사').replace(/\s*\([^)]*\)\s*$/, '').trim();
+        bannerText = `💡 [세션 ${sessionId} 퀴즈 오픈] ${speakerClean}님의 '${sess.title}' 강연이 종료되었습니다! 지금 핵심 퀴즈를 풀고 럭키드로우에 응모하세요!`;
+        toastTitle = `세션 ${sessionId}`;
+      }
       const bannerPayload = {
         enabled: true,
         level: 'warning',
-        text: `💡 [세션 ${sessionId} 퀴즈 오픈] ${speakerClean}님의 '${sess.title}' 강연이 종료되었습니다! 지금 핵심 퀴즈를 풀고 럭키드로우에 응모하세요!`,
+        text: bannerText,
         linkUrl: `./quiz.html?session=${sessionId}`,
-        linkLabel: '👉 지금 퀴즈 풀기',
+        linkLabel: sessionId === 0 ? '👉 오프닝 퀴즈 풀기' : '👉 지금 퀴즈 풀기',
         duration: 15000,
         expireAfterMs: 60000, // 1분 후 자동 소멸
         isQuizAlert: true,
@@ -5830,13 +5849,13 @@ ${s3.speaker}님의 '${s3.title}' 세션까지 오전 강연이 모두 종료되
       try {
         window.dispatchEvent(new CustomEvent('hvac:config-updated', { detail: { keys: ['hvac_notice_banner'] } }));
       } catch (e) {}
-      showToast(`🔔 [세션 ${sessionId} 퀴즈 알림 팝업 발송] 전체 참석자 화면 상단에 15초간 퀴즈 알림 배너 팝업이 발송되었습니다! (최초 알림 1분 후 자동 소멸)`, 15000);
+      showToast(`🔔 [${toastTitle} 퀴즈 알림 팝업 발송] 전체 참석자 화면 상단에 15초간 퀴즈 알림 배너 팝업이 발송되었습니다! (최초 알림 1분 후 자동 소멸)`, 15000);
     }
 
     function triggerSelectedInAppQuizBanner() {
       const sel = document.getElementById('selectInAppQuizSession');
-      const sNum = sel ? parseInt(sel.value, 10) || 1 : 1;
-      triggerInAppQuizBanner(sNum);
+      const sNum = sel ? parseInt(sel.value, 10) : 0;
+      triggerInAppQuizBanner(isNaN(sNum) ? 0 : sNum);
     }
 
     function renderKakaoPresetItems() {
@@ -8353,9 +8372,19 @@ ${s3.speaker}님의 '${s3.title}' 세션까지 오전 강연이 모두 종료되
 
     // =========================================================
     // 14. [TAB 6] 💡 퀴즈 문항 & 실시간 참가자 점수 관리 시스템
-    //  - 세션 1~5 대상, 세션별 2문항씩 기본 10문항 구성 (세션 6 인문학 제외)
+    //  - 오프닝 1문항 + 세션 1~5 대상 세션별 2문항, 기본 11문항 구성 (세션 6 인문학 제외)
     // =========================================================
     const DEFAULT_QUIZ_CONFIG = [
+      // Session 0: 오프닝 및 개회사 (아이스브레이킹)
+      {
+        id: 'q0',
+        sessionNum: 0,
+        tag: 'OPENING · 오프닝 퀴즈',
+        question: "2026년 오늘 개최되는 'LG HVAC 전문가 세미나(HVAC Engineering Expert Seminar)'는 올해로 몇 회째를 맞이하였을까요?",
+        options: ['제5회', '제7회', '제10회', '제15회'],
+        correct: 2,
+        explanation: "2026 LG HVAC 전문가 세미나는 국내 냉난방공조(HVAC) 산학연 엔지니어들과 미래 기술 비전을 선도해 온 뜻깊은 '제10회' 세미나입니다."
+      },
       // Session 1: 여명석 교수 (Keynote 1 · 주거난방)
       {
         id: 'q1',
@@ -8458,9 +8487,10 @@ ${s3.speaker}님의 '${s3.title}' 세션까지 오전 강연이 모두 종료되
 
     
     // =========================================================
-    // 세션별 퀴즈 순차 공개 & 카톡 공지 제어기 (세션 1~5)
+    // 세션별 퀴즈 순차 공개 & 카톡 공지 제어기 (오프닝 + 세션 1~5)
     // =========================================================
     const QUIZ_SESSION_INFO = [
+      { num: 0, speaker: 'ES엔지니어링담당', title: '오프닝 및 개회사 (아이스브레이킹)', tag: 'OPENING · 오프닝 퀴즈' },
       { num: 1, speaker: '여명석 교수 (서울대)', title: '국내주거난방의 변천과 현황', tag: 'KEYNOTE 1 · 주거난방' },
       { num: 2, speaker: '이성혁 교수 (중앙대)', title: '고밀도 AI 서버의 액체냉각 및 데이터센터 열관리 기술', tag: 'KEYNOTE 2 · 액체냉각' },
       { num: 3, speaker: '조홍종 교수 (단국대)', title: '국내 전력시장 현황 및 AIDC 전력공급 방안', tag: 'KEYNOTE 3 · 전력시장' },
@@ -8476,7 +8506,7 @@ ${s3.speaker}님의 '${s3.title}' 세션까지 오전 강연이 모두 종료되
           if (Array.isArray(arr)) return arr.map(Number);
         }
       } catch (e) {}
-      return [1];
+      return []; // 기본값: 전체 잠금 (오프닝 및 세션 1 모두 잠금)
     }
 
     function saveUnlockedQuizSessions(arr) {
@@ -8505,7 +8535,7 @@ ${s3.speaker}님의 '${s3.title}' 세션까지 오전 강연이 모두 종료되
                   ${isOpen ? '🟢 공개 중 (OPEN)' : '🔒 비공개 (LOCKED)'}
                 </span>
               </div>
-              <h4 style="font-size: 15px; font-weight: 900; color: #fff; margin-bottom: 4px;">세션 ${s.num}. ${escapeHtml(s.speaker)}</h4>
+              <h4 style="font-size: 15px; font-weight: 900; color: #fff; margin-bottom: 4px;">${s.num === 0 ? '오프닝 퀴즈' : '세션 ' + s.num}. ${escapeHtml(s.speaker)}</h4>
               <p style="font-size: 12.5px; color: var(--text-muted); line-height: 1.4; margin: 0;">${escapeHtml(s.title)}</p>
             </div>
 
@@ -8527,24 +8557,41 @@ ${s3.speaker}님의 '${s3.title}' 세션까지 오전 강연이 모두 종료되
 
     function toggleQuizSessionRelease(sNum) {
       let unlocked = getUnlockedQuizSessions();
+      const sName = sNum === 0 ? '오프닝 퀴즈' : `세션 ${sNum} 퀴즈`;
       if (unlocked.includes(sNum)) {
         unlocked = unlocked.filter(n => n !== sNum);
-        showToast(`🔒 세션 ${sNum} 퀴즈가 비공개(잠금) 처리되었습니다.`, 15000);
+        showToast(`🔒 ${sName}가 비공개(잠금) 처리되었습니다.`, 15000);
       } else {
         unlocked.push(sNum);
         unlocked.sort((a, b) => a - b);
         triggerInAppQuizBanner(sNum); // 퀴즈 오픈 시 참석자 실시간 퀴즈 알람 배너 팝업 동시 전송 (15초 유지)
-        showToast(`🔓 [세션 ${sNum} 퀴즈 오픈] 퀴즈가 공개되었으며, 참석자 화면으로 15초간 실시간 알람 배너 팝업이 전송되었습니다!`, 15000);
+        showToast(`🔓 [${sName} 오픈] 퀴즈가 공개되었으며, 참석자 화면으로 15초간 실시간 알람 배너 팝업이 전송되었습니다!`, 15000);
       }
       saveUnlockedQuizSessions(unlocked);
       renderQuizReleaseGrid();
     }
 
     function unlockAllQuizSessions() {
-      const all = [1, 2, 3, 4, 5];
+      const all = [0, 1, 2, 3, 4, 5];
       saveUnlockedQuizSessions(all);
       renderQuizReleaseGrid();
-      showToast('🔓 1~5 전체 세션 퀴즈가 모두 오픈되었으며, 참석자 화면으로 실시간 알람이 전송되었습니다.', 15000);
+      showToast('🔓 오프닝 및 1~5 전체 세션 퀴즈가 모두 오픈되었으며, 참석자 화면으로 실시간 알람이 전송되었습니다.', 15000);
+    }
+
+    function unlockOnlyOpeningQuiz() {
+      saveUnlockedQuizSessions([0]);
+      renderQuizReleaseGrid();
+      try {
+        const cur = JSON.parse(localStorage.getItem('hvac_notice_banner') || '{}');
+        if (cur && (cur.isQuizAlert || (cur.text && cur.text.includes('퀴즈')))) {
+          cur.enabled = false;
+          cur.updatedAt = Date.now();
+          localStorage.setItem('hvac_notice_banner', JSON.stringify(cur));
+          if (window.HVAC && window.HVAC.cloud) window.HVAC.cloud.pushConfig('hvac_notice_banner', cur);
+          window.dispatchEvent(new CustomEvent('hvac:config-updated', { detail: { keys: ['hvac_notice_banner'] } }));
+        }
+      } catch (e) {}
+      showToast('🔓 오프닝 퀴즈만 오픈되고 1~5 세션은 비공개(잠금) 처리되었습니다.', 15000);
     }
 
     function lockAllQuizSessionsExceptFirst() {
@@ -8560,7 +8607,7 @@ ${s3.speaker}님의 '${s3.title}' 세션까지 오전 강연이 모두 종료되
           window.dispatchEvent(new CustomEvent('hvac:config-updated', { detail: { keys: ['hvac_notice_banner'] } }));
         }
       } catch (e) {}
-      showToast('🔒 1세션만 열리고 2~5세션은 잠금 리셋되었습니다.', 15000);
+      showToast('🔒 1세션만 열리고 오프닝 및 2~5세션은 잠금 리셋되었습니다.', 15000);
     }
 
     function lockAllQuizSessions() {
@@ -8576,7 +8623,7 @@ ${s3.speaker}님의 '${s3.title}' 세션까지 오전 강연이 모두 종료되
           window.dispatchEvent(new CustomEvent('hvac:config-updated', { detail: { keys: ['hvac_notice_banner'] } }));
         }
       } catch (e) {}
-      showToast('🔒 1번 세션을 포함한 전체 세션 퀴즈가 비공개(잠금) 처리되었습니다.', 15000);
+      showToast('🔒 오프닝 및 세션 1을 포함한 전체 세션 퀴즈가 비공개(잠금) 처리되었습니다.', 15000);
     }
 
     function copyKakaoQuizNotice(sNum) {
@@ -8586,7 +8633,21 @@ ${s3.speaker}님의 '${s3.title}' 세션까지 오전 강연이 모두 종료되
         : 'https://lghvac.app';
       const link = `${siteBase}/quiz.html?session=${sNum}`;
 
-      const text = `[📢 2026 HVAC 전문가 세미나 실시간 퀴즈 안내]
+      let text = '';
+      if (sNum === 0) {
+        text = `[📢 2026 HVAC 전문가 세미나 오프닝 아이스브레이킹 퀴즈 안내]
+
+오늘 2026 LG HVAC 전문가 세미나가 개회되었습니다!
+세미나 시작을 알리는 오프닝 아이스브레이킹 퀴즈가 오픈되었으니 지금 바로 도전해보세요!
+
+💡 오프닝 퀴즈 풀고 만찬 럭키드로우 경품에 도전하세요!
+
+👉 오프닝 퀴즈 풀기:
+${link}
+
+(정답을 맞히시면 경품 추첨권이 부여됩니다!)`;
+      } else {
+        text = `[📢 2026 HVAC 전문가 세미나 실시간 퀴즈 안내]
 
 방금 [세션 ${sNum}] ${s.speaker}님의
 '${s.title}' 강연이 종료되었습니다!
@@ -8597,10 +8658,12 @@ ${s3.speaker}님의 '${s3.title}' 세션까지 오전 강연이 모두 종료되
 ${link}
 
 (정답을 맞히시면 경품 추첨권이 부여됩니다!)`;
+      }
 
+      const sName = sNum === 0 ? '오프닝' : `세션 ${sNum}`;
       if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(text).then(() => {
-          showToast(`📢 [세션 ${sNum}] 카톡 공지문이 복사되었습니다! 카톡창에 바로 붙여넣기(Ctrl+V)하세요.`);
+          showToast(`📢 [${sName}] 카톡 공지문이 복사되었습니다! 카톡창에 바로 붙여넣기(Ctrl+V)하세요.`);
         }).catch(() => {
           copyFallbackText(text, sNum);
         });
@@ -8840,7 +8903,12 @@ ${link}
       const lectures = getQuizLectureSessions();
 
       let matchedVal = '';
-      sel.innerHTML = lectures.map((s, idx) => {
+      const openingOpt = `<option value="0" data-tag="OPENING · 오프닝 퀴즈">[오프닝] 오프닝 퀴즈 (ES엔지니어링담당)</option>`;
+      if (currentSessionNum === 0 || (currentTag && (currentTag.includes('오프닝') || currentTag.toUpperCase().includes('OPENING')))) {
+        matchedVal = '0';
+      }
+
+      const lectureOpts = lectures.map((s, idx) => {
         const num = idx + 1;
         const cleanTitle = (s.title || '').trim();
         const cleanSpeaker = (s.speaker || '').trim();
@@ -8849,15 +8917,17 @@ ${link}
         const optText = `[세션 ${num}] ${cleanTitle}${cleanSpeaker ? ` (${cleanSpeaker})` : ''}`;
 
         // 현재 퀴즈의 세션 번호 또는 태그와 매칭 확인
-        if (currentSessionNum === num) {
-          matchedVal = String(num);
-        } else if (!matchedVal && currentTag) {
-          const normCur = currentTag.replace(/\s+/g, '').toLowerCase();
-          const normTitle = cleanTitle.replace(/\s+/g, '').toLowerCase();
-          const normSpk = cleanSpeaker.replace(/\s+/g, '').toLowerCase();
-          const normTag = tagValue.replace(/\s+/g, '').toLowerCase();
-          if (normCur === normTag || (normTitle && normCur.includes(normTitle)) || (normSpk && normCur.includes(normSpk))) {
+        if (!matchedVal) {
+          if (currentSessionNum === num) {
             matchedVal = String(num);
+          } else if (currentTag) {
+            const normCur = currentTag.replace(/\s+/g, '').toLowerCase();
+            const normTitle = cleanTitle.replace(/\s+/g, '').toLowerCase();
+            const normSpk = cleanSpeaker.replace(/\s+/g, '').toLowerCase();
+            const normTag = tagValue.replace(/\s+/g, '').toLowerCase();
+            if (normCur === normTag || (normTitle && normCur.includes(normTitle)) || (normSpk && normCur.includes(normSpk))) {
+              matchedVal = String(num);
+            }
           }
         }
 
@@ -8865,7 +8935,7 @@ ${link}
       }).join('');
 
       // 직접 입력 / 기타 세션 옵션 추가
-      sel.innerHTML += `<option value="custom" data-tag="">[직접 입력 / 사용자 지정 세션]</option>`;
+      sel.innerHTML = openingOpt + lectureOpts + `<option value="custom" data-tag="">[직접 입력 / 사용자 지정 세션]</option>`;
 
       if (matchedVal) {
         sel.value = matchedVal;
@@ -8896,7 +8966,7 @@ ${link}
     function openAddQuizModal() {
       document.getElementById('editQuizIndex').value = '-1';
       document.getElementById('modalQuizTitle').textContent = '+ 새 퀴즈 문항 추가';
-      const nextNum = Math.min(Math.ceil((quizConfigList.length + 1) / 2), 5);
+      const nextNum = Math.min(Math.ceil((quizConfigList.length) / 2), 5);
       populateQuizSessionDropdown('', nextNum);
       handleQuizSessionSelectChange();
       document.getElementById('mQuizQuestion').value = '';
@@ -8915,7 +8985,8 @@ ${link}
       const opts = Array.isArray(q.options) ? q.options : ['', '', '', ''];
       document.getElementById('editQuizIndex').value = idx;
       document.getElementById('modalQuizTitle').textContent = `✏️ Q${idx + 1} 퀴즈 문항 수정`;
-      populateQuizSessionDropdown(q.tag || '', q.sessionNum || (idx + 1));
+      const curSNum = (q.sessionNum !== undefined && q.sessionNum !== null) ? Number(q.sessionNum) : (idx === 0 ? 0 : Math.ceil(idx / 2));
+      populateQuizSessionDropdown(q.tag || '', curSNum);
       document.getElementById('mQuizTag').value = q.tag || '';
       document.getElementById('mQuizQuestion').value = q.question || '';
       document.getElementById('mQuizOpt1').value = opts[0] || '';
@@ -8931,7 +9002,14 @@ ${link}
       e.preventDefault();
       const idx = parseInt(document.getElementById('editQuizIndex').value, 10);
       const sel = document.getElementById('mQuizSessionSelect');
-      const sessionNum = (sel && sel.value !== 'custom') ? parseInt(sel.value, 10) : (idx >= 0 && quizConfigList[idx] && quizConfigList[idx].sessionNum ? quizConfigList[idx].sessionNum : (idx + 1));
+      let sessionNum = 0;
+      if (sel && sel.value !== 'custom' && sel.value !== '') {
+        sessionNum = parseInt(sel.value, 10);
+      } else if (idx >= 0 && quizConfigList[idx] && quizConfigList[idx].sessionNum !== undefined && quizConfigList[idx].sessionNum !== null) {
+        sessionNum = quizConfigList[idx].sessionNum;
+      } else {
+        sessionNum = (idx === 0 ? 0 : Math.ceil(idx / 2));
+      }
 
       const item = {
         id: idx >= 0 && quizConfigList[idx] ? (quizConfigList[idx].id || ('q' + (idx + 1))) : ('q' + (quizConfigList.length + 1) + '_' + Date.now().toString(36)),
@@ -9005,12 +9083,12 @@ ${link}
     }
 
     function resetQuizConfigToDefault() {
-      if (confirm('5개 세션 기본 퀴즈 문항(총 10문항, 세션별 2문항)으로 복원하시겠습니까?')) {
+      if (confirm('오프닝 및 5개 세션 기본 퀴즈 문항(총 11문항)으로 복원하시겠습니까?')) {
         quizConfigList = JSON.parse(JSON.stringify(DEFAULT_QUIZ_CONFIG));
         saveQuizConfigToStorage(false);
         renderQuizAdminList();
         updateAllStats();
-        showToast('🔄 기본 퀴즈 10문항(세션별 2문항)으로 복원되었습니다.');
+        showToast('🔄 기본 퀴즈 11문항(오프닝 1문항 + 5개 세션별 2문항)으로 복원되었습니다.');
       }
     }
 
@@ -9023,7 +9101,7 @@ ${link}
         ? quizSubmissionsMap
         : Object.keys(quizSubmissionsMap).map(k => quizSubmissionsMap[k]).filter(Boolean);
 
-      const totalQ = (quizConfigList && quizConfigList.length) || 10;
+      const totalQ = (quizConfigList && quizConfigList.length) || 11;
       const participantCount = list.length;
       const completedCount = list.filter(s => (Number(s.solved) >= totalQ || Number(s.answeredCount) >= totalQ)).length;
       const perfectCount = list.filter(s => Number(s.score) >= totalQ).length;
