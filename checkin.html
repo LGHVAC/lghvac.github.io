@@ -1516,7 +1516,7 @@
       <div class="session-viewer">
         <div class="session-card" id="currentSessionCard">
           <div class="session-time-row">
-            <div class="session-time" id="sTime">~08:50</div>
+            <div class="session-time" id="sTime">08:00 ~ 08:50</div>
             <div class="location-badge" id="sLocation">📍 본부관 학술회의장</div>
           </div>
           <div class="session-sublabel" id="sSublabel">
@@ -1524,7 +1524,7 @@
           </div>
 
           <h2 class="session-title" id="sTitle">세미나 참석자 등록 및 입장 안내</h2>
-          <div class="session-speaker" id="sSpeaker">-</div>
+          <div class="session-speaker" id="sSpeaker" style="display: none;"></div>
 
           <ul class="session-bullets" id="sBullets">
             <li>등록 데스크 근처에 준비된 음료와 다과를 드시면서 잠시 기다려주세요.</li>
@@ -1899,14 +1899,14 @@
     const DEFAULT_SESSIONS = [
       {
         id: "s1",
-        time: "~ 08:50",
-        minute: "-",
+        time: "08:00 ~ 08:50",
+        minute: "50",
         type: "general",
         sublabel: "Registration & Welcome",
         status: "진행 중",
         location: "📍 본부관 학술회의장",
         title: "세미나 참석자 등록 및 입장 안내",
-        speaker: "-",
+        speaker: "",
         note: "본부관 학술회의장",
         bullets: [
           "등록 데스크 근처에 준비된 음료와 다과를 드시면서 잠시 기다려주세요.",
@@ -1957,7 +1957,7 @@
         status: "예정",
         location: "📍 로비",
         title: "☕ 휴식 시간 (Coffee Break)",
-        speaker: "-",
+        speaker: "",
         note: "다과 및 네트워킹",
         bullets: [
           "로비에 비치된 음료와 다과를 자유롭게 이용하세요.",
@@ -1990,7 +1990,7 @@
         status: "예정",
         location: "📍 로비",
         title: "☕ 휴식 시간 (Break Time)",
-        speaker: "-",
+        speaker: "",
         note: "",
         bullets: [
           "다음 세션 시작 5분 전까지 착석해 주시기 바랍니다."
@@ -2022,7 +2022,7 @@
         status: "예정",
         location: "📍 법학관 5층 청향",
         title: "🍱 기념촬영 및 점심 식사",
-        speaker: "-",
+        speaker: "",
         note: "법학관 5층 청향",
         bullets: [
           "학술회의장 앞 로비에서 단체 기념촬영이 진행됩니다.",
@@ -2057,7 +2057,7 @@
         status: "예정",
         location: "📍 로비",
         title: "☕ 휴식 시간 (Break Time)",
-        speaker: "-",
+        speaker: "",
         note: "",
         bullets: [
           "오후 세션 중간 휴식 및 질의응답 준비 시간입니다."
@@ -2089,7 +2089,7 @@
         status: "예정",
         location: "📍 로비",
         title: "☕ 휴식 시간 (Break Time)",
-        speaker: "-",
+        speaker: "",
         note: "",
         bullets: [
           "세션 퀴즈 마감 전 최종 제출을 확인해 주세요."
@@ -2168,6 +2168,7 @@
           if (data && Array.isArray(data.sessions) && data.sessions.length > 0) {
             let migrated = false;
             data.sessions.forEach(s => {
+              if (s.id === 's1' && (s.time === '~ 08:50' || s.time === '~08:50' || !s.minute || s.minute === '-')) { s.time = '08:00 ~ 08:50'; s.minute = '50'; if (s.speaker === '-') s.speaker = ''; migrated = true; }
               if (s.id === 's2' && s.type === 'session' && (s.sublabel || '').includes('Opening')) { s.type = 'general'; migrated = true; }
               if (s.title === '건축설비 측면에서 바라보는 공동주택 공기열원 히트펌프의 역할과 과제') { s.title = '헬로우 히트펌프, 굿바이 보일러'; migrated = true; }
               if (s.title === '과학 및 인문학 강의') { s.title = '테라포밍 또는 찬란한 멸종-그래도 우리는 지구에 살아야 한다'; migrated = true; }
@@ -2751,7 +2752,16 @@
       if (sLoc) sLoc.textContent = s.location || '📍 본부관 학술회의장';
       if (sSub) sSub.innerHTML = `${escapeHtml(s.sublabel || '')} <span class="status-pill">${escapeHtml(s.status || '예정')}</span>`;
       if (sTitle) sTitle.textContent = s.title || '';
-      if (sSpeaker) sSpeaker.textContent = s.speaker || '-';
+      if (sSpeaker) {
+        const cleanSpk = (s.speaker || '').trim();
+        if (!cleanSpk || cleanSpk === '-') {
+          sSpeaker.style.display = 'none';
+          sSpeaker.textContent = '';
+        } else {
+          sSpeaker.style.display = '';
+          sSpeaker.textContent = cleanSpk;
+        }
+      }
 
       if (ul) {
         ul.innerHTML = '';

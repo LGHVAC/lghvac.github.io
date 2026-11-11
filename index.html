@@ -96,6 +96,7 @@
           migrated = true;
         }
         (data.sessions || []).forEach(function (s) {
+          if (s.id === 's1' && (s.time === '~ 08:50' || s.time === '~08:50' || !s.minute || s.minute === '-')) { s.time = '08:00 ~ 08:50'; s.minute = '50'; if (s.speaker === '-') s.speaker = ''; migrated = true; }
           if (s.id === 's2' && s.type === 'session' && (s.sublabel || '').includes('Opening')) { s.type = 'general'; migrated = true; }
           if (s.title === '건축설비 측면에서 바라보는 공동주택 공기열원 히트펌프의 역할과 과제') { s.title = '헬로우 히트펌프, 굿바이 보일러'; migrated = true; }
           if (s.title === '과학 및 인문학 강의') { s.title = '테라포밍 또는 찬란한 멸종-그래도 우리는 지구에 살아야 한다'; migrated = true; }
@@ -186,12 +187,15 @@
           const typeClass = ['session', 'break', 'meal'].indexOf(s.type) >= 0 ? s.type : '';
           const row = document.createElement('div');
           row.className = ('agenda-row ' + typeClass).trim();
+          const spk = cleanSpeaker(s.speaker);
+          const speakerVal = (!spk || spk === '-') ? '' : spk;
+          const minuteVal = (s.minute && s.minute !== '-') ? s.minute : '';
           row.innerHTML =
             '<div class="time">' + esc(s.time) + '</div>' +
-            '<div class="minute">' + esc(s.minute || '-') + '</div>' +
+            '<div class="minute">' + esc(minuteVal) + '</div>' +
             '<div class="topic"><div>' + esc(s.title) + '</div>' + buildMaterialBtn(s, true) + '</div>' +
-            '<div class="speaker">' + esc(cleanSpeaker(s.speaker) || '-') + '</div>' +
-            '<div class="note">' + esc(s.note) + '</div>';
+            '<div class="speaker">' + esc(speakerVal) + '</div>' +
+            '<div class="note">' + esc(s.note || '') + '</div>';
           agendaShell.appendChild(row);
         });
         bindMaterialButtons(agendaShell);
@@ -1407,10 +1411,17 @@
         display: none;
       }
       .agenda-row {
-        grid-template-columns: 1fr;
-        gap: 5px;
+        display: grid;
+        grid-template-columns: auto 1fr;
+        grid-template-areas:
+          "time minute"
+          "topic topic"
+          "speaker speaker"
+          "note note";
+        align-items: baseline;
+        gap: 3px 8px;
         margin-bottom: 10px;
-        padding: 18px;
+        padding: 16px 18px;
         border: 1px solid var(--line);
         border-radius: 13px;
         box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
@@ -1422,30 +1433,57 @@
         text-align: left;
       }
       .time {
+        grid-area: time;
         color: #ff6677;
         font-size: 15px;
         font-weight: 950;
+        letter-spacing: -0.01em;
       }
       .minute {
+        grid-area: minute;
         color: #bdbdc3;
-        font-size: 13px;
+        font-size: 15px;
+        font-weight: 850;
+        justify-self: start;
       }
       .minute::before {
-        content: "시간: ";
-        color: #aaaaaa;
+        content: "(";
+        color: #8e8e93;
+        margin-left: 2px;
       }
       .minute::after {
-        content: "분";
+        content: "분)";
+        color: #8e8e93;
+      }
+      .minute:empty {
+        display: none;
       }
       .topic {
+        grid-area: topic;
         font-size: 16px;
+        font-weight: 850;
         line-height: 1.45;
+        margin-top: 4px;
+        color: #ffffff;
       }
       .speaker {
-        margin-top: 7px;
+        grid-area: speaker;
+        font-size: 14px;
+        font-weight: 700;
+        color: #f3c448;
+        margin-top: 3px;
+      }
+      .speaker:empty {
+        display: none;
       }
       .note {
+        grid-area: note;
         font-size: 13px;
+        color: var(--muted);
+        margin-top: 2px;
+      }
+      .note:empty {
+        display: none;
       }
       .venue-grid,
       .info-layout {
@@ -1631,10 +1669,10 @@
           </div>
 
           <div class="agenda-row">
-            <div class="time">~ 08:50</div>
-            <div class="minute">-</div>
+            <div class="time">08:00 ~ 08:50</div>
+            <div class="minute">50</div>
             <div class="topic">Registration & Welcome (참석자 등록 및 입장 안내)</div>
-            <div class="speaker">-</div>
+            <div class="speaker"></div>
             <div class="note">등록데스크 / 다과</div>
           </div>
 
@@ -1658,7 +1696,7 @@
             <div class="time">10:10 ~ 10:30</div>
             <div class="minute">20</div>
             <div class="topic">Break time</div>
-            <div class="speaker">-</div>
+            <div class="speaker"></div>
             <div class="note"></div>
           </div>
 
@@ -1674,7 +1712,7 @@
             <div class="time">11:20 ~ 11:40</div>
             <div class="minute">20</div>
             <div class="topic">Break time</div>
-            <div class="speaker">-</div>
+            <div class="speaker"></div>
             <div class="note"></div>
           </div>
 
@@ -1690,8 +1728,8 @@
             <div class="time">12:30 ~ 14:00</div>
             <div class="minute">90</div>
             <div class="topic">기념촬영 및 점심 식사</div>
-            <div class="speaker">-</div>
-            <div class="note">교내 식당</div>
+            <div class="speaker"></div>
+            <div class="note">법학관 5층 청향</div>
           </div>
 
           <div class="agenda-row session">
@@ -1706,7 +1744,7 @@
             <div class="time">14:50 ~ 15:10</div>
             <div class="minute">20</div>
             <div class="topic">Break time</div>
-            <div class="speaker">-</div>
+            <div class="speaker"></div>
             <div class="note"></div>
           </div>
 
@@ -1722,7 +1760,7 @@
             <div class="time">15:40 ~ 16:00</div>
             <div class="minute">20</div>
             <div class="topic">Break time</div>
-            <div class="speaker">-</div>
+            <div class="speaker"></div>
             <div class="note"></div>
           </div>
 
@@ -1738,7 +1776,7 @@
             <div class="time">17:40 ~ 18:00</div>
             <div class="minute">20</div>
             <div class="topic">Wrap up</div>
-            <div class="speaker">-</div>
+            <div class="speaker"></div>
             <div class="note">설문 및 마무리</div>
           </div>
         </div>
