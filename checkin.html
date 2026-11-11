@@ -1782,7 +1782,7 @@
       </div>
 
       <p style="font-size: 12.5px; color: rgba(255,255,255,0.6); line-height: 1.45;">
-        강연자에게 궁금한 점을 질문해 보세요. 질의응답 시간에 우선 답변됩니다.
+        강연자에게 궁금한 점을 질문해 보세요. 질의응답 시간에 우선 답변됩니다. (체크인 실명으로 등록)
       </p>
 
       <div class="qna-input-box">
@@ -1794,10 +1794,9 @@
 
         <div class="qna-meta-row">
           <div class="qna-user-tag">
-            <span id="modalQnaAuthorName">홍길동</span>
-            <label class="qna-anon-label">
-              <input type="checkbox" id="modalQnaAnonCheck"> 익명
-            </label>
+            <span style="font-size: 13px;">👤</span>
+            <strong id="modalQnaAuthorName" style="color: #fff; font-weight: 700;">홍길동</strong>
+            <span class="qna-realname-badge" style="font-size: 11px; color: #4ade80; background: rgba(34, 197, 94, 0.15); border: 1px solid rgba(34, 197, 94, 0.3); border-radius: 4px; padding: 2px 6px; font-weight: 700;">실명 질문</span>
           </div>
           <button class="btn-send-qna" id="btnSubmitSessionQna" type="button">질문 등록</button>
         </div>
@@ -1880,7 +1879,7 @@
           <div class="map-loc-icon">🚗</div>
           <div class="map-loc-content">
             <strong>주차장 (자가용 이용 시)</strong>
-            <span>본부관 지하주차장 이용 (출차 시 등록데스크에서 무료 주차권 수령)</span>
+            <span>본부관 지하주차장 이용</span>
           </div>
         </div>
       </div>
@@ -3033,16 +3032,14 @@
     const modalQnaTitle = document.getElementById('modalQnaTitle');
     const modalQnaContent = document.getElementById('modalQnaContent');
     const modalQnaAuthorName = document.getElementById('modalQnaAuthorName');
-    const modalQnaAnonCheck = document.getElementById('modalQnaAnonCheck');
 
-    // 하단 '💬 세션 질문하기 ∨' 버튼 누를 때 액션: 현재 세션 Q&A 팝업 오픈!
+    // 하단 '💬 강연 세션 질문하기 ∨' 버튼 누를 때 액션: 현재 세션 Q&A 팝업 오픈!
     document.getElementById('btnBottomAction').addEventListener('click', () => {
       const s = sessions[currentIdx];
       modalQnaBadge.textContent = s.sublabel;
       modalQnaTitle.textContent = s.title;
       modalQnaAuthorName.textContent = document.getElementById('menuUserName').textContent || '참가자';
       modalQnaContent.value = '';
-      modalQnaAnonCheck.checked = false;
       modalSessionQna.classList.add('show');
       setTimeout(() => modalQnaContent.focus(), 250);
     });
@@ -3073,7 +3070,9 @@
       }
 
       const s = sessions[currentIdx];
-      const author = modalQnaAnonCheck.checked ? '익명 참가자' : (modalQnaAuthorName.textContent || '참가자');
+      const author = (modalQnaAuthorName.textContent && modalQnaAuthorName.textContent.trim() !== '참가자')
+        ? modalQnaAuthorName.textContent.trim()
+        : ((window.currentUser && window.currentUser.name) ? window.currentUser.name : (document.getElementById('menuUserName')?.textContent || '참가자'));
       const now = new Date();
       const timeStr = now.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
       const qSessionKey = resolveQnaSessionKey(s, currentIdx);
@@ -3098,7 +3097,7 @@
       } catch (e) {}
 
       modalSessionQna.classList.remove('show');
-      alert('🎉 질문이 성공적으로 등록되었습니다!\n세션 Q&A 시간에 답변해 드립니다.');
+      alert(`🎉 질문이 실명(${author})으로 성공적으로 등록되었습니다!\n세션 Q&A 시간에 답변해 드립니다.`);
     });
 
     document.getElementById('menuItemKakao').addEventListener('click', () => {

@@ -982,7 +982,7 @@
           return { duplicate: true, locked: true, originalScore: existing.score };
         }
         var record = {
-          email: user.email || '익명(미체크인)',
+          email: user.email || '미체크인(현장참석자)',
           name: user.name || '미체크인 참가자',
           position: user.position || user.title || '',
           empNo: user.empNo || user.employeeId || '',

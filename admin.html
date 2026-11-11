@@ -2667,7 +2667,7 @@
             <textarea id="cfgVenueTransit" class="form-control" rows="4"></textarea>
           </div>
           <div>
-            <label class="form-label">🚶 행사장 이용 동선 & 주차 안내 (줄바꿈으로 항목 구분)</label>
+            <label class="form-label">🚶 행사장 이용 동선 안내 (줄바꿈으로 항목 구분)</label>
             <textarea id="cfgVenueRoutes" class="form-control" rows="4"></textarea>
           </div>
           <div>
@@ -9169,7 +9169,7 @@ ${link}
           <tr>
             <td style="color: var(--text-muted); font-size: 12px;">${idx + 1}</td>
             <td><code style="color: #10b981; font-weight: 700;">${escapeHtml(s.checkinId || '-')}</code></td>
-            <td><strong>${escapeHtml(s.name || '익명 참가자')}</strong></td>
+            <td><strong>${escapeHtml(s.name || '참석자')}</strong></td>
             <td><code>${escapeHtml(s.empNo || s.email || '-')}</code></td>
             <td><span style="font-weight: 700;">${solvedNum} / ${totalQ} 문항</span></td>
             <td><strong style="color: var(--gold-bright); font-size: 15px;">${scoreDisplay}점</strong></td>
