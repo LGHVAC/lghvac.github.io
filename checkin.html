@@ -1819,7 +1819,7 @@
       <div class="m-item" id="missionItem3" style="cursor: pointer;" onclick="handleMissionSurveyClick(event)">
         <div class="m-num">03</div>
         <div class="m-info">
-          <small>FEEDBACK & LUCKY DRAW</small>
+          <small>FEEDBACK & SURVEY</small>
           <strong>만족도 설문 제출하기 (터치하여 이동 ➔)</strong>
         </div>
         <span class="m-badge" id="missionBadge3">미완료</span>
@@ -3159,10 +3159,24 @@
       window.location.href = './quiz.html';
     });
 
+    function isPreEventSurveyPeriod() {
+      try {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('admin_preview') === '1' || urlParams.get('survey_open') === '1') return false;
+        if (urlParams.get('survey_open') === '0') return true;
+        const testDateParam = urlParams.get('test_date');
+        const now = testDateParam ? new Date(testDateParam) : new Date();
+        const closingKst = new Date('2026-11-16T17:00:00+09:00');
+        return now.getTime() < closingKst.getTime();
+      } catch (e) {
+        return false;
+      }
+    }
+
     function handleMissionSurveyClick(e) {
-      if (isPreEventPeriod()) {
+      if (isPreEventSurveyPeriod()) {
         if (e && e.preventDefault) e.preventDefault();
-        alert('📋 만족도 설문 오픈 안내\n\n본 만족도 설문은 세미나 당일(11월 16일)에 오픈됩니다.\n모든 강연 세션이 종료된 후 클로징 럭키드로우 경품 추첨과 함께 진행되오니 행사 당일에 참여해 주시기 바랍니다.');
+        alert('📋 만족도 설문 오픈 안내\n\n본 만족도 설문은 세미나 당일(11월 16일) 클로징 세션(17:40~)에 오픈됩니다.\n\n현장에서 바로 작성해 주셔도 좋고, 귀가하시면서 편안하게 입력해 주셔도 좋습니다.');
         return;
       }
       window.location.href = './survey.html';
@@ -3172,8 +3186,8 @@
     if (menuItemSurvey) {
       menuItemSurvey.addEventListener('click', () => {
         menuPopover.classList.remove('show');
-        if (isPreEventPeriod()) {
-          alert('📋 만족도 설문 오픈 안내\n\n본 만족도 설문은 세미나 당일(11월 16일)에 오픈됩니다.\n모든 강연 세션이 종료된 후 클로징 럭키드로우 경품 추첨과 함께 진행되오니 행사 당일에 참여해 주시기 바랍니다.');
+        if (isPreEventSurveyPeriod()) {
+          alert('📋 만족도 설문 오픈 안내\n\n본 만족도 설문은 세미나 당일(11월 16일) 클로징 세션(17:40~)에 오픈됩니다.\n\n현장에서 바로 작성해 주셔도 좋고, 귀가하시면서 편안하게 입력해 주셔도 좋습니다.');
           return;
         }
         window.location.href = './survey.html';

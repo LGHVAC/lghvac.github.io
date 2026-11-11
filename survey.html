@@ -4,11 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>2026 HVAC Engineering Expert Seminar 만족도 설문</title>
-  <meta name="description" content="2026 HVAC Engineering Expert Seminar 만족도 설문 참여 및 클로징 럭키드로우 경품 응모">
+  <meta name="description" content="2026 HVAC Engineering Expert Seminar 만족도 설문 참여 및 의견 수렴">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://lghvac.app/survey.html">
   <meta property="og:title" content="2026 HVAC Engineering Expert Seminar 만족도 설문">
-  <meta property="og:description" content="세미나 만족도 설문에 참여하시고 만찬 럭키드로우 경품 추첨 기회를 잡으세요!">
+  <meta property="og:description" content="더 나은 세미나를 위한 참석자 만족도 설문입니다. 현장 및 귀가 중 편안하게 참여해 주세요.">
   <meta property="og:image" content="https://lghvac.app/assets/hvac-2026-title-banner-centered.jpg">
   <meta property="og:image:secure_url" content="https://lghvac.app/assets/hvac-2026-title-banner-centered.jpg">
   <meta property="og:image:type" content="image/jpeg">
@@ -555,23 +555,24 @@
       <span id="userPillText">참석자 확인 중...</span>
     </div>
 
-    <!-- 사전 오픈 대기 안내 카드 (11/16 세미나 당일 이전 표출) -->
+    <!-- 사전 오픈 대기 안내 카드 (11/16 클로징 세션 이전 표출) -->
     <div class="standby-card" id="surveyStandbyCard" style="display: none;">
       <div class="standby-icon">📋</div>
-      <div class="standby-badge">🔒 11월 16일 세미나 당일 오픈</div>
+      <div class="standby-badge">🔒 11월 16일(월) 클로징 세션 오픈</div>
       <h2 class="standby-title">만족도 설문 오픈 준비 중</h2>
       <p class="standby-desc">
         2026 HVAC Engineering Expert Seminar에 참여해 주셔서 감사합니다.<br>
-        본 만족도 설문은 <strong>세미나 당일(11월 16일)</strong> 모든 세션이 완료된 후 공식 오픈됩니다.
+        본 만족도 설문은 <strong>세미나 당일(11월 16일) 클로징 세션</strong>에 공식 오픈됩니다.<br>
+        현장에서 바로 작성해 주셔도 좋고, 귀가하시면서 편안하게 참여해 주셔도 좋습니다.
       </p>
       <div class="standby-box">
         <div class="standby-box-row">
           <span style="font-size: 15px;">📅</span>
-          <div><strong>오픈 일시:</strong> 2026년 11월 16일(월) 당일</div>
+          <div><strong>오픈 일시:</strong> 2026년 11월 16일(월) 클로징 세션 (17:40~)</div>
         </div>
-        <div class="standby-box-row" style="margin-top: 4px;">
-          <span style="font-size: 15px;">🎁</span>
-          <div><strong>참여 혜택:</strong> 설문 완료 시 <strong>클로징 럭키드로우 경품 추첨</strong> 자동 응모</div>
+        <div class="standby-box-row" style="margin-top: 6px;">
+          <span style="font-size: 15px;">💡</span>
+          <div><strong>참여 안내:</strong> 현장 참여 및 행사 종료 후 귀가 중 편하신 시간에 자율 참여 가능</div>
         </div>
       </div>
       <div class="standby-actions">
@@ -594,7 +595,7 @@
         <button class="btn-step-prev" id="btnStepPrev" type="button" style="display: none;">← 이전</button>
         <button class="btn-step-next" id="btnStepNext" type="button">다음 (과정별 만족도 2/3 ➔)</button>
         <button class="btn-submit-final" id="btnSubmitFinal" type="button" style="display: none;">
-          설문 제출 &amp; 럭키드로우 응모 🎉
+          만족도 설문 제출하기 🎉
         </button>
       </div>
     </form>
@@ -605,7 +606,7 @@
       <h2 class="success-title">만족도 설문 제출 완료!</h2>
       <p class="success-desc">
         소중한 의견과 피드백을 주셔서 진심으로 감사드립니다.<br>
-        <strong>클로징 럭키드로우 추첨 응모 자격</strong>이 정상적으로 부여되었습니다!
+        보내주신 고견은 향후 더 유익하고 발전된 세미나를 만드는 데 적극 반영하겠습니다.
       </p>
       <a href="./checkin.html" class="btn-success-action" style="background: var(--gold-primary); color: #040906;">
         📅 세미나 대시보드로 이동
@@ -911,9 +912,10 @@
         const testDateParam = urlParams.get('test_date');
         const now = testDateParam ? new Date(testDateParam) : new Date();
 
-        // 2026년 11월 16일 00:00:00 KST (한국 표준시)
-        const eventDayKst = new Date('2026-11-16T00:00:00+09:00');
-        return now.getTime() < eventDayKst.getTime();
+        // 2026년 11월 16일 클로징 세션(17:00 KST) 이전 차단
+        // (행사 당일 17시 이전에는 사전 안내 표출, 17시 클로징 세션 시작 이후에는 귀가 중 또는 이후 상시 오픈)
+        const closingSessionKst = new Date('2026-11-16T17:00:00+09:00');
+        return now.getTime() < closingSessionKst.getTime();
       } catch (e) {
         return false;
       }
@@ -999,18 +1001,18 @@
         만족도 설문 오픈 안내
       </h3>
       <p class="modal-pre-desc">
-        본 만족도 설문은 <strong>세미나 당일(11월 16일)</strong>에 오픈됩니다.<br>
-        모든 강연 세션이 종료된 후 클로징 럭키드로우 경품 추첨과 함께 진행되오니 행사 당일에 참여해 주시기 바랍니다.
+        본 만족도 설문은 <strong>세미나 당일(11월 16일) 클로징 세션</strong>에 공식 오픈됩니다.<br>
+        현장에서 바로 참여해 주셔도 좋고, 귀가 중이나 편안하신 시간에 언제든 참여해 주시기 바랍니다.
       </p>
 
       <div class="modal-pre-info-box">
         <div class="info-line">
           <span class="info-ico">📅</span>
-          <div><strong>오픈 일시:</strong> 2026년 11월 16일(월)</div>
+          <div><strong>오픈 일시:</strong> 2026년 11월 16일(월) 클로징 세션 (17:40~)</div>
         </div>
         <div class="info-line" style="margin-top: 8px;">
-          <span class="info-ico">🎁</span>
-          <div><strong>참여 혜택:</strong> 설문 제출 완료 시 <strong>클로징 럭키드로우 경품 추첨</strong> 자격이 자동 부여됩니다.</div>
+          <span class="info-ico">💡</span>
+          <div><strong>참여 안내:</strong> 현장 작성 및 행사 종료 후 귀가 중 편하신 시간에 자율 참여 가능</div>
         </div>
       </div>
 

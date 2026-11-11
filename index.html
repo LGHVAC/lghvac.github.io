@@ -2242,7 +2242,7 @@
       }
     })();
 
-    // 만족도 설문 사전 오픈 제어 가드 (세미나 당일 11/16 이전 안내 팝업)
+    // 만족도 설문 사전 오픈 제어 가드 (세미나 당일 11/16 클로징 세션 이전 안내 팝업)
     (function initSurveyPreEventGuard() {
       function isPreEvent() {
         try {
@@ -2251,8 +2251,8 @@
           if (urlParams.get('survey_open') === '0') return true;
           const testDateParam = urlParams.get('test_date');
           const now = testDateParam ? new Date(testDateParam) : new Date();
-          const eventDayKst = new Date('2026-11-16T00:00:00+09:00');
-          return now.getTime() < eventDayKst.getTime();
+          const closingKst = new Date('2026-11-16T17:00:00+09:00');
+          return now.getTime() < closingKst.getTime();
         } catch (e) {
           return false;
         }
@@ -2262,7 +2262,7 @@
         document.querySelectorAll('a[href="./survey.html"], a[href="survey.html"]').forEach(function (link) {
           link.addEventListener('click', function (e) {
             e.preventDefault();
-            alert('📋 만족도 설문 오픈 안내\n\n본 만족도 설문은 세미나 당일(11월 16일)에 오픈됩니다.\n모든 강연 세션이 종료된 후 클로징 럭키드로우 경품 추첨과 함께 진행되오니 행사 당일에 참여해 주시기 바랍니다.');
+            alert('📋 만족도 설문 오픈 안내\n\n본 만족도 설문은 세미나 당일(11월 16일) 클로징 세션(17:40~)에 오픈됩니다.\n\n현장에서 바로 작성해 주셔도 좋고, 귀가하시면서 편안하게 입력해 주셔도 좋습니다.');
           });
         });
       }

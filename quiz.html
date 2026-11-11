@@ -1341,14 +1341,14 @@
     </article>
     </div>
 
-    <!-- 하단 럭키드로우 경품 응모 카드 -->
+    <!-- 하단 모바일 만족도 설문 안내 카드 -->
     <section class="lucky-draw-banner">
-      <h3>🎁 만족도 설문 & 럭키드로우 응모</h3>
+      <h3>📋 모바일 만족도 설문 참여</h3>
       <p id="luckyDrawPrompt">
-        만족도 설문에 참여하시고 클로징 럭키드로우 경품 추첨 기회를 놓치지 마세요!
+        더 나은 세미나를 위해 소중한 의견을 들려주세요. 현장 제출 및 귀가 중에도 편안하게 참여하실 수 있습니다.
       </p>
       <a class="btn-submit-draw" id="btnSurveySubmit" href="./survey.html">
-        만족도 설문 참여 & 경품 응모하기 (30초) ➔
+        만족도 설문 참여하기 ➔
       </a>
     </section>
 
@@ -1753,9 +1753,9 @@
       const promptEl = document.getElementById('luckyDrawPrompt');
       if (!promptEl) return;
       if (totalQuizzes && answeredCount === totalQuizzes) {
-        promptEl.textContent = `모든 퀴즈를 완료했습니다! (총 ${currentScore} / ${totalQuizzes}.0점 획득, 1차 만점: ${firstTryCount}문항 / 재시도 정답: ${retryCount}문항) 클로징 럭키드로우 추첨 기회를 잡으세요!`;
+        promptEl.textContent = `모든 퀴즈를 완료했습니다! (총 ${currentScore} / ${totalQuizzes}.0점 획득, 1차 만점: ${firstTryCount}문항 / 재시도 정답: ${retryCount}문항) 클로징 럭키드로우 행운을 기대해 주세요!`;
       } else {
-        promptEl.textContent = '만족도 설문에 참여하시고 클로징 럭키드로우 경품 추첨 기회를 놓치지 마세요!';
+        promptEl.textContent = '더 나은 세미나를 위해 소중한 의견을 들려주세요. 현장 또는 귀가 중에도 편안하게 참여 가능합니다.';
       }
     }
 
@@ -2205,8 +2205,8 @@
         if (urlParams.get('survey_open') === '0') return true;
         const testDateParam = urlParams.get('test_date');
         const now = testDateParam ? new Date(testDateParam) : new Date();
-        const eventDayKst = new Date('2026-11-16T00:00:00+09:00');
-        return now.getTime() < eventDayKst.getTime();
+        const closingKst = new Date('2026-11-16T17:00:00+09:00');
+        return now.getTime() < closingKst.getTime();
       } catch (e) {
         return false;
       }
@@ -2216,12 +2216,12 @@
       const isDone = localStorage.getItem('hvac_survey_done') === 'true';
       if (!btnSurveySubmit) return;
       if (isDone) {
-        btnSurveySubmit.textContent = '✅ 만족도 설문 제출 완료 (응모 완료)';
+        btnSurveySubmit.textContent = '✅ 만족도 설문 제출 완료';
         btnSurveySubmit.style.background = '#10b981';
         btnSurveySubmit.style.color = '#ffffff';
         btnSurveySubmit.style.boxShadow = '0 0 20px rgba(16, 185, 129, 0.4)';
       } else if (isPreEventPeriod()) {
-        btnSurveySubmit.textContent = '🔒 만족도 설문 (세미나 당일 11/16 오픈) ➔';
+        btnSurveySubmit.textContent = '🔒 만족도 설문 (11/16 클로징 세션 오픈) ➔';
         btnSurveySubmit.style.background = 'rgba(255, 255, 255, 0.08)';
         btnSurveySubmit.style.color = 'rgba(255, 255, 255, 0.7)';
         btnSurveySubmit.style.border = '1px solid rgba(255, 255, 255, 0.15)';
@@ -2233,7 +2233,7 @@
       btnSurveySubmit.addEventListener('click', (e) => {
         if (isPreEventPeriod() && localStorage.getItem('hvac_survey_done') !== 'true') {
           e.preventDefault();
-          alert('📋 만족도 설문 오픈 안내\n\n본 만족도 설문은 세미나 당일(11월 16일)에 오픈됩니다.\n모든 강연 세션이 종료된 후 클로징 럭키드로우 경품 추첨과 함께 진행되오니 행사 당일에 참여해 주시기 바랍니다.');
+          alert('📋 만족도 설문 오픈 안내\n\n본 만족도 설문은 세미나 당일(11월 16일) 클로징 세션(17:40~)에 오픈됩니다.\n\n현장에서 바로 작성해 주셔도 좋고, 귀가하시면서 편안하게 입력해 주셔도 좋습니다.');
         }
       });
     }
