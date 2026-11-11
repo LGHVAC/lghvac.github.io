@@ -3468,7 +3468,10 @@
 
       // 2. 이전 체크인 상태 복원
       try {
-        const saved = localStorage.getItem('hvac_user_checked');
+        const urlParams = new URLSearchParams(window.location.search);
+        const forcePreEvent = urlParams.get('pre_event') === '1';
+
+        const saved = forcePreEvent ? null : localStorage.getItem('hvac_user_checked');
         if (saved) {
           const parsed = JSON.parse(saved);
           if (parsed && parsed.name) {
@@ -3524,7 +3527,6 @@
 
             // 이미 체크인된 사용자가 redirect 파라미터와 함께 방문한 경우 자동 리디렉트
             try {
-              const urlParams = new URLSearchParams(window.location.search);
               const redirectTarget = urlParams.get('redirect');
               if (redirectTarget && ['quiz.html', 'qna.html', 'survey.html', 'game.html'].includes(redirectTarget)) {
                 window.location.href = './' + redirectTarget;
@@ -3537,10 +3539,14 @@
       } catch (e) {}
 
       // 저장된 사용자 없는 경우:
-      // - 11/15 23:59:59까지 (사전 기간): '모바일 체크인 사전 안내 페이지(screenIntro)' 노출
-      // - 11/16 00:00:00부터 (세미나 당일): 사전 안내 없이 바로 체크인 입력 화면(screenStep1)으로 직행!
+      // - 11/15 23:59:59까지 (사전 기간): '모바일 체크인 사전 안내 페이지(screenIntro)' 노출 + 현장 비밀번호 안내 팝업 즉시 자동 표출!
+      // - 11/16 00:00:00부터 (세미나 당일): 사전 안내 팝업 없이 바로 체크인 입력 화면(screenStep1)으로 직행!
       if (isPreEventPeriod()) {
         showScreen('intro');
+        // 11/15(일)까지 접속 시 현장 비밀번호 사전 안내 팝업을 즉시 오픈
+        setTimeout(() => {
+          openPreEventModal();
+        }, 120);
       } else {
         proceedToStep1();
         // 당일 진입 시 인트로 카드 타이틀/뱃지 동적 최적화
