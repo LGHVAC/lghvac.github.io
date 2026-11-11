@@ -819,11 +819,43 @@
     .status-pill {
       display: inline-block;
       padding: 2px 8px;
-      background: rgba(255, 255, 255, 0.9);
-      color: #040906;
       border-radius: 99px;
       font-size: 11px;
       font-weight: 900;
+      transition: all 0.25s ease;
+    }
+
+    .status-pill.upcoming {
+      background: rgba(255, 255, 255, 0.9);
+      color: #040906;
+    }
+
+    .status-pill.ongoing {
+      background: #10b981;
+      color: #ffffff;
+      box-shadow: 0 0 12px rgba(16, 185, 129, 0.7);
+      animation: pulseOngoing 1.8s infinite;
+    }
+
+    .status-pill.ended {
+      background: rgba(255, 255, 255, 0.18);
+      color: rgba(255, 255, 255, 0.55);
+    }
+
+    @keyframes pulseOngoing {
+      0%, 100% { box-shadow: 0 0 8px rgba(16, 185, 129, 0.5); transform: scale(1); }
+      50% { box-shadow: 0 0 16px rgba(16, 185, 129, 0.85); transform: scale(1.03); }
+    }
+
+    .session-dots-bar .dot.is-live:not(.active) {
+      background: #10b981 !important;
+      box-shadow: 0 0 8px rgba(16, 185, 129, 0.85) !important;
+      animation: pulseDot 2s infinite;
+    }
+
+    @keyframes pulseDot {
+      0%, 100% { transform: scale(1); opacity: 0.85; }
+      50% { transform: scale(1.25); opacity: 1; }
     }
 
     .session-title {
@@ -1602,8 +1634,11 @@
           <strong id="dashAttendeeSeq" style="color: #fff; font-size: 13px;">No. -</strong>
           <code id="dashAttendeeId" style="background: rgba(16, 185, 129, 0.15); color: #10b981; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: 700;">HVAC-000</code>
         </div>
-        <div id="dashMilestoneBadge" style="display: none; background: rgba(243, 196, 72, 0.18); border: 1px solid rgba(243, 196, 72, 0.45); color: #f3c448; font-weight: 850; font-size: 11px; padding: 3px 8px; border-radius: 99px; cursor: pointer;" title="경품 수령 안내">
-          🎁 이벤트 당첨
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <button type="button" id="dashLiveSessionBtn" style="display: none; background: rgba(16, 185, 129, 0.18); border: 1px solid rgba(16, 185, 129, 0.45); color: #34d399; font-weight: 850; font-size: 11px; padding: 3px 9px; border-radius: 99px; cursor: pointer; animation: pulseOngoing 2s infinite;" title="현재 진행/예정 세션으로 바로가기">⚡ LIVE 세션</button>
+          <div id="dashMilestoneBadge" style="display: none; background: rgba(243, 196, 72, 0.18); border: 1px solid rgba(243, 196, 72, 0.45); color: #f3c448; font-weight: 850; font-size: 11px; padding: 3px 8px; border-radius: 99px; cursor: pointer;" title="경품 수령 안내">
+            🎁 이벤트 당첨
+          </div>
         </div>
       </div>
 
@@ -1623,7 +1658,7 @@
 
           <ul class="session-bullets" id="sBullets">
             <li>운영 데스크 근처에 준비된 음료와 다과를 드시면서 잠시 기다려주세요.</li>
-            <li>카카오톡 오픈 채팅방 입장 및 회의장에 8시 55분까지 입실 부탁드립니다.</li>
+            <li>카카오톡 공식 채널 안내 및 회의장에 8시 55분까지 입실 부탁드립니다.</li>
             <li>오프닝 세션은 오전 9시에 정시 시작합니다!</li>
           </ul>
         </div>
@@ -2022,7 +2057,7 @@
         note: "본부관 별관 1F 학술회의장",
         bullets: [
           "운영 데스크 근처에 준비된 음료와 다과를 드시면서 잠시 기다려주세요.",
-          "카카오톡 오픈 채팅방 입장 및 회의장에 8시 55분까지 입실 부탁드립니다.",
+          "카카오톡 공식 채널 안내 및 회의장에 8시 55분까지 입실 부탁드립니다.",
           "오프닝 세션은 오전 9시에 정시 시작합니다!"
         ]
       },
@@ -2289,7 +2324,11 @@
                   s.bullets = s.bullets.map(b => {
                     if (b.includes('등록 데스크') || b.includes('등록데스크')) {
                       migrated = true;
-                      return b.replace('등록 데스크', '운영 데스크').replace('등록데스크', '운영데스크');
+                      b = b.replace('등록 데스크', '운영 데스크').replace('등록데스크', '운영데스크');
+                    }
+                    if (b.includes('오픈 채팅방') || b.includes('오픈채팅방')) {
+                      migrated = true;
+                      b = b.replace('오픈 채팅방', '공식 채널').replace('오픈채팅방', '공식 채널');
                     }
                     return b;
                   });
@@ -2900,6 +2939,8 @@
 
       // 대시보드 화면 활성화
       showScreen('dash');
+      const initialIdx = findCurrentOrUpcomingSessionIndex(sessions);
+      renderSession(initialIdx);
 
       // redirect 지원: 퀴즈 또는 Q&A 등 원래 요청했던 페이지로 즉시 자동 복귀
       try {
@@ -2924,21 +2965,151 @@
     });
 
     // =========================================================
-    // 대시보드 세션 인디케이터 도트 클릭 & 뷰어 갱신
+    // 대시보드 세션 인디케이터 도트 클릭 & 뷰어 갱신 & 실시간 자동 탐색
     // =========================================================
     let currentIdx = 0;
     const cardEl = document.getElementById('currentSessionCard');
     const viewerEl = document.querySelector('.session-viewer');
 
+    function getNowTimeMinutes() {
+      try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const testDate = urlParams.get('test_date');
+        const testTime = urlParams.get('test_time') || urlParams.get('session_time') || urlParams.get('time');
+        
+        if (testDate) {
+          const d = new Date(testDate);
+          if (!isNaN(d.getTime())) return d.getHours() * 60 + d.getMinutes();
+        }
+        if (testTime && /^\d{1,2}:\d{2}$/.test(testTime.trim())) {
+          const [h, m] = testTime.trim().split(':').map(Number);
+          return h * 60 + m;
+        }
+      } catch (e) {}
+      const now = new Date();
+      return now.getHours() * 60 + now.getMinutes();
+    }
+
+    function parseSessionTimeRange(timeStr) {
+      if (!timeStr || typeof timeStr !== 'string') return null;
+      const parts = timeStr.split(/[~–—\-]/).map(s => s.trim());
+      if (parts.length < 2) return null;
+      const parseHM = (str) => {
+        const match = str.match(/(\d{1,2}):(\d{2})/);
+        if (!match) return null;
+        return parseInt(match[1], 10) * 60 + parseInt(match[2], 10);
+      };
+      const start = parseHM(parts[0]);
+      const end = parseHM(parts[1]);
+      if (start === null || end === null) return null;
+      return { start, end };
+    }
+
+    function findSessionIndexByQuery(sessList) {
+      if (!Array.isArray(sessList) || sessList.length === 0) return -1;
+      try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const hash = (window.location.hash || '').replace('#', '').trim().toLowerCase();
+        const querySession = (urlParams.get('session') || urlParams.get('s') || hash || '').trim().toLowerCase();
+        const queryIdx = urlParams.get('idx');
+
+        if (queryIdx !== null && queryIdx !== '') {
+          const parsedIdx = parseInt(queryIdx, 10);
+          if (!isNaN(parsedIdx) && parsedIdx >= 0 && parsedIdx < sessList.length) {
+            return parsedIdx;
+          }
+        }
+
+        if (!querySession) return -1;
+
+        // 1. 점심 / 미니게임 관련 쿼리
+        if (['lunch', 'lunchbreak', 'game', 'meal', 'lunchtime', '점심', '식사'].includes(querySession)) {
+          const idx = sessList.findIndex(s => 
+            s.id === 's8' || 
+            s.type === 'meal' || 
+            (s.title && s.title.includes('점심')) || 
+            (s.sublabel && s.sublabel.toLowerCase().includes('lunch'))
+          );
+          if (idx !== -1) return idx;
+        }
+
+        // 2. 오프닝 / 등록
+        if (['intro', 'welcome', 'registration', '등록', '입장'].includes(querySession)) {
+          const idx = sessList.findIndex(s => s.id === 's1' || (s.sublabel && s.sublabel.toLowerCase().includes('registration')));
+          if (idx !== -1) return idx;
+        }
+        if (['opening', '개회', '개회사'].includes(querySession)) {
+          const idx = sessList.findIndex(s => s.id === 's2' || (s.sublabel && s.sublabel.toLowerCase().includes('opening')));
+          if (idx !== -1) return idx;
+        }
+
+        // 3. 클로징 / 럭키드로우 / 설문
+        if (['closing', 'luckydraw', 'survey', '마무리', '추첨', '클로징'].includes(querySession)) {
+          const idx = sessList.findIndex(s => 
+            s.id === 's14' || 
+            (s.sublabel && s.sublabel.toLowerCase().includes('closing')) || 
+            (s.title && s.title.includes('클로징'))
+          );
+          if (idx !== -1) return idx;
+        }
+
+        // 4. 세션 ID 매칭 (s1, s2, ... s14)
+        const byId = sessList.findIndex(s => s.id && s.id.toLowerCase() === querySession);
+        if (byId !== -1) return byId;
+
+        // 5. 세션 번호(1~14) 매칭
+        if (/^\d+$/.test(querySession)) {
+          const num = parseInt(querySession, 10);
+          if (num >= 1 && num <= sessList.length) {
+            return num - 1;
+          }
+        }
+      } catch (e) {}
+      return -1;
+    }
+
+    function findCurrentOrUpcomingSessionIndex(sessList) {
+      if (!Array.isArray(sessList) || sessList.length === 0) return 0;
+
+      // 1순위: URL 파라미터나 해시가 명시된 경우 (?session=lunch, #lunch 등)
+      const queryIdx = findSessionIndexByQuery(sessList);
+      if (queryIdx !== -1) return queryIdx;
+
+      const nowMinutes = getNowTimeMinutes();
+
+      // 2순위: 현재 시각 기준 진행 중인 세션 (start <= now < end)
+      for (let i = 0; i < sessList.length; i++) {
+        const range = parseSessionTimeRange(sessList[i].time);
+        if (range && nowMinutes >= range.start && nowMinutes < range.end) {
+          return i;
+        }
+      }
+
+      // 3순위: 바로 다음에 예정된 세션 (now < start 중 가장 첫 번째)
+      for (let i = 0; i < sessList.length; i++) {
+        const range = parseSessionTimeRange(sessList[i].time);
+        if (range && nowMinutes < range.start) {
+          return i;
+        }
+      }
+
+      // 4순위: 전체 세미나 종료 후 시각인 경우 마지막 세션(클로징/럭키드로우)
+      return sessList.length - 1;
+    }
+
     function renderSideDots() {
       const bar = document.getElementById('sideDots');
       if (!bar) return;
       bar.innerHTML = '';
+      const liveIdx = findCurrentOrUpcomingSessionIndex(sessions);
       sessions.forEach((s, i) => {
         const d = document.createElement('div');
-        d.className = 'dot' + (i === currentIdx ? ' active' : '');
+        let cls = 'dot';
+        if (i === currentIdx) cls += ' active';
+        if (i === liveIdx) cls += ' is-live';
+        d.className = cls;
         d.setAttribute('data-index', i);
-        d.setAttribute('title', s.sublabel || s.title || `세션 ${i + 1}`);
+        d.setAttribute('title', (i === liveIdx ? '[진행/예정] ' : '') + (s.sublabel || s.title || `세션 ${i + 1}`));
         bar.appendChild(d);
       });
     }
@@ -2961,12 +3132,25 @@
       const container = document.getElementById('timetableListContainer');
       if (!container) return;
       container.innerHTML = '';
+      const nowMinutes = getNowTimeMinutes();
       sessions.forEach((s, idx) => {
         const item = document.createElement('div');
         item.className = 'tt-item';
         item.style.cursor = 'pointer';
+
+        const range = parseSessionTimeRange(s.time);
+        const isOngoing = range && (nowMinutes >= range.start && nowMinutes < range.end);
+        if (isOngoing) {
+          item.style.borderColor = 'rgba(16, 185, 129, 0.55)';
+          item.style.background = 'rgba(16, 185, 129, 0.12)';
+        }
+
+        const liveBadge = isOngoing 
+          ? '<span style="background:#10b981; color:#fff; font-size:10px; font-weight:900; padding:2px 6px; border-radius:99px; margin-left:6px; vertical-align:middle;">진행중</span>' 
+          : '';
+
         item.innerHTML = `
-          <div class="tt-time">${escapeHtml(s.time || '')}</div>
+          <div class="tt-time">${escapeHtml(s.time || '')}${liveBadge}</div>
           <div class="tt-title">${escapeHtml(s.title || '')}</div>
           <div class="tt-speaker">${escapeHtml(s.speaker && s.speaker !== '-' ? s.speaker : (s.location || ''))}</div>
         `;
@@ -3005,9 +3189,27 @@
       const sSpeaker = document.getElementById('sSpeaker');
       const ul = document.getElementById('sBullets');
 
+      // 실시간 시각 기준 세션 상태 동적 계산 (진행중 / 종료 / 예정)
+      const nowMinutes = getNowTimeMinutes();
+      const range = parseSessionTimeRange(s.time);
+      let dynamicStatus = s.status || '예정';
+      let statusClass = 'status-pill';
+      if (range) {
+        if (nowMinutes >= range.start && nowMinutes < range.end) {
+          dynamicStatus = '진행중';
+          statusClass = 'status-pill ongoing';
+        } else if (nowMinutes >= range.end) {
+          dynamicStatus = '종료';
+          statusClass = 'status-pill ended';
+        } else {
+          dynamicStatus = '예정';
+          statusClass = 'status-pill upcoming';
+        }
+      }
+
       if (sTime) sTime.textContent = s.time || '';
       if (sLoc) sLoc.textContent = s.location || '📍 본부관 학술회의장';
-      if (sSub) sSub.innerHTML = `${escapeHtml(s.sublabel || '')} <span class="status-pill">${escapeHtml(s.status || '예정')}</span>`;
+      if (sSub) sSub.innerHTML = `${escapeHtml(s.sublabel || '')} <span class="${statusClass}">${escapeHtml(dynamicStatus)}</span>`;
       if (sTitle) sTitle.textContent = s.title || '';
       if (sSpeaker) {
         const cleanSpk = (s.speaker || '').trim();
@@ -3036,6 +3238,27 @@
           li.style.fontStyle = 'italic';
           li.textContent = '세부 일정 및 안내 내용은 추후 업데이트 예정입니다.';
           ul.appendChild(li);
+        }
+      }
+
+      // 상단 배너 LIVE 세션 바로가기 버튼 동적 제어
+      const dashLiveBtn = document.getElementById('dashLiveSessionBtn');
+      if (dashLiveBtn) {
+        const liveIdx = findCurrentOrUpcomingSessionIndex(sessions);
+        if (liveIdx !== -1 && liveIdx !== idx) {
+          const liveSession = sessions[liveIdx];
+          const liveName = liveSession ? (liveSession.sublabel || liveSession.title || '현재 세션') : '현재 세션';
+          dashLiveBtn.style.display = 'inline-flex';
+          dashLiveBtn.style.alignItems = 'center';
+          dashLiveBtn.style.gap = '4px';
+          dashLiveBtn.innerHTML = `<span>⚡</span> LIVE 세션`;
+          dashLiveBtn.title = `현재 세션(${liveName})으로 바로 이동`;
+          dashLiveBtn.onclick = () => {
+            const dir = liveIdx > currentIdx ? 'next' : 'prev';
+            renderSession(liveIdx, dir);
+          };
+        } else {
+          dashLiveBtn.style.display = 'none';
         }
       }
 
@@ -3098,7 +3321,7 @@
             btnBottomAction.style.background = 'linear-gradient(135deg, rgba(212, 160, 23, 0.95), rgba(16, 133, 72, 0.95))';
             btnBottomAction.style.borderColor = 'rgba(243, 196, 72, 0.6)';
             btnBottomAction.style.color = '#fff';
-            btnBottomAction.innerHTML = '🎮 점심 미니게임 (10초/26℃ 맞추기) ↗';
+            btnBottomAction.innerHTML = '🎮 점심 미니게임 (10초/20.0℃ 맞추기) ↗';
           } else {
             btnBottomAction.style.background = 'rgba(255, 255, 255, 0.08)';
             btnBottomAction.style.borderColor = 'rgba(255, 255, 255, 0.18)';
@@ -3556,7 +3779,8 @@
               localStorage.removeItem('hvac_user_checked');
               alert('⚠️ 안내: 관리자 권한에 의해 출석 등록이 초기화되었습니다.\n안내 데스크로 문의해 주세요.');
               showScreen('intro');
-              renderSession(0);
+              const autoIdx = findCurrentOrUpcomingSessionIndex(sessions);
+              renderSession(autoIdx);
               return;
             }
 
@@ -3597,7 +3821,8 @@
             }
 
             showScreen('dash');
-            renderSession(0);
+            const targetIdx = findCurrentOrUpcomingSessionIndex(sessions);
+            renderSession(targetIdx);
 
             // 이미 체크인된 사용자가 redirect 파라미터와 함께 방문한 경우 자동 리디렉트
             try {
@@ -3629,7 +3854,16 @@
         if (titleEl) titleEl.innerHTML = '<span>📢</span> 현장 체크인 안내';
         if (badgeEl) badgeEl.textContent = '11/16 오늘 현장';
       }
-      renderSession(0);
+      const initialIdx = findCurrentOrUpcomingSessionIndex(sessions);
+      renderSession(initialIdx);
+
+      // 실시간 세션 상태(진행중/예정/종료) 및 라이브 세션 인디케이터 백그라운드 동기화
+      setInterval(() => {
+        if (screens.dash && screens.dash.classList.contains('active')) {
+          renderSideDots();
+          renderSession(currentIdx);
+        }
+      }, 30000);
     });
 
     // 관리자 페이지 등 타 탭에서 세션/일정/퀴즈 정보 수정 시 실시간 자동 반영
