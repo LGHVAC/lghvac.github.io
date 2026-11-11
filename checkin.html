@@ -2065,7 +2065,7 @@
         time: "10:10 ~ 10:30",
         minute: "20",
         type: "break",
-        sublabel: "Break time",
+        sublabel: "Coffee Break",
         status: "예정",
         location: "📍 로비",
         title: "☕ 휴식 시간 (Coffee Break)",
@@ -2098,10 +2098,10 @@
         time: "11:20 ~ 11:40",
         minute: "20",
         type: "break",
-        sublabel: "Break time",
+        sublabel: "Coffee Break",
         status: "예정",
         location: "📍 로비",
-        title: "☕ 휴식 시간 (Break Time)",
+        title: "☕ 휴식 시간 (Coffee Break)",
         speaker: "",
         note: "",
         bullets: [
@@ -2165,10 +2165,10 @@
         time: "14:50 ~ 15:10",
         minute: "20",
         type: "break",
-        sublabel: "Break time",
+        sublabel: "Coffee Break",
         status: "예정",
         location: "📍 로비",
-        title: "☕ 휴식 시간 (Break Time)",
+        title: "☕ 휴식 시간 (Coffee Break)",
         speaker: "",
         note: "",
         bullets: [
@@ -2197,10 +2197,10 @@
         time: "15:40 ~ 16:00",
         minute: "20",
         type: "break",
-        sublabel: "Break time",
+        sublabel: "Coffee Break",
         status: "예정",
         location: "📍 로비",
-        title: "☕ 휴식 시간 (Break Time)",
+        title: "☕ 휴식 시간 (Coffee Break)",
         speaker: "",
         note: "",
         bullets: [
@@ -2305,6 +2305,16 @@
                 if (s.time === '17:40 ~ 17:50') { s.time = '17:40 ~ 18:00'; s.minute = '20'; s.title = 'Wrap up 및 클로징 럭키드로우'; migrated = true; }
                 if (Array.isArray(s.bullets) && (s.bullets[0] === '모바일 만족도 설문 제출 안내' || !s.bullets[0].includes('귀가'))) {
                   s.bullets[0] = '모바일 만족도 설문 안내: 현장에서 바로 작성해 주셔도 좋고, 귀가하시면서 편안하게 입력해 주셔도 좋습니다.';
+                  migrated = true;
+                }
+              }
+              if (s.type === 'break') {
+                if (s.title && s.title.includes('Break Time')) {
+                  s.title = s.title.replace('Break Time', 'Coffee Break');
+                  migrated = true;
+                }
+                if (s.sublabel && (s.sublabel === 'Break time' || s.sublabel === 'Break Time')) {
+                  s.sublabel = 'Coffee Break';
                   migrated = true;
                 }
               }

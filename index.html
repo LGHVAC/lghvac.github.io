@@ -126,6 +126,16 @@
           if (s.title === '건축설비 측면에서 바라보는 공동주택 공기열원 히트펌프의 역할과 과제') { s.title = '헬로우 히트펌프, 굿바이 보일러'; migrated = true; }
           if (s.title === '과학 및 인문학 강의') { s.title = '테라포밍 또는 찬란한 멸종-그래도 우리는 지구에 살아야 한다'; migrated = true; }
           if (s.id === 's14' && s.time === '17:40 ~ 17:50') { s.time = '17:40 ~ 18:00'; s.minute = '20'; migrated = true; }
+          if (s.type === 'break') {
+            if (s.title && s.title.includes('Break Time')) {
+              s.title = s.title.replace('Break Time', 'Coffee Break');
+              migrated = true;
+            }
+            if (s.sublabel && (s.sublabel === 'Break time' || s.sublabel === 'Break Time')) {
+              s.sublabel = 'Coffee Break';
+              migrated = true;
+            }
+          }
         });
         if (migrated) {
           try { localStorage.setItem('hvac_schedule_settings', JSON.stringify(data)); } catch (e) {}
@@ -1861,7 +1871,7 @@
           <div class="agenda-row break">
             <div class="time">10:10 ~ 10:30</div>
             <div class="minute">20</div>
-            <div class="topic">Break time</div>
+            <div class="topic">Coffee Break</div>
             <div class="speaker"></div>
             <div class="note"></div>
           </div>
@@ -1877,7 +1887,7 @@
           <div class="agenda-row break">
             <div class="time">11:20 ~ 11:40</div>
             <div class="minute">20</div>
-            <div class="topic">Break time</div>
+            <div class="topic">Coffee Break</div>
             <div class="speaker"></div>
             <div class="note"></div>
           </div>
@@ -1909,7 +1919,7 @@
           <div class="agenda-row break">
             <div class="time">14:50 ~ 15:10</div>
             <div class="minute">20</div>
-            <div class="topic">Break time</div>
+            <div class="topic">Coffee Break</div>
             <div class="speaker"></div>
             <div class="note"></div>
           </div>
@@ -1925,7 +1935,7 @@
           <div class="agenda-row break">
             <div class="time">15:40 ~ 16:00</div>
             <div class="minute">20</div>
-            <div class="topic">Break time</div>
+            <div class="topic">Coffee Break</div>
             <div class="speaker"></div>
             <div class="note"></div>
           </div>

@@ -3802,7 +3802,7 @@
               <label>세션 유형 (Type)</label>
               <select id="mSessionType" class="form-control">
                 <option value="session">🎓 강연 세션 (Keynote/Insight)</option>
-                <option value="break">☕ 휴식 시간 (Break Time)</option>
+                <option value="break">☕ 휴식 시간 (Coffee Break)</option>
                 <option value="meal">🍱 식사 및 기념촬영 (Meal/Photo)</option>
                 <option value="general">📢 일반 일정 (입실/오프닝/클로징)</option>
               </select>
@@ -4565,7 +4565,7 @@ const DEFAULT_SCHEDULE_DATA = {
           time: "10:10 ~ 10:30",
           minute: "20",
           type: "break",
-          sublabel: "Break time",
+          sublabel: "Coffee Break",
           status: "예정",
           location: "📍 로비",
           title: "☕ 휴식 시간 (Coffee Break)",
@@ -4604,10 +4604,10 @@ const DEFAULT_SCHEDULE_DATA = {
           time: "11:20 ~ 11:40",
           minute: "20",
           type: "break",
-          sublabel: "Break time",
+          sublabel: "Coffee Break",
           status: "예정",
           location: "📍 로비",
-          title: "☕ 휴식 시간 (Break Time)",
+          title: "☕ 휴식 시간 (Coffee Break)",
           speaker: "",
           note: "",
           bullets: [
@@ -4682,10 +4682,10 @@ const DEFAULT_SCHEDULE_DATA = {
           time: "14:50 ~ 15:10",
           minute: "20",
           type: "break",
-          sublabel: "Break time",
+          sublabel: "Coffee Break",
           status: "예정",
           location: "📍 로비",
-          title: "☕ 휴식 시간 (Break Time)",
+          title: "☕ 휴식 시간 (Coffee Break)",
           speaker: "",
           note: "",
           bullets: [
@@ -4720,10 +4720,10 @@ const DEFAULT_SCHEDULE_DATA = {
           time: "15:40 ~ 16:00",
           minute: "20",
           type: "break",
-          sublabel: "Break time",
+          sublabel: "Coffee Break",
           status: "예정",
           location: "📍 로비",
-          title: "☕ 휴식 시간 (Break Time)",
+          title: "☕ 휴식 시간 (Coffee Break)",
           speaker: "",
           note: "",
           bullets: [
@@ -8310,6 +8310,16 @@ ${s3.speaker}님의 '${s3.title}' 세션까지 오전 강연이 모두 종료되
             migrated = true;
           }
         }
+        if (s.type === 'break') {
+          if (s.title && s.title.includes('Break Time')) {
+            s.title = s.title.replace('Break Time', 'Coffee Break');
+            migrated = true;
+          }
+          if (s.sublabel && (s.sublabel === 'Break time' || s.sublabel === 'Break Time')) {
+            s.sublabel = 'Coffee Break';
+            migrated = true;
+          }
+        }
         if (defaultById[s.id] && defaultById[s.id].bio && (!Array.isArray(s.bio) || s.bio.length === 0)) {
           s.bio = JSON.parse(JSON.stringify(defaultById[s.id].bio));
           migrated = true;
@@ -8384,7 +8394,7 @@ ${s3.speaker}님의 '${s3.title}' 세션까지 오전 강연이 모두 종료되
 
       const typeLabels = {
         session: '🎓 강연 세션',
-        break: '☕ 휴식 (Break)',
+        break: '☕ 휴식 (Coffee Break)',
         meal: '🍱 기념촬영 & 식사',
         general: '📢 일반 일정'
       };
