@@ -3272,8 +3272,14 @@
 
           <div class="link-row">
             <div class="link-label">오시는 길 네이버 지도 URL (Naver Map)</div>
-            <input type="url" id="linkMap" class="form-control" placeholder="https://map.naver.com 또는 카카오맵 링크">
+            <input type="url" id="linkMap" class="form-control" placeholder="https://map.naver.com/p/search/%EA%B5%AD%EB%AF%BC%EB%8C%80%ED%95%99%EA%B5%90%20%EB%B3%B8%EB%B6%80%EA%B4%80">
             <button class="btn-tbl" onclick="testLink('linkMap')">열기 ↗</button>
+          </div>
+
+          <div class="link-row">
+            <div class="link-label">오시는 길 카카오맵 URL (Kakao Map)</div>
+            <input type="url" id="linkKakaoMap" class="form-control" placeholder="https://map.kakao.com/link/search/%EA%B5%AD%EB%AF%BC%EB%8C%80%ED%95%99%EA%B5%90%20%EB%B3%B8%EB%B6%80%EA%B4%80">
+            <button class="btn-tbl" onclick="testLink('linkKakaoMap')">열기 ↗</button>
           </div>
 
           <div class="link-row">
@@ -6362,6 +6368,7 @@ ${s3.speaker}님의 '${s3.title}' 세션까지 오전 강연이 모두 종료되
       surveyForm: 'https://forms.cloud.microsoft/Pages/ResponsePage.aspx?id=5M1pUCpkwEWAlNDC3sEL42ywEzOY3PNJr4qBXM_4T5dURDlOS1VaUFpXTVRPUTkzSFZXUDlBQlk1Vy4u',
       attendanceForm: 'https://forms.cloud.microsoft/r/kaugdHpUxh',
       mapUrl: 'https://map.naver.com/p/search/%EA%B5%AD%EB%AF%BC%EB%8C%80%ED%95%99%EA%B5%90%20%EB%B3%B8%EB%B6%80%EA%B4%80',
+      kakaoMapUrl: 'https://map.kakao.com/link/search/%EA%B5%AD%EB%AF%BC%EB%8C%80%ED%95%99%EA%B5%90%20%EB%B3%B8%EB%B6%80%EA%B4%80',
       googleMapUrl: 'https://maps.app.goo.gl/dts8ECvXtLcWcx4m6'
     };
 
@@ -6376,6 +6383,8 @@ ${s3.speaker}님의 '${s3.title}' 세션까지 오전 강연이 모두 종료되
         document.getElementById('linkSurveyForm').value = links.surveyForm || DEFAULT_SITE_LINKS.surveyForm;
         document.getElementById('linkAttendanceForm').value = links.attendanceForm || DEFAULT_SITE_LINKS.attendanceForm;
         document.getElementById('linkMap').value = links.mapUrl || DEFAULT_SITE_LINKS.mapUrl;
+        const kakaoMapInput = document.getElementById('linkKakaoMap');
+        if (kakaoMapInput) kakaoMapInput.value = links.kakaoMapUrl || DEFAULT_SITE_LINKS.kakaoMapUrl;
         const googleMapInput = document.getElementById('linkGoogleMap');
         if (googleMapInput) googleMapInput.value = links.googleMapUrl || DEFAULT_SITE_LINKS.googleMapUrl;
       } catch (e) {}
@@ -6392,6 +6401,7 @@ ${s3.speaker}님의 '${s3.title}' 세션까지 오전 강연이 모두 종료되
 
     function saveSiteLinks() {
       const baseInput = document.getElementById('linkSiteBaseUrl');
+      const kakaoMapInput = document.getElementById('linkKakaoMap');
       const googleMapInput = document.getElementById('linkGoogleMap');
       const links = {
         siteBaseUrl: baseInput ? baseInput.value.trim().replace(/\/+$/, '') : '',
@@ -6400,6 +6410,7 @@ ${s3.speaker}님의 '${s3.title}' 세션까지 오전 강연이 모두 종료되
         surveyForm: document.getElementById('linkSurveyForm').value.trim() || DEFAULT_SITE_LINKS.surveyForm,
         attendanceForm: document.getElementById('linkAttendanceForm').value.trim() || DEFAULT_SITE_LINKS.attendanceForm,
         mapUrl: document.getElementById('linkMap').value.trim() || DEFAULT_SITE_LINKS.mapUrl,
+        kakaoMapUrl: (kakaoMapInput ? kakaoMapInput.value.trim() : '') || DEFAULT_SITE_LINKS.kakaoMapUrl,
         googleMapUrl: (googleMapInput ? googleMapInput.value.trim() : '') || DEFAULT_SITE_LINKS.googleMapUrl
       };
       try {

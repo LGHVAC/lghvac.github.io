@@ -305,6 +305,14 @@
             renderSpeakers(sessions);
           }
           renderVenueNotice(data && data.hero, content);
+
+          const links = readJson('hvac_site_links');
+          if (links) {
+            document.querySelectorAll('[data-hvac-link]').forEach(function (el) {
+              const key = el.getAttribute('data-hvac-link');
+              if (links[key]) el.href = links[key];
+            });
+          }
         } catch (e) {
           console.warn('index sync error:', e);
         }
@@ -1279,6 +1287,101 @@
       margin-top: 12px;
     }
 
+    .venue-map-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .venue-map-grid .btn-map-nav {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      gap: 6px;
+      padding: 12px 8px;
+      min-height: 48px;
+      border-radius: 12px;
+      font-size: 13.5px;
+      font-weight: 850;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      cursor: pointer;
+      box-sizing: border-box;
+      line-height: 1.25;
+    }
+
+    .venue-map-grid .btn-map-nav:hover {
+      transform: translateY(-2px);
+    }
+
+    .btn-map-naver {
+      background: rgba(3, 199, 90, 0.12);
+      border: 1px solid rgba(3, 199, 90, 0.38);
+      color: #22c55e;
+    }
+
+    .btn-map-naver:hover {
+      background: rgba(3, 199, 90, 0.22);
+      border-color: #22c55e;
+      box-shadow: 0 6px 18px rgba(34, 197, 94, 0.25);
+    }
+
+    .btn-map-kakao {
+      background: rgba(254, 229, 0, 0.12);
+      border: 1px solid rgba(254, 229, 0, 0.38);
+      color: #facc15;
+    }
+
+    .btn-map-kakao:hover {
+      background: rgba(254, 229, 0, 0.22);
+      border-color: #facc15;
+      box-shadow: 0 6px 18px rgba(254, 229, 0, 0.25);
+    }
+
+    .btn-map-tmap {
+      background: rgba(59, 130, 246, 0.12);
+      border: 1px solid rgba(59, 130, 246, 0.38);
+      color: #60a5fa;
+    }
+
+    .btn-map-tmap:hover {
+      background: rgba(59, 130, 246, 0.22);
+      border-color: #60a5fa;
+      box-shadow: 0 6px 18px rgba(59, 130, 246, 0.25);
+    }
+
+    .btn-map-google {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      color: #e2e8f0;
+    }
+
+    .btn-map-google:hover {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: rgba(255, 255, 255, 0.4);
+      box-shadow: 0 6px 18px rgba(255, 255, 255, 0.15);
+    }
+
+    @media (max-width: 480px) {
+      .venue-map-grid {
+        gap: 8px;
+      }
+      .venue-map-grid .btn-map-nav {
+        font-size: 12px;
+        padding: 10px 4px;
+        min-height: 44px;
+        border-radius: 10px;
+      }
+    }
+
+    @media (max-width: 330px) {
+      .venue-map-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
     /* =========================
        참석 안내
     ========================= */
@@ -2042,12 +2145,18 @@
               <li>4호선 성신여대입구역 → 국민대학교행 버스, 약 15분</li>
               <li>우이신설선 정릉역 → 국민대학교 정문, 도보 약 15분</li>
             </ul>
-            <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px;">
-              <a class="btn" target="_blank" rel="noopener noreferrer" data-hvac-link="mapUrl" href="https://map.naver.com/p/search/%EA%B5%AD%EB%AF%BC%EB%8C%80%ED%95%99%EA%B5%90%20%EB%B3%B8%EB%B6%80%EA%B4%80" style="flex: 1 1 150px; justify-content: center; text-align: center; font-size: 14px; padding: 0 14px;">
-                🗺️ 네이버 지도에서 보기 ↗
+            <div class="venue-map-grid">
+              <a class="btn-map-nav btn-map-naver" target="_blank" rel="noopener noreferrer" data-hvac-link="mapUrl" href="https://map.naver.com/p/search/%EA%B5%AD%EB%AF%BC%EB%8C%80%ED%95%99%EA%B5%90%20%EB%B3%B8%EB%B6%80%EA%B4%80">
+                <span>🗺️ 네이버 지도에서 보기 ↗</span>
               </a>
-              <a class="btn" target="_blank" rel="noopener noreferrer" data-hvac-link="googleMapUrl" href="https://maps.app.goo.gl/dts8ECvXtLcWcx4m6" style="flex: 1 1 150px; justify-content: center; text-align: center; font-size: 14px; padding: 0 14px; background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.2);">
-                🌐 구글 지도에서 보기 ↗
+              <a class="btn-map-nav btn-map-kakao" target="_blank" rel="noopener noreferrer" data-hvac-link="kakaoMapUrl" href="https://map.kakao.com/link/search/%EA%B5%AD%EB%AF%BC%EB%8C%80%ED%95%99%EA%B5%90%20%EB%B3%B8%EB%B6%80%EA%B4%80">
+                <span>🟡 카카오맵에서 보기 ↗</span>
+              </a>
+              <a class="btn-map-nav btn-map-tmap" id="btnTmapNav" href="javascript:void(0)">
+                <span>🚗 티맵(TMAP) 내비 열기 ↗</span>
+              </a>
+              <a class="btn-map-nav btn-map-google" target="_blank" rel="noopener noreferrer" data-hvac-link="googleMapUrl" href="https://maps.app.goo.gl/dts8ECvXtLcWcx4m6">
+                <span>🌐 구글 지도에서 보기 ↗</span>
               </a>
             </div>
           </article>
@@ -2224,6 +2333,43 @@
           navigator.clipboard.writeText(window.location.href).then(() => {
             showToast("💬 링크가 복사되었습니다! 카카오톡에 붙여넣어 공유하세요.");
           });
+        }
+      });
+    }
+
+    // 티맵(TMAP) 내비게이션 원클릭 연동 (모바일: TMAP 앱/스토어 다이렉트, PC: 안내 및 경로 오픈)
+    const btnTmapNav = document.getElementById("btnTmapNav");
+    if (btnTmapNav) {
+      btnTmapNav.addEventListener("click", function (e) {
+        e.preventDefault();
+        const destName = "국민대학교 본부관";
+        const lat = 37.610288;
+        const lng = 126.998521;
+        const ua = navigator.userAgent || "";
+        const isIos = /iPhone|iPad|iPod/i.test(ua);
+        const isAndroid = /Android/i.test(ua);
+
+        if (isAndroid) {
+          // 안드로이드: TMAP Intent (앱 미설치 시 플레이스토어로 자동 유도)
+          const intentUrl = `intent://route?goalname=${encodeURIComponent(destName)}&goalx=${lng}&goaly=${lat}#Intent;scheme=tmap;package=com.skt.tmap.ku;end`;
+          window.location.href = intentUrl;
+        } else if (isIos) {
+          // iOS: TMAP URL Scheme (미설치 시 앱스토어 유도)
+          const tmapAppUrl = `tmap://route?rGoName=${encodeURIComponent(destName)}&rGoX=${lng}&rGoY=${lat}`;
+          const appStoreUrl = "https://apps.apple.com/kr/app/tmap-%EB%8C%80%EC%A4%91%EA%B5%90%ED%86%B5-%EB%82%B4%EB%B9%84%EA%B2%8C%EC%9D%B4%EC%85%98/id431589174";
+          const start = Date.now();
+          window.location.href = tmapAppUrl;
+          setTimeout(function () {
+            if (Date.now() - start < 1800) {
+              window.location.href = appStoreUrl;
+            }
+          }, 1200);
+        } else {
+          // PC 환경: 모바일 전용 알림 토스트와 함께 안전하게 길찾기 화면으로 연결
+          if (typeof showToast === "function") {
+            showToast("🚗 티맵은 스마트폰 모바일에서 실행 시 내비게이션으로 바로 연결됩니다!");
+          }
+          window.open("https://map.kakao.com/link/to/" + encodeURIComponent(destName) + "," + lat + "," + lng, "_blank");
         }
       });
     }
