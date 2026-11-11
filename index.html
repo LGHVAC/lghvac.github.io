@@ -809,6 +809,17 @@
       box-shadow: 0 8px 24px rgba(254, 229, 0, 0.3);
     }
 
+    .kakao-qr-box {
+      text-align: center;
+      background: #fff;
+      padding: 10px 12px;
+      border-radius: 14px;
+      border: 2px solid #fee500;
+      align-self: center;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+      flex-shrink: 0;
+    }
+
     .share-box {
       background: #111114;
       border: 1px solid var(--line);
@@ -1419,6 +1430,9 @@
       html {
         scroll-padding-top: 70px;
       }
+      .kakao-qr-box {
+        display: none !important;
+      }
       .links {
         display: none;
       }
@@ -1975,7 +1989,7 @@
                 </ul>
               </div>
 
-              <div style="text-align: center; background: #fff; padding: 10px 12px; border-radius: 14px; border: 2px solid #fee500; align-self: center; box-shadow: 0 4px 16px rgba(0,0,0,0.35);">
+              <div class="kakao-qr-box">
                 <img src="./assets/kakao-channel-qr.png" alt="LG HVAC 전문가 세미나 카카오 채널 QR코드" style="width: 105px; height: 105px; display: block; border-radius: 6px;">
                 <span style="font-size: 10.5px; font-weight: 850; color: #391b1b; display: block; margin-top: 5px;">QR 스캔 채널 추가</span>
               </div>
