@@ -1482,6 +1482,7 @@
             </div>
           </div>
           <ul class="menu-list">
+            <li class="menu-item" id="menuItemMiniGame" style="color: #f3c448; font-weight: 850;">🎮 점심 미니게임 (10초/26℃)</li>
             <li class="menu-item" id="menuItemMissionPopup">🎯 오늘의 미션 현황</li>
             <li class="menu-item" id="menuItemMissions">✨ 오늘의 퀴즈 챌린지</li>
             <li class="menu-item" id="menuItemSurvey">📋 만족도 설문 참여</li>
@@ -2020,6 +2021,7 @@
         bullets: [
           "학술회의장 앞 로비에서 단체 기념촬영이 진행됩니다.",
           "식권 또는 명찰을 패용하시고 법학관 5층 청향 식당으로 이동해 주세요.",
+          "🎮 점심시간 미니게임 진행 중: 10초 & 26℃ 맞추고 대형 전광판 1등에 도전해 보세요!",
           "오후 세션은 14:00 정시에 시작합니다."
         ]
       },
@@ -2806,11 +2808,21 @@
         !(s.sublabel || '').includes('Closing') &&
         (s.speaker && s.speaker !== '-');
 
+      const isMealSession = (s.id === 's8' || s.type === 'meal' || (s.title || '').includes('점심'));
       const btnBottomAction = document.getElementById('btnBottomAction');
       if (btnBottomAction) {
         if (isLectureSession) {
           btnBottomAction.style.display = 'flex';
+          btnBottomAction.style.background = '';
+          btnBottomAction.style.borderColor = '';
+          btnBottomAction.style.color = '';
           btnBottomAction.innerHTML = '💬 강연 세션 질문하기 ∨';
+        } else if (isMealSession) {
+          btnBottomAction.style.display = 'flex';
+          btnBottomAction.style.background = 'linear-gradient(135deg, rgba(212, 160, 23, 0.95), rgba(16, 133, 72, 0.95))';
+          btnBottomAction.style.borderColor = 'rgba(243, 196, 72, 0.6)';
+          btnBottomAction.style.color = '#fff';
+          btnBottomAction.innerHTML = '🎮 점심 미니게임 (10초/26℃ 맞추기) ↗';
         } else {
           btnBottomAction.style.display = 'none';
         }
@@ -2972,6 +2984,14 @@
     });
 
     // 메뉴 항목들
+    const menuItemMiniGame = document.getElementById('menuItemMiniGame');
+    if (menuItemMiniGame) {
+      menuItemMiniGame.addEventListener('click', () => {
+        menuPopover.classList.remove('show');
+        window.location.href = './game.html';
+      });
+    }
+
     const menuItemMissionPopup = document.getElementById('menuItemMissionPopup');
     if (menuItemMissionPopup) {
       menuItemMissionPopup.addEventListener('click', () => {
@@ -3030,9 +3050,14 @@
     const modalQnaContent = document.getElementById('modalQnaContent');
     const modalQnaAuthorName = document.getElementById('modalQnaAuthorName');
 
-    // 하단 '💬 강연 세션 질문하기 ∨' 버튼 누를 때 액션: 현재 세션 Q&A 팝업 오픈!
+    // 하단 '💬 강연 세션 질문하기 ∨' 버튼 누를 때 액션: 점심시간이면 게임 이동, 강연 세션이면 Q&A 팝업 오픈!
     document.getElementById('btnBottomAction').addEventListener('click', () => {
       const s = sessions[currentIdx];
+      const isMeal = s && (s.id === 's8' || s.type === 'meal' || (s.title || '').includes('점심'));
+      if (isMeal) {
+        window.location.href = './game.html';
+        return;
+      }
       modalQnaBadge.textContent = s.sublabel;
       modalQnaTitle.textContent = s.title;
       modalQnaAuthorName.textContent = document.getElementById('menuUserName').textContent || '참가자';

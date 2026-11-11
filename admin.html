@@ -1939,6 +1939,8 @@
         <a class="btn-header" href="./checkin.html" target="_blank">📱 체크인 ↗</a>
         <a class="btn-header" href="./qna.html" target="_blank">💬 Q&A 피드 ↗</a>
         <a class="btn-header" href="./quiz.html" target="_blank">💡 퀴즈 ↗</a>
+        <a class="btn-header" href="./game.html" target="_blank">🎮 미니게임 ↗</a>
+        <a class="btn-header" href="./lunch-screen.html" target="_blank">🖥️ 전광판 ↗</a>
         <button class="btn-header" onclick="openPwdChangeModal()">🔑 암호 변경</button>
         <button class="btn-header danger" onclick="handleLogout()">⏻ 로그아웃</button>
       </div>
@@ -1966,6 +1968,9 @@
       </button>
       <button class="tab-btn" data-tab="tabSurvey" onclick="switchTab('tabSurvey')">
         📋 만족도 설문 & 응답 <span class="tab-count" id="countBadgeSurvey">0</span>
+      </button>
+      <button class="tab-btn" data-tab="tabGames" onclick="switchTab('tabGames')">
+        🎮 점심 미니게임 현황 <span class="tab-count" id="countBadgeGames">0</span>
       </button>
       <button class="tab-btn" data-tab="tabKakao" onclick="switchTab('tabKakao')">
         📢 카카오톡 공지 센터
@@ -2990,6 +2995,97 @@
             </thead>
             <tbody id="surveyResponsesTableBody">
               <!-- JS 동적 렌더링 -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- -----------------------------------------------------
+         [TAB 5-C] 🎮 점심시간 미니게임 현황 & 실시간 리더보드 (10초 / 26℃)
+         ----------------------------------------------------- -->
+    <section id="tabGames" class="tab-panel">
+      <!-- 상단 요약 지표 -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon" style="background: rgba(16, 185, 129, 0.15); color: #10b981;">🎮</div>
+          <div>
+            <div class="stat-label">총 참여 인원</div>
+            <div class="stat-value" id="statGamesTotalUsers">0</div>
+            <div class="stat-sub">10초 / 26℃ 참여자</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon gold">⏱️</div>
+          <div>
+            <div class="stat-label">10초 맞추기 1위</div>
+            <div class="stat-value" id="statGames10sBest" style="font-size: 20px;">-</div>
+            <div class="stat-sub" id="statGames10sUser">도전자 대기 중</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8;">🌡️</div>
+          <div>
+            <div class="stat-label">26℃ 맞추기 1위</div>
+            <div class="stat-value" id="statGames26cBest" style="font-size: 20px;">-</div>
+            <div class="stat-sub" id="statGames26cUser">도전자 대기 중</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon gold">🎯</div>
+          <div>
+            <div class="stat-label">PERFECT 달성자</div>
+            <div class="stat-value" id="statGamesPerfectCount">0</div>
+            <div class="stat-sub">10.00초 / 26.0℃ 정타</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 리더보드 툴바 -->
+      <div class="qna-toolbar">
+        <div class="toolbar-left">
+          <button class="btn-filter-tag active" id="btnFilterGameAll" onclick="setGameFilterMode('all')">🏆 종합 명예의 전당</button>
+          <button class="btn-filter-tag" id="btnFilterGame10s" onclick="setGameFilterMode('10s')">⏱️ 10.00초 맞추기</button>
+          <button class="btn-filter-tag" id="btnFilterGame26c" onclick="setGameFilterMode('26c')">🌡️ 26.0℃ 맞추기</button>
+        </div>
+
+        <div class="toolbar-right">
+          <a class="btn-act primary" href="./lunch-screen.html" target="_blank" style="text-decoration: none;">🖥️ 대형 전광판 모드 열기 ↗</a>
+          <button class="btn-act" onclick="refreshGamesData(true)">🔄 새로고침</button>
+          <button class="btn-act" onclick="addDummyGameSubmissions()">🧪 테스트 더미 5명</button>
+          <button class="btn-act" onclick="exportGamesCsv()">📥 CSV 내보내기</button>
+          <button class="btn-act danger" onclick="resetGamesDataPrompt()">🗑️ 기록 초기화</button>
+        </div>
+      </div>
+
+      <!-- 리더보드 목록 테이블 -->
+      <div class="settings-card" style="padding: 0; overflow: hidden;">
+        <div style="padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between;">
+          <h3 class="settings-title" id="gameTableTitle">🏆 점심 미니게임 종합 순위표</h3>
+          <span style="font-size: 12px; color: var(--text-muted);" id="gameTableUpdatedTime">실시간 동기화 중</span>
+        </div>
+        <div style="overflow-x: auto;">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th style="width: 60px; text-align: center;">순위</th>
+                <th>참가자 (이름 / 소속)</th>
+                <th style="text-align: center;">10초 1차</th>
+                <th style="text-align: center;">10초 2차</th>
+                <th style="text-align: center; color: var(--gold-light);">10초 Best</th>
+                <th style="text-align: center;">26℃ 1차</th>
+                <th style="text-align: center;">26℃ 2차</th>
+                <th style="text-align: center; color: #38bdf8;">26℃ Best</th>
+                <th style="text-align: center;">종합 오차합</th>
+                <th style="text-align: center; width: 90px;">달성 시각</th>
+              </tr>
+            </thead>
+            <tbody id="gamesTableBody">
+              <tr>
+                <td colspan="10" style="text-align: center; color: var(--text-muted); padding: 40px;">
+                  등록된 미니게임 참여 기록이 없습니다.
+                </td>
+              </tr>
             </tbody>
           </table>
         </div>
@@ -4764,6 +4860,7 @@ const DEFAULT_SCHEDULE_DATA = {
       if (tabId === 'tabSchedule') renderScheduleTab();
       if (tabId === 'tabQuiz' && typeof renderQuizTab === 'function') renderQuizTab();
       if (tabId === 'tabSurvey' && typeof renderSurveyTab === 'function') renderSurveyTab();
+      if (tabId === 'tabGames' && typeof renderGamesTab === 'function') renderGamesTab();
       if (tabId === 'tabKakao' && typeof renderKakaoTab === 'function') renderKakaoTab();
     }
 
@@ -6082,6 +6179,17 @@ ${s3.speaker}님의 '${s3.title}' 세션까지 오전 강연이 모두 종료되
           elSurveyBadge.textContent = Array.isArray(sList) ? sList.length : Object.keys(sList).length;
         } catch (e) {
           elSurveyBadge.textContent = 0;
+        }
+      }
+
+      const elGamesBadge = document.getElementById('countBadgeGames');
+      if (elGamesBadge) {
+        try {
+          const rawG = localStorage.getItem('hvac_game_submissions');
+          const gList = rawG ? JSON.parse(rawG) : [];
+          elGamesBadge.textContent = Array.isArray(gList) ? gList.length : Object.keys(gList).length;
+        } catch (e) {
+          elGamesBadge.textContent = 0;
         }
       }
     }
@@ -9966,6 +10074,294 @@ ${link}
         showToast('🔄 세션 일정표의 최신 강연명 및 강사명이 만족도 설문(과정별 문항)에 동기화되었습니다!');
       }
     }
+
+    // =========================================================
+    // 16. [TAB Games] 점심 미니게임 실시간 리더보드 & 관리
+    // =========================================================
+    let currentGameFilterMode = 'all'; // 'all', '10s', '26c'
+    let cachedGameSubmissions = [];
+
+    function setGameFilterMode(mode) {
+      currentGameFilterMode = mode;
+      document.getElementById('btnFilterGameAll')?.classList.toggle('active', mode === 'all');
+      document.getElementById('btnFilterGame10s')?.classList.toggle('active', mode === '10s');
+      document.getElementById('btnFilterGame26c')?.classList.toggle('active', mode === '26c');
+
+      const titleMap = {
+        all: '🏆 점심 미니게임 종합 순위표 (오차 합산)',
+        '10s': '⏱️ 10.00초 스톱워치 챌린지 순위표',
+        '26c': '🌡️ 26.0℃ 적정온도 챌린지 순위표'
+      };
+      const titleEl = document.getElementById('gameTableTitle');
+      if (titleEl) titleEl.textContent = titleMap[mode] || titleMap.all;
+
+      renderGamesList();
+    }
+
+    function refreshGamesData(showToastMsg) {
+      if (!window.HVAC || !window.HVAC.cloud) {
+        cachedGameSubmissions = JSON.parse(localStorage.getItem('hvac_game_submissions') || '[]');
+        renderGamesTab();
+        if (showToastMsg) showToast('로컬 미니게임 데이터를 불러왔습니다.');
+        return;
+      }
+
+      window.HVAC.cloud.fetchGames().then(list => {
+        cachedGameSubmissions = list || [];
+        localStorage.setItem('hvac_game_submissions', JSON.stringify(cachedGameSubmissions));
+        renderGamesTab();
+        if (showToastMsg) showToast('🔄 실시간 미니게임 랭킹이 갱신되었습니다.');
+      }).catch(() => {
+        cachedGameSubmissions = JSON.parse(localStorage.getItem('hvac_game_submissions') || '[]');
+        renderGamesTab();
+      });
+    }
+
+    function renderGamesTab() {
+      // 1. 통계 카드 계산
+      const list = cachedGameSubmissions || [];
+      const totalUsers = list.length;
+      const totalUsersEl = document.getElementById('statGamesTotalUsers');
+      if (totalUsersEl) totalUsersEl.textContent = totalUsers;
+      const badge = document.getElementById('countBadgeGames');
+      if (badge) badge.textContent = totalUsers;
+
+      // 10초 1위
+      const valid10s = list.filter(it => it.game10s && it.game10s.bestDiff !== null && it.game10s.bestDiff !== undefined);
+      valid10s.sort((a, b) => a.game10s.bestDiff - b.game10s.bestDiff);
+      const stat10sBestEl = document.getElementById('statGames10sBest');
+      const stat10sUserEl = document.getElementById('statGames10sUser');
+      if (valid10s.length > 0) {
+        const top10 = valid10s[0];
+        if (stat10sBestEl) stat10sBestEl.textContent = `${top10.game10s.bestTime.toFixed(2)}s (±${top10.game10s.bestDiff.toFixed(2)}s)`;
+        if (stat10sUserEl) stat10sUserEl.textContent = `${top10.name} (${top10.dept || '참가자'})`;
+      } else {
+        if (stat10sBestEl) stat10sBestEl.textContent = '-';
+        if (stat10sUserEl) stat10sUserEl.textContent = '도전자 대기 중';
+      }
+
+      // 26도 1위
+      const valid26c = list.filter(it => it.game26c && it.game26c.bestDiff !== null && it.game26c.bestDiff !== undefined);
+      valid26c.sort((a, b) => a.game26c.bestDiff - b.game26c.bestDiff);
+      const stat26cBestEl = document.getElementById('statGames26cBest');
+      const stat26cUserEl = document.getElementById('statGames26cUser');
+      if (valid26c.length > 0) {
+        const top26 = valid26c[0];
+        if (stat26cBestEl) stat26cBestEl.textContent = `${top26.game26c.bestTemp.toFixed(1)}℃ (±${top26.game26c.bestDiff.toFixed(1)}℃)`;
+        if (stat26cUserEl) stat26cUserEl.textContent = `${top26.name} (${top26.dept || '참가자'})`;
+      } else {
+        if (stat26cBestEl) stat26cBestEl.textContent = '-';
+        if (stat26cUserEl) stat26cUserEl.textContent = '도전자 대기 중';
+      }
+
+      // PERFECT 달성자
+      const perfect10s = list.filter(it => it.game10s && it.game10s.isPerfect).length;
+      const perfect26c = list.filter(it => it.game26c && it.game26c.isPerfect).length;
+      const perfectCountEl = document.getElementById('statGamesPerfectCount');
+      if (perfectCountEl) perfectCountEl.textContent = `${perfect10s + perfect26c}명`;
+
+      const timeEl = document.getElementById('gameTableUpdatedTime');
+      if (timeEl) {
+        timeEl.textContent = `최근 갱신: ${new Date().toLocaleTimeString('ko-KR')}`;
+      }
+
+      renderGamesList();
+    }
+
+    function renderGamesList() {
+      const tbody = document.getElementById('gamesTableBody');
+      if (!tbody) return;
+      const list = cachedGameSubmissions || [];
+
+      if (!list.length) {
+        tbody.innerHTML = `<tr><td colspan="10" style="text-align: center; color: var(--text-muted); padding: 40px;">등록된 미니게임 참여 기록이 없습니다.</td></tr>`;
+        return;
+      }
+
+      let sorted = [...list];
+      if (currentGameFilterMode === '10s') {
+        sorted = sorted.filter(it => it.game10s && it.game10s.bestDiff !== null && it.game10s.bestDiff !== undefined);
+        sorted.sort((a, b) => a.game10s.bestDiff - b.game10s.bestDiff);
+      } else if (currentGameFilterMode === '26c') {
+        sorted = sorted.filter(it => it.game26c && it.game26c.bestDiff !== null && it.game26c.bestDiff !== undefined);
+        sorted.sort((a, b) => a.game26c.bestDiff - b.game26c.bestDiff);
+      } else {
+        // 종합: 두 게임의 오차 합 (미도전 게임은 패널티 +99)
+        sorted.sort((a, b) => {
+          const diffA10 = (a.game10s && a.game10s.bestDiff !== null && a.game10s.bestDiff !== undefined) ? a.game10s.bestDiff : 99;
+          const diffA26 = (a.game26c && a.game26c.bestDiff !== null && a.game26c.bestDiff !== undefined) ? a.game26c.bestDiff : 99;
+          const diffB10 = (b.game10s && b.game10s.bestDiff !== null && b.game10s.bestDiff !== undefined) ? b.game10s.bestDiff : 99;
+          const diffB26 = (b.game26c && b.game26c.bestDiff !== null && b.game26c.bestDiff !== undefined) ? b.game26c.bestDiff : 99;
+          return (diffA10 + diffA26) - (diffB10 + diffB26);
+        });
+      }
+
+      tbody.innerHTML = sorted.map((item, idx) => {
+        const rank = idx + 1;
+        const medal = rank === 1 ? '🥇 1위' : (rank === 2 ? '🥈 2위' : (rank === 3 ? '🥉 3위' : `${rank}위`));
+
+        const t1_10s = item.game10s?.tries?.[0]?.time !== undefined ? `${item.game10s.tries[0].time.toFixed(2)}s` : '-';
+        const t2_10s = item.game10s?.tries?.[1]?.time !== undefined ? `${item.game10s.tries[1].time.toFixed(2)}s` : '-';
+        const best_10s = item.game10s?.bestTime !== null && item.game10s?.bestTime !== undefined
+          ? `<strong>${item.game10s.bestTime.toFixed(2)}s</strong> (±${item.game10s.bestDiff.toFixed(2)}s)` : '-';
+
+        const t1_26c = item.game26c?.tries?.[0]?.temp !== undefined ? `${item.game26c.tries[0].temp.toFixed(1)}℃` : '-';
+        const t2_26c = item.game26c?.tries?.[1]?.temp !== undefined ? `${item.game26c.tries[1].temp.toFixed(1)}℃` : '-';
+        const best_26c = item.game26c?.bestTemp !== null && item.game26c?.bestTemp !== undefined
+          ? `<strong>${item.game26c.bestTemp.toFixed(1)}℃</strong> (±${item.game26c.bestDiff.toFixed(1)}℃)` : '-';
+
+        let totalDiffText = '-';
+        if (item.game10s?.bestDiff !== null && item.game26c?.bestDiff !== null && item.game10s?.bestDiff !== undefined && item.game26c?.bestDiff !== undefined) {
+          totalDiffText = `±${(item.game10s.bestDiff + item.game26c.bestDiff).toFixed(2)}`;
+        }
+
+        const isPerfect10 = item.game10s?.isPerfect;
+        const isPerfect26 = item.game26c?.isPerfect;
+
+        return `
+          <tr>
+            <td style="text-align: center; font-weight: 900; ${rank <= 3 ? 'color: var(--gold-light);' : ''}">${medal}</td>
+            <td>
+              <strong>${escapeHtml(item.name)}</strong>
+              <span style="font-size: 12px; color: var(--text-muted); margin-left: 6px;">${escapeHtml(item.dept || '')}</span>
+              ${isPerfect10 ? '<span class="status-pill green" style="margin-left: 4px;">10s 🎯</span>' : ''}
+              ${isPerfect26 ? '<span class="status-pill green" style="margin-left: 4px;">26℃ 🎯</span>' : ''}
+            </td>
+            <td style="text-align: center; font-family: var(--font-mono);">${t1_10s}</td>
+            <td style="text-align: center; font-family: var(--font-mono);">${t2_10s}</td>
+            <td style="text-align: center; font-family: var(--font-mono); color: var(--gold-light);">${best_10s}</td>
+            <td style="text-align: center; font-family: var(--font-mono);">${t1_26c}</td>
+            <td style="text-align: center; font-family: var(--font-mono);">${t2_26c}</td>
+            <td style="text-align: center; font-family: var(--font-mono); color: #38bdf8;">${best_26c}</td>
+            <td style="text-align: center; font-family: var(--font-mono); font-weight: 850;">${totalDiffText}</td>
+            <td style="text-align: center; font-size: 12px; color: var(--text-muted);">${item.updatedAt || '-'}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function addDummyGameSubmissions() {
+      const dummyNames = [
+        { name: '김태호', dept: '에너지엔지니어링팀', t10_1: 10.02, t10_2: 9.98, t26_1: 26.1, t26_2: 26.0 },
+        { name: '이수진', dept: '삼우설계 공조설계부', t10_1: 10.15, t10_2: 10.01, t26_1: 25.8, t26_2: 26.2 },
+        { name: '박민우', dept: 'LG전자 B2B솔루션팀', t10_1: 9.88, t10_2: 10.00, t26_1: 26.0, t26_2: 26.5 },
+        { name: '최현석', dept: '한일엠이씨 기계설비', t10_1: 10.22, t10_2: 9.95, t26_1: 26.4, t26_2: 25.9 },
+        { name: '정유라', dept: 'ES기술지원팀', t10_1: 10.05, t10_2: 10.03, t26_1: 26.3, t26_2: 26.1 }
+      ];
+
+      let promises = [];
+      dummyNames.forEach((d, idx) => {
+        const diff10_1 = Math.abs(d.t10_1 - 10.00);
+        const diff10_2 = Math.abs(d.t10_2 - 10.00);
+        const best10 = diff10_1 < diff10_2 ? { time: d.t10_1, diff: diff10_1 } : { time: d.t10_2, diff: diff10_2 };
+
+        const diff26_1 = Math.abs(d.t26_1 - 26.0);
+        const diff26_2 = Math.abs(d.t26_2 - 26.0);
+        const best26 = diff26_1 < diff26_2 ? { temp: d.t26_1, diff: diff26_1 } : { temp: d.t26_2, diff: diff26_2 };
+
+        const payload = {
+          name: d.name,
+          dept: d.dept,
+          phoneLast4: String(1000 + idx),
+          email: `dummy_${idx + 1}@lge.com`,
+          game10s: {
+            tries: [
+              { attempt: 1, time: d.t10_1, diff: Math.round(diff10_1 * 100) / 100, isPerfect: diff10_1 === 0, timestamp: '12:35:10' },
+              { attempt: 2, time: d.t10_2, diff: Math.round(diff10_2 * 100) / 100, isPerfect: diff10_2 === 0, timestamp: '12:36:20' }
+            ],
+            bestTime: best10.time,
+            bestDiff: Math.round(best10.diff * 100) / 100,
+            isPerfect: best10.diff === 0
+          },
+          game26c: {
+            tries: [
+              { attempt: 1, temp: d.t26_1, diff: Math.round(diff26_1 * 10) / 10, isPerfect: diff26_1 === 0, timestamp: '12:37:05' },
+              { attempt: 2, temp: d.t26_2, diff: Math.round(diff26_2 * 10) / 10, isPerfect: diff26_2 === 0, timestamp: '12:38:15' }
+            ],
+            bestTemp: best26.temp,
+            bestDiff: Math.round(best26.diff * 10) / 10,
+            isPerfect: best26.diff === 0
+          }
+        };
+
+        if (window.HVAC && window.HVAC.cloud) {
+          promises.push(window.HVAC.cloud.pushGameRecord(payload));
+        }
+      });
+
+      Promise.all(promises).then(() => {
+        showToast('🧪 테스트 더미 5명의 게임 참여 기록이 추가되었습니다!');
+        refreshGamesData(false);
+      });
+    }
+
+    function exportGamesCsv() {
+      const list = cachedGameSubmissions || [];
+      if (!list.length) {
+        alert('내보낼 게임 참여 기록이 없습니다.');
+        return;
+      }
+
+      let csv = '\uFEFF순위,이름,소속,전화번호뒷자리,10초_1차,10초_2차,10초_Best,10초_오차,26℃_1차,26℃_2차,26℃_Best,26℃_오차,달성시각\n';
+      list.forEach((item, idx) => {
+        const row = [
+          idx + 1,
+          `"${(item.name || '').replace(/"/g, '""')}"`,
+          `"${(item.dept || '').replace(/"/g, '""')}"`,
+          `"${item.phoneLast4 || ''}"`,
+          item.game10s?.tries?.[0]?.time !== undefined ? item.game10s.tries[0].time : '',
+          item.game10s?.tries?.[1]?.time !== undefined ? item.game10s.tries[1].time : '',
+          item.game10s?.bestTime !== undefined ? item.game10s.bestTime : '',
+          item.game10s?.bestDiff !== undefined ? item.game10s.bestDiff : '',
+          item.game26c?.tries?.[0]?.temp !== undefined ? item.game26c.tries[0].temp : '',
+          item.game26c?.tries?.[1]?.temp !== undefined ? item.game26c.tries[1].temp : '',
+          item.game26c?.bestTemp !== undefined ? item.game26c.bestTemp : '',
+          item.game26c?.bestDiff !== undefined ? item.game26c.bestDiff : '',
+          `"${item.updatedAt || ''}"`
+        ];
+        csv += row.join(',') + '\n';
+      });
+
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `HVAC_2026_Lunch_Minigame_Leaderboard_${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function resetGamesDataPrompt() {
+      if (!confirm('⚠️ 경고: 모든 참가자의 10초 및 26℃ 미니게임 기록을 전체 초기화하시겠습니까?\n이 작업은 되돌릴 수 없습니다.')) return;
+
+      if (window.HVAC && window.HVAC.cloud && window.HVAC.cloud.resetGames) {
+        window.HVAC.cloud.resetGames().then(() => {
+          cachedGameSubmissions = [];
+          localStorage.removeItem('hvac_game_submissions');
+          renderGamesTab();
+          showToast('🗑️ 모든 미니게임 기록이 초기화되었습니다.');
+        });
+      } else {
+        cachedGameSubmissions = [];
+        localStorage.removeItem('hvac_game_submissions');
+        renderGamesTab();
+        showToast('🗑️ 로컬 미니게임 기록이 초기화되었습니다.');
+      }
+    }
+
+    // 미니게임 클라우드 이벤트 리스너 등록
+    window.addEventListener('hvac:games-updated', (e) => {
+      if (e.detail && e.detail.submissions) {
+        cachedGameSubmissions = e.detail.submissions;
+        renderGamesTab();
+      }
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+      setTimeout(() => {
+        refreshGamesData(false);
+      }, 1000);
+    });
 
   </script>
 </body>

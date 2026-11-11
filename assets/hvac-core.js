@@ -63,6 +63,8 @@
     if (/checkin\.html$/.test(p)) return 'checkin';
     if (/qna\.html$/.test(p)) return 'qna';
     if (/quiz\.html$/.test(p)) return 'quiz';
+    if (/game\.html$/.test(p)) return 'game';
+    if (/lunch-screen\.html$/.test(p)) return 'lunch-screen';
     return 'index';
   }
 
@@ -504,7 +506,7 @@
     return c.dbUrl + '/' + c.roomKey + '/' + subpath.replace(/^\/+/, '') + '.json';
   }
 
-  var lastSeenMeta = { config: 0, checkins: 0, qna: 0, quiz: 0, surveys: 0 };
+  var lastSeenMeta = { config: 0, checkins: 0, qna: 0, quiz: 0, surveys: 0, games: 0 };
   var isSyncingCloud = false;
 
   function touchCloudMeta(section) {
@@ -1011,6 +1013,71 @@
       .catch(function () { return { success: false }; });
   }
 
+  // 점심 미니게임 (10초 / 26℃) 결과 클라우드 전송
+  function pushGameRecordToCloud(gameData) {
+    var c = getCloudConfig();
+    if (!c || !window.fetch || !gameData) return Promise.resolve({ success: false });
+    var user = read('hvac_user_checked') || {};
+    var rawKey = user.email || gameData.email || gameData.deviceId || ('anon_' + (gameData.name || 'player') + '_' + (gameData.phoneLast4 || '0000'));
+    var key = String(rawKey).toLowerCase().replace('@lge.com', '').replace(/[.#$\[\]\/]/g, '_');
+    var subUrl = cloudPath('games/submissions/' + key);
+
+    return fetch(subUrl, { cache: 'no-store' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (existing) {
+        existing = existing || {};
+        var merged = {
+          key: key,
+          email: user.email || gameData.email || '미체크인',
+          name: gameData.name || user.name || '참가자',
+          dept: gameData.dept || user.dept || '',
+          phoneLast4: gameData.phoneLast4 || user.phoneLast4 || '',
+          checkinId: user.checkinId || '-',
+          seq: user.seq || null,
+          game10s: gameData.game10s !== undefined ? gameData.game10s : (existing.game10s || { tries: [], bestTime: null, bestDiff: null, isPerfect: false }),
+          game26c: gameData.game26c !== undefined ? gameData.game26c : (existing.game26c || { tries: [], bestTemp: null, bestDiff: null, isPerfect: false }),
+          updatedAt: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+        };
+        return fetch(subUrl, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(merged)
+        }).then(function (r) {
+          if (r.ok) return touchCloudMeta('games').then(function () { return { success: true, record: merged }; });
+          return { success: false };
+        });
+      })
+      .catch(function () { return { success: false }; });
+  }
+
+  function fetchGameSubmissionsFromCloud() {
+    var c = getCloudConfig();
+    if (!c || !window.fetch) return Promise.resolve([]);
+    return fetch(cloudPath('games/submissions'), { cache: 'no-store' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (subMap) {
+        if (!subMap || typeof subMap !== 'object') return [];
+        var list = Object.values(subMap).filter(Boolean);
+        writeLocalSilent('hvac_game_submissions', list);
+        return list;
+      })
+      .catch(function () { return []; });
+  }
+
+  function resetGameSubmissionsOnCloud() {
+    var c = getCloudConfig();
+    if (!c || !window.fetch) return Promise.resolve(false);
+    return fetch(cloudPath('games/submissions'), {
+      method: 'DELETE'
+    }).then(function (r) {
+      if (r.ok) {
+        writeLocalSilent('hvac_game_submissions', []);
+        return touchCloudMeta('games').then(function () { return true; });
+      }
+      return false;
+    }).catch(function () { return false; });
+  }
+
   // 클라우드 -> 로컬 변경사항 폴링 (meta 타임스탬프 비교 후 변경된 섹션만 다운로드)
   function pollCloudChanges(forceAll) {
     var c = getCloudConfig();
@@ -1144,6 +1211,23 @@
           );
         }
 
+        // 6) 점심 미니게임 변경 감지 (admin, lunch-screen, game)
+        if ((pId === 'admin' || pId === 'lunch-screen' || pId === 'game') && (forceAll || (meta.games && meta.games > lastSeenMeta.games))) {
+          lastSeenMeta.games = meta.games || Date.now();
+          tasks.push(
+            fetch(cloudPath('games/submissions'), { cache: 'no-store' })
+              .then(function (r) { return r.ok ? r.json() : null; })
+              .then(function (subMap) {
+                if (!subMap || typeof subMap !== 'object') return;
+                var list = Object.values(subMap).filter(Boolean);
+                writeLocalSilent('hvac_game_submissions', list);
+                window.dispatchEvent(new CustomEvent('hvac:games-updated', { detail: { submissions: list } }));
+                window.dispatchEvent(new StorageEvent('storage', { key: 'hvac_game_submissions' }));
+              })
+              .catch(function () {})
+          );
+        }
+
         return Promise.all(tasks).then(function () {
           isSyncingCloud = false;
           return true;
@@ -1267,6 +1351,9 @@
       checkin: cloudCheckin,
       pushQuizScore: pushQuizScoreToCloud,
       pushSurvey: pushSurveyResponseToCloud,
+      pushGameRecord: pushGameRecordToCloud,
+      fetchGames: fetchGameSubmissionsFromCloud,
+      resetGames: resetGameSubmissionsOnCloud,
       restart: startCloudLoop
     },
     onConfigUpdated: function (fn) {

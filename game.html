@@ -1,0 +1,1363 @@
+<!DOCTYPE html>
+<html lang="ko" data-hvac-page="game">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>점심시간 미니게임 챌린지 | 2026 HVAC Expert Seminar</title>
+  <meta name="theme-color" content="#060e09">
+
+  <!-- Core Scripts & Cloud Sync -->
+  <script src="./assets/hvac-core.js"></script>
+
+  <style>
+    :root {
+      --bg: #060e09;
+      --card-bg: rgba(16, 28, 20, 0.85);
+      --card-border: rgba(255, 255, 255, 0.12);
+      --primary: #108548;
+      --primary-light: #22c55e;
+      --gold: #d4a017;
+      --gold-light: #f3c448;
+      --red: #ef4444;
+      --blue: #38bdf8;
+      --text: #f3f4f6;
+      --text-muted: rgba(255, 255, 255, 0.6);
+      --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Pretendard Variable", Pretendard, "Apple SD Gothic Neo", "Segoe UI", sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow-x: hidden;
+      padding-bottom: 40px;
+    }
+
+    /* 배경 은은한 그라데이션 */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(circle at 50% 15%, rgba(16, 133, 72, 0.22) 0%, transparent 65%),
+                  radial-gradient(circle at 80% 85%, rgba(212, 160, 23, 0.12) 0%, transparent 60%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 520px;
+      margin: 0 auto;
+      padding: 16px 18px;
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+    }
+
+    /* 상단 헤더 */
+    .game-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--card-border);
+    }
+
+    .btn-back {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #fff;
+      padding: 7px 13px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 700;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+
+    .btn-back:active {
+      transform: scale(0.96);
+      background: rgba(255, 255, 255, 0.16);
+    }
+
+    .user-pill {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(243, 196, 72, 0.12);
+      border: 1px solid rgba(243, 196, 72, 0.35);
+      color: var(--gold-light);
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-size: 12.5px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    /* 타이틀 배너 */
+    .title-banner {
+      text-align: center;
+      margin-bottom: 18px;
+    }
+
+    .badge-sub {
+      display: inline-block;
+      font-size: 11.5px;
+      font-weight: 900;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--gold-light);
+      background: rgba(243, 196, 72, 0.15);
+      border: 1px solid rgba(243, 196, 72, 0.3);
+      padding: 3px 10px;
+      border-radius: 6px;
+      margin-bottom: 6px;
+    }
+
+    .title-banner h1 {
+      font-size: 24px;
+      font-weight: 900;
+      letter-spacing: -0.03em;
+      color: #fff;
+      margin-bottom: 4px;
+    }
+
+    .title-banner p {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    /* 탭 내비게이션 */
+    .game-tabs {
+      display: flex;
+      gap: 8px;
+      background: rgba(0, 0, 0, 0.35);
+      padding: 5px;
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      margin-bottom: 18px;
+    }
+
+    .game-tab-btn {
+      flex: 1;
+      padding: 12px 10px;
+      border-radius: 10px;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 14px;
+      font-weight: 850;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .game-tab-btn.active {
+      background: linear-gradient(135deg, rgba(16, 133, 72, 0.85), rgba(10, 85, 45, 0.95));
+      color: #fff;
+      border: 1px solid rgba(34, 197, 94, 0.45);
+      box-shadow: 0 4px 14px rgba(16, 133, 72, 0.35);
+    }
+
+    /* 게임 카드 컨테이너 */
+    .game-panel {
+      display: none;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .game-panel.active {
+      display: flex;
+    }
+
+    .game-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      padding: 22px 20px;
+      text-align: center;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+      backdrop-filter: blur(12px);
+    }
+
+    /* 기회 인디케이터 */
+    .try-indicator-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+      padding: 8px 14px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      font-size: 13px;
+    }
+
+    .try-badge {
+      font-weight: 850;
+      color: var(--gold-light);
+    }
+
+    .mode-toggle {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.7);
+      cursor: pointer;
+    }
+
+    .mode-toggle input {
+      accent-color: var(--gold-light);
+      cursor: pointer;
+    }
+
+    /* 메인 디스플레이 박스 */
+    .display-screen {
+      background: #020704;
+      border: 2px solid rgba(16, 133, 72, 0.4);
+      border-radius: 18px;
+      padding: 26px 16px;
+      margin-bottom: 22px;
+      box-shadow: inset 0 2px 16px rgba(0, 0, 0, 0.8), 0 0 24px rgba(16, 133, 72, 0.15);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .display-screen::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(34, 197, 94, 0.6), transparent);
+    }
+
+    .target-tag {
+      font-size: 12px;
+      font-weight: 850;
+      color: var(--gold-light);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    .big-number {
+      font-family: var(--font-mono);
+      font-size: 58px;
+      font-weight: 900;
+      line-height: 1;
+      color: #fff;
+      letter-spacing: -0.02em;
+      text-shadow: 0 0 20px rgba(34, 197, 94, 0.4);
+      user-select: none;
+    }
+
+    .big-number.blinded {
+      color: var(--gold-light);
+      text-shadow: 0 0 20px rgba(243, 196, 72, 0.6);
+      animation: pulseBlind 1s infinite alternate;
+    }
+
+    @keyframes pulseBlind {
+      from { opacity: 0.6; transform: scale(0.98); }
+      to { opacity: 1; transform: scale(1.02); }
+    }
+
+    .diff-status {
+      margin-top: 10px;
+      font-size: 14px;
+      font-weight: 800;
+      min-height: 22px;
+    }
+
+    .diff-status.perfect { color: #facc15; text-shadow: 0 0 12px rgba(250, 204, 21, 0.8); }
+    .diff-status.great { color: #4ade80; }
+    .diff-status.close { color: #38bdf8; }
+    .diff-status.normal { color: #f87171; }
+
+    /* 거대한 액션 버튼 */
+    .btn-game-action {
+      width: 100%;
+      height: 76px;
+      border-radius: 18px;
+      border: none;
+      font-size: 21px;
+      font-weight: 900;
+      letter-spacing: -0.01em;
+      color: #fff;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      transition: all 0.15s ease-out;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    }
+
+    .btn-game-action.ready {
+      background: linear-gradient(135deg, #108548, #0b6133);
+      border: 1px solid #22c55e;
+      box-shadow: 0 6px 20px rgba(16, 133, 72, 0.45);
+    }
+
+    .btn-game-action.ready:active {
+      transform: scale(0.97);
+    }
+
+    .btn-game-action.running {
+      background: linear-gradient(135deg, #dc2626, #b91c1c);
+      border: 2px solid #f87171;
+      box-shadow: 0 0 28px rgba(220, 38, 38, 0.65);
+      animation: pulseStopBtn 0.8s infinite alternate;
+    }
+
+    @keyframes pulseStopBtn {
+      from { transform: scale(1); box-shadow: 0 0 20px rgba(220, 38, 38, 0.5); }
+      to { transform: scale(1.02); box-shadow: 0 0 35px rgba(220, 38, 38, 0.85); }
+    }
+
+    .btn-game-action.finished {
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: var(--text-muted);
+      cursor: not-allowed;
+      font-size: 17px;
+    }
+
+    /* 시도 결과 기록 카드 */
+    .tries-history-box {
+      margin-top: 20px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .try-card {
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 14px;
+      padding: 12px 10px;
+      text-align: center;
+    }
+
+    .try-card.best {
+      border-color: rgba(243, 196, 72, 0.5);
+      background: rgba(243, 196, 72, 0.06);
+    }
+
+    .try-card-title {
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+
+    .try-card-score {
+      font-family: var(--font-mono);
+      font-size: 18px;
+      font-weight: 850;
+      color: #fff;
+    }
+
+    .try-card-diff {
+      font-size: 11.5px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    /* 26도 맞추기 게이지 바늘 시각화 */
+    .gauge-wrapper {
+      position: relative;
+      width: 100%;
+      height: 24px;
+      background: linear-gradient(90deg, #38bdf8 0%, #22c55e 50%, #ef4444 100%);
+      border-radius: 12px;
+      margin: 18px 0 10px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .gauge-target-line {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 57.14%; /* (26 - 18) / (32 - 18) = 8/14 ≈ 57.14% */
+      width: 3px;
+      background: #facc15;
+      box-shadow: 0 0 8px #facc15;
+      z-index: 2;
+    }
+
+    .gauge-needle {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 6px;
+      background: #fff;
+      border: 1px solid #000;
+      border-radius: 3px;
+      transform: translateX(-50%);
+      left: 50%;
+      z-index: 3;
+      transition: left 0.03s linear;
+      box-shadow: 0 0 10px rgba(255, 255, 255, 0.9);
+    }
+
+    .gauge-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+      padding: 0 4px;
+    }
+
+    /* 리더보드 미리보기 카드 */
+    .leaderboard-preview-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 18px;
+      padding: 16px;
+      margin-top: 14px;
+    }
+
+    .leaderboard-preview-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+      font-size: 13px;
+      font-weight: 850;
+      color: var(--gold-light);
+    }
+
+    .leaderboard-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .leaderboard-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 10px;
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 10px;
+      font-size: 12.5px;
+    }
+
+    .leaderboard-item.rank-1 {
+      background: rgba(243, 196, 72, 0.12);
+      border: 1px solid rgba(243, 196, 72, 0.35);
+      font-weight: 850;
+    }
+
+    /* 안내 모달 (이름 등록) */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.82);
+      backdrop-filter: blur(8px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 9999;
+    }
+
+    .modal-overlay.open {
+      display: flex;
+    }
+
+    .modal-box {
+      width: 100%;
+      max-width: 400px;
+      background: #0b1710;
+      border: 1px solid var(--gold);
+      border-radius: 20px;
+      padding: 24px 22px;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.7);
+    }
+
+    .modal-box h3 {
+      font-size: 18px;
+      font-weight: 900;
+      color: #fff;
+      margin-bottom: 6px;
+    }
+
+    .modal-box p {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+      line-height: 1.45;
+    }
+
+    .form-group {
+      margin-bottom: 12px;
+      text-align: left;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 12px;
+      font-weight: 800;
+      color: rgba(255, 255, 255, 0.8);
+      margin-bottom: 5px;
+    }
+
+    .form-input {
+      width: 100%;
+      height: 44px;
+      background: #020704;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 10px;
+      padding: 0 12px;
+      color: #fff;
+      font-size: 14px;
+    }
+
+    .form-input:focus {
+      outline: none;
+      border-color: var(--primary-light);
+    }
+
+    .btn-submit-user {
+      width: 100%;
+      height: 46px;
+      background: linear-gradient(135deg, #108548, #0b6133);
+      border: 1px solid #22c55e;
+      border-radius: 12px;
+      color: #fff;
+      font-size: 15px;
+      font-weight: 850;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+
+    /* 캔버스 폭죽 */
+    #confettiCanvas {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 999;
+    }
+  </style>
+</head>
+
+<body>
+  <canvas id="confettiCanvas"></canvas>
+
+  <div class="container">
+    <!-- 헤더 -->
+    <header class="game-header">
+      <a href="./checkin.html" class="btn-back">
+        <span>←</span> 세미나 화면으로
+      </a>
+      <div class="user-pill" id="userPillBtn" onclick="openUserModal()">
+        <span>👤</span>
+        <span id="userNameDisplay">참가자 확인 중...</span>
+      </div>
+    </header>
+
+    <!-- 타이틀 -->
+    <div class="title-banner">
+      <span class="badge-sub">10TH ANNIVERSARY LUNCH SPECIAL</span>
+      <h1>점심시간 미니게임 챌린지</h1>
+      <p>10회 기념 10초 & 여름철 26℃ 맞추기! 대형 전광판 1등에 도전하세요.</p>
+    </div>
+
+    <!-- 탭 전환 -->
+    <div class="game-tabs">
+      <button class="game-tab-btn active" id="tabBtn10s" onclick="switchGameTab('10s')">
+        ⏱️ 10.00초 맞추기
+      </button>
+      <button class="game-tab-btn" id="tabBtn26c" onclick="switchGameTab('26c')">
+        🌡️ 26.0℃ 맞추기
+      </button>
+    </div>
+
+    <!-- ========================================================
+         [GAME 1] ⏱️ 10.00초 스톱워치 챌린지
+         ======================================================== -->
+    <section class="game-panel active" id="panel10s">
+      <div class="game-card">
+        <div class="try-indicator-wrap">
+          <span class="try-badge" id="tryBadge10s">도전 기회: 2회 남음</span>
+          <label class="mode-toggle">
+            <input type="checkbox" id="chkHiddenMode10s" checked>
+            <span>3초 블라인드 모드 🙈</span>
+          </label>
+        </div>
+
+        <div class="display-screen">
+          <div class="target-tag">TARGET : EXACT 10.00 SECONDS</div>
+          <div class="big-number" id="timerDisplay10s">00.00</div>
+          <div class="diff-status" id="diffStatus10s">START 버튼을 누르면 시작됩니다</div>
+        </div>
+
+        <button type="button" class="btn-game-action ready" id="btnAction10s" onclick="handleAction10s()">
+          ⏱️ START (1차 시도)
+        </button>
+
+        <div class="tries-history-box">
+          <div class="try-card" id="card10sTry1">
+            <div class="try-card-title">1차 시도</div>
+            <div class="try-card-score" id="score10sTry1">-</div>
+            <div class="try-card-diff" id="diff10sTry1">오차 -</div>
+          </div>
+          <div class="try-card" id="card10sTry2">
+            <div class="try-card-title">2차 시도</div>
+            <div class="try-card-score" id="score10sTry2">-</div>
+            <div class="try-card-diff" id="diff10sTry2">오차 -</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================================
+         [GAME 2] 🌡️ 26.0℃ 적정온도 밸브 챌린지
+         ======================================================== -->
+    <section class="game-panel" id="panel26c">
+      <div class="game-card">
+        <div class="try-indicator-wrap">
+          <span class="try-badge" id="tryBadge26c">도전 기회: 2회 남음</span>
+          <span style="font-size: 11.5px; color: var(--gold-light);">여름철 정부 권장 적정온도</span>
+        </div>
+
+        <div class="display-screen">
+          <div class="target-tag">TARGET : EXACT 26.0 ℃</div>
+          <div class="big-number" id="tempDisplay26c">26.0℃</div>
+
+          <!-- 시각적 온도계 게이지 -->
+          <div class="gauge-wrapper">
+            <div class="gauge-target-line" title="목표 26.0℃"></div>
+            <div class="gauge-needle" id="gaugeNeedle"></div>
+          </div>
+          <div class="gauge-labels">
+            <span>18℃ (Cold)</span>
+            <span style="color: #facc15; font-weight: 800;">26.0℃</span>
+            <span>32℃ (Hot)</span>
+          </div>
+
+          <div class="diff-status" id="diffStatus26c">스윙 시작 버튼을 누르면 온도가 빠르게 변합니다</div>
+        </div>
+
+        <button type="button" class="btn-game-action ready" id="btnAction26c" onclick="handleAction26c()">
+          🌡️ 온도 스윙 시작 (1차 시도)
+        </button>
+
+        <div class="tries-history-box">
+          <div class="try-card" id="card26cTry1">
+            <div class="try-card-title">1차 시도</div>
+            <div class="try-card-score" id="score26cTry1">-</div>
+            <div class="try-card-diff" id="diff26cTry1">오차 -</div>
+          </div>
+          <div class="try-card" id="card26cTry2">
+            <div class="try-card-title">2차 시도</div>
+            <div class="try-card-score" id="score26cTry2">-</div>
+            <div class="try-card-diff" id="diff26cTry2">오차 -</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 실시간 리더보드 TOP 3 간이 프리뷰 -->
+    <section class="leaderboard-preview-card">
+      <div class="leaderboard-preview-head">
+        <span>🏆 현재 실시간 리더보드 TOP 3</span>
+        <span style="font-size: 11px; color: var(--text-muted); cursor: pointer;" onclick="loadMiniLeaderboard()">🔄 새로고침</span>
+      </div>
+      <ul class="leaderboard-list" id="miniLeaderboardList">
+        <li class="leaderboard-item" style="justify-content: center; color: var(--text-muted);">
+          실시간 기록을 불러오는 중...
+        </li>
+      </ul>
+    </section>
+  </div>
+
+  <!-- 사용자 정보 등록 모달 (미체크인 시) -->
+  <div class="modal-overlay" id="userModal">
+    <div class="modal-box">
+      <h3>참가자 정보 확인</h3>
+      <p>대형 전광판 랭킹에 기록을 등록하기 위해 이름과 소속을 확인해 주세요.</p>
+      <form id="userForm" onsubmit="handleSaveUser(event)">
+        <div class="form-group">
+          <label for="inputUserName">이름 *</label>
+          <input type="text" id="inputUserName" class="form-input" placeholder="홍길동" required>
+        </div>
+        <div class="form-group">
+          <label for="inputUserDept">소속 부서 / 회사명</label>
+          <input type="text" id="inputUserDept" class="form-input" placeholder="LG전자 시스템기술팀 또는 설계사무소">
+        </div>
+        <div class="form-group">
+          <label for="inputUserPhone">휴대폰 번호 뒤 4자리 (동명이인 구분용)</label>
+          <input type="text" id="inputUserPhone" class="form-input" maxlength="4" placeholder="예: 1234">
+        </div>
+        <button type="submit" class="btn-submit-user">저장 후 게임 참여하기</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    /* =========================================================
+       1. 사용자 식별 & 로컬 데이터 초기화
+       ========================================================= */
+    const STORAGE_KEY_USER = 'hvac_user_checked';
+    const STORAGE_KEY_RECORDS = 'hvac_lunch_game_records';
+
+    let currentUser = {
+      name: '',
+      dept: '',
+      phoneLast4: '',
+      email: '',
+      checkinId: ''
+    };
+
+    let userRecords = {
+      game10s: { tries: [], bestTime: null, bestDiff: null, isPerfect: false },
+      game26c: { tries: [], bestTemp: null, bestDiff: null, isPerfect: false }
+    };
+
+    function initUser() {
+      try {
+        const savedChecked = localStorage.getItem(STORAGE_KEY_USER);
+        if (savedChecked) {
+          const parsed = JSON.parse(savedChecked);
+          currentUser.name = parsed.name || '';
+          currentUser.dept = parsed.dept || '';
+          currentUser.email = parsed.email || '';
+          currentUser.checkinId = parsed.checkinId || '';
+        }
+      } catch (e) {}
+
+      // 저장된 사용자 지정 정보가 있으면 덮어쓰기
+      try {
+        const localCustom = localStorage.getItem('hvac_game_player_info');
+        if (localCustom) {
+          const parsed = JSON.parse(localCustom);
+          if (parsed.name) currentUser.name = parsed.name;
+          if (parsed.dept) currentUser.dept = parsed.dept;
+          if (parsed.phoneLast4) currentUser.phoneLast4 = parsed.phoneLast4;
+        }
+      } catch (e) {}
+
+      // 로컬 게임 기록 불러오기
+      try {
+        const savedRec = localStorage.getItem(STORAGE_KEY_RECORDS);
+        if (savedRec) {
+          userRecords = Object.assign(userRecords, JSON.parse(savedRec));
+        }
+      } catch (e) {}
+
+      updateUserHeader();
+      renderRecordsUI();
+      if (!currentUser.name) {
+        openUserModal();
+      }
+    }
+
+    function updateUserHeader() {
+      const el = document.getElementById('userNameDisplay');
+      if (el) {
+        if (currentUser.name) {
+          el.textContent = `${currentUser.name} (${currentUser.dept || '참가자'})`;
+        } else {
+          el.textContent = '참가자 정보 등록 필요';
+        }
+      }
+    }
+
+    function openUserModal() {
+      document.getElementById('inputUserName').value = currentUser.name || '';
+      document.getElementById('inputUserDept').value = currentUser.dept || '';
+      document.getElementById('inputUserPhone').value = currentUser.phoneLast4 || '';
+      document.getElementById('userModal').classList.add('open');
+    }
+
+    function handleSaveUser(e) {
+      e.preventDefault();
+      const name = document.getElementById('inputUserName').value.trim();
+      const dept = document.getElementById('inputUserDept').value.trim();
+      const phoneLast4 = document.getElementById('inputUserPhone').value.trim();
+      if (!name) return;
+
+      currentUser.name = name;
+      currentUser.dept = dept;
+      currentUser.phoneLast4 = phoneLast4;
+
+      localStorage.setItem('hvac_game_player_info', JSON.stringify({
+        name, dept, phoneLast4
+      }));
+
+      updateUserHeader();
+      document.getElementById('userModal').classList.remove('open');
+      syncRecordToCloud();
+    }
+
+    /* =========================================================
+       2. Web Audio API 사운드 효과 (무설치/순수 오실레이터)
+       ========================================================= */
+    let audioCtx = null;
+    function playBeep(freq = 520, type = 'sine', duration = 0.08) {
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+      } catch (e) {}
+    }
+
+    function playFanfare() {
+      [523, 659, 784, 1046].forEach((f, idx) => {
+        setTimeout(() => playBeep(f, 'triangle', 0.25), idx * 100);
+      });
+    }
+
+    /* =========================================================
+       3. 탭 전환
+       ========================================================= */
+    let currentTab = '10s';
+    function switchGameTab(tab) {
+      if (isRunning10s || isRunning26c) {
+        if (!confirm('현재 게임이 진행 중입니다. 탭을 이동하시겠습니까?')) return;
+        if (isRunning10s) stopTimer10s(false);
+        if (isRunning26c) stopTimer26c(false);
+      }
+      currentTab = tab;
+      document.querySelectorAll('.game-tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.game-panel').forEach(p => p.classList.remove('active'));
+
+      if (tab === '10s') {
+        document.getElementById('tabBtn10s').classList.add('active');
+        document.getElementById('panel10s').classList.add('active');
+      } else {
+        document.getElementById('tabBtn26c').classList.add('active');
+        document.getElementById('panel26c').classList.add('active');
+      }
+      loadMiniLeaderboard();
+    }
+
+    /* =========================================================
+       4. GAME 1: ⏱️ 10.00초 맞추기 로직
+       ========================================================= */
+    let isRunning10s = false;
+    let startTime10s = 0;
+    let animId10s = null;
+    const TARGET_10S = 10.00;
+
+    function handleAction10s() {
+      if (!currentUser.name) {
+        openUserModal();
+        return;
+      }
+      const tries = userRecords.game10s.tries || [];
+      if (tries.length >= 2 && !isRunning10s) {
+        alert('10초 맞추기 도전 기회(2회)를 모두 사용하셨습니다!\n최종 기록이 전광판에 등록되었습니다.');
+        return;
+      }
+
+      if (!isRunning10s) {
+        startTimer10s();
+      } else {
+        stopTimer10s(true);
+      }
+    }
+
+    function startTimer10s() {
+      isRunning10s = true;
+      startTime10s = performance.now();
+      const isHidden = document.getElementById('chkHiddenMode10s').checked;
+      const display = document.getElementById('timerDisplay10s');
+      const diffStatus = document.getElementById('diffStatus10s');
+      const btn = document.getElementById('btnAction10s');
+
+      display.classList.remove('blinded');
+      display.textContent = '00.00';
+      diffStatus.className = 'diff-status';
+      diffStatus.textContent = isHidden ? '🙈 3초 후 숫자가 가려집니다! 마음속으로 세세요!' : '10.00초에 맞춰 STOP을 누르세요!';
+      btn.className = 'btn-game-action running';
+      btn.innerHTML = '🛑 STOP!';
+      playBeep(440, 'sine', 0.1);
+
+      function loop() {
+        if (!isRunning10s) return;
+        const elapsedSec = (performance.now() - startTime10s) / 1000;
+
+        if (isHidden && elapsedSec >= 3.00) {
+          display.classList.add('blinded');
+          display.textContent = '?.??';
+        } else {
+          display.textContent = elapsedSec.toFixed(2);
+        }
+
+        // 20초 초과 시 자동 정지
+        if (elapsedSec > 20.00) {
+          stopTimer10s(true);
+          return;
+        }
+        animId10s = requestAnimationFrame(loop);
+      }
+      animId10s = requestAnimationFrame(loop);
+    }
+
+    function stopTimer10s(save = true) {
+      if (!isRunning10s) return;
+      isRunning10s = false;
+      cancelAnimationFrame(animId10s);
+
+      const endTime = performance.now();
+      const elapsedSec = Math.round(((endTime - startTime10s) / 1000) * 100) / 100;
+      const display = document.getElementById('timerDisplay10s');
+      const diffStatus = document.getElementById('diffStatus10s');
+      const btn = document.getElementById('btnAction10s');
+
+      display.classList.remove('blinded');
+      display.textContent = elapsedSec.toFixed(2);
+
+      if (!save) {
+        btn.className = 'btn-game-action ready';
+        btn.innerHTML = '⏱️ START';
+        return;
+      }
+
+      const diff = Math.round(Math.abs(elapsedSec - TARGET_10S) * 100) / 100;
+      const isPerfect = (diff === 0);
+
+      // 감탄사 & 사운드
+      if (isPerfect) {
+        diffStatus.className = 'diff-status perfect';
+        diffStatus.textContent = '🎯 PERFECT!! 기적의 10.00초 달성!';
+        playFanfare();
+        triggerConfetti();
+      } else if (diff <= 0.05) {
+        diffStatus.className = 'diff-status great';
+        diffStatus.textContent = `🔥 소름돋는 감각! 오차 단 ${diff.toFixed(2)}초!`;
+        playBeep(880, 'sine', 0.2);
+      } else if (diff <= 0.20) {
+        diffStatus.className = 'diff-status close';
+        diffStatus.textContent = `👏 훌륭합니다! 오차 ${diff.toFixed(2)}초`;
+        playBeep(660, 'sine', 0.15);
+      } else {
+        diffStatus.className = 'diff-status normal';
+        diffStatus.textContent = `😅 ${elapsedSec < TARGET_10S ? '조금 빨랐네요!' : '조금 늦었습니다!'} (오차 ${diff.toFixed(2)}초)`;
+        playBeep(320, 'sine', 0.15);
+      }
+
+      // 기록 저장
+      userRecords.game10s.tries.push({
+        attempt: userRecords.game10s.tries.length + 1,
+        time: elapsedSec,
+        diff: diff,
+        isPerfect: isPerfect,
+        timestamp: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+      });
+
+      // Best 기록 갱신
+      recalcBest10s();
+      saveRecordsLocal();
+      syncRecordToCloud();
+      renderRecordsUI();
+    }
+
+    function recalcBest10s() {
+      const tries = userRecords.game10s.tries || [];
+      if (!tries.length) return;
+      let best = tries[0];
+      tries.forEach(t => {
+        if (t.diff < best.diff) best = t;
+      });
+      userRecords.game10s.bestTime = best.time;
+      userRecords.game10s.bestDiff = best.diff;
+      userRecords.game10s.isPerfect = best.diff === 0;
+    }
+
+    /* =========================================================
+       5. GAME 2: 🌡️ 26.0℃ 맞추기 로직
+       ========================================================= */
+    let isRunning26c = false;
+    let animId26c = null;
+    let currentTemp = 26.0;
+    let tempPhase = 0;
+    const TARGET_26C = 26.0;
+    const MIN_TEMP = 18.0;
+    const MAX_TEMP = 32.0;
+
+    function handleAction26c() {
+      if (!currentUser.name) {
+        openUserModal();
+        return;
+      }
+      const tries = userRecords.game26c.tries || [];
+      if (tries.length >= 2 && !isRunning26c) {
+        alert('26℃ 맞추기 도전 기회(2회)를 모두 사용하셨습니다!\n최종 기록이 전광판에 등록되었습니다.');
+        return;
+      }
+
+      if (!isRunning26c) {
+        startTimer26c();
+      } else {
+        stopTimer26c(true);
+      }
+    }
+
+    function startTimer26c() {
+      isRunning26c = true;
+      const display = document.getElementById('tempDisplay26c');
+      const diffStatus = document.getElementById('diffStatus26c');
+      const btn = document.getElementById('btnAction26c');
+      const needle = document.getElementById('gaugeNeedle');
+
+      diffStatus.className = 'diff-status';
+      diffStatus.textContent = '26.0℃에 맞춰 STOP을 누르세요!';
+      btn.className = 'btn-game-action running';
+      btn.innerHTML = '❄️ 26.0℃에서 STOP!';
+      playBeep(480, 'sine', 0.1);
+
+      // 스윙 주기 및 진폭 (18℃ ~ 32℃ 사이 정현파)
+      const center = (MIN_TEMP + MAX_TEMP) / 2; // 25.0
+      const amp = (MAX_TEMP - MIN_TEMP) / 2;    // 7.0
+      const startTime = performance.now();
+      const speed = 0.0035; // 스피드
+
+      function loop(now) {
+        if (!isRunning26c) return;
+        const t = (now - startTime) * speed;
+        currentTemp = center + Math.sin(t) * amp;
+        const rounded = Math.round(currentTemp * 10) / 10;
+
+        display.textContent = `${rounded.toFixed(1)}℃`;
+
+        // 게이지 바늘 위치 %
+        const pct = Math.max(0, Math.min(100, ((rounded - MIN_TEMP) / (MAX_TEMP - MIN_TEMP)) * 100));
+        needle.style.left = `${pct}%`;
+
+        animId26c = requestAnimationFrame(loop);
+      }
+      animId26c = requestAnimationFrame(loop);
+    }
+
+    function stopTimer26c(save = true) {
+      if (!isRunning26c) return;
+      isRunning26c = false;
+      cancelAnimationFrame(animId26c);
+
+      const finalTemp = Math.round(currentTemp * 10) / 10;
+      const display = document.getElementById('tempDisplay26c');
+      const diffStatus = document.getElementById('diffStatus26c');
+      const btn = document.getElementById('btnAction26c');
+      const needle = document.getElementById('gaugeNeedle');
+
+      display.textContent = `${finalTemp.toFixed(1)}℃`;
+      const pct = Math.max(0, Math.min(100, ((finalTemp - MIN_TEMP) / (MAX_TEMP - MIN_TEMP)) * 100));
+      needle.style.left = `${pct}%`;
+
+      if (!save) {
+        btn.className = 'btn-game-action ready';
+        btn.innerHTML = '🌡️ 온도 스윙 시작';
+        return;
+      }
+
+      const diff = Math.round(Math.abs(finalTemp - TARGET_26C) * 10) / 10;
+      const isPerfect = (diff === 0);
+
+      // 감탄사 & 사운드
+      if (isPerfect) {
+        diffStatus.className = 'diff-status perfect';
+        diffStatus.textContent = '🎯 PERFECT!! 정부 권장 26.0℃ 정확 달성!';
+        playFanfare();
+        triggerConfetti();
+      } else if (diff <= 0.3) {
+        diffStatus.className = 'diff-status great';
+        diffStatus.textContent = `🔥 환상적인 공조 감각! 오차 단 ${diff.toFixed(1)}℃!`;
+        playBeep(880, 'sine', 0.2);
+      } else if (diff <= 1.0) {
+        diffStatus.className = 'diff-status close';
+        diffStatus.textContent = `👏 근접했습니다! 오차 ${diff.toFixed(1)}℃`;
+        playBeep(660, 'sine', 0.15);
+      } else {
+        diffStatus.className = 'diff-status normal';
+        diffStatus.textContent = `😅 ${finalTemp < TARGET_26C ? '조금 춥네요!' : '조금 덥습니다!'} (오차 ${diff.toFixed(1)}℃)`;
+        playBeep(320, 'sine', 0.15);
+      }
+
+      userRecords.game26c.tries.push({
+        attempt: userRecords.game26c.tries.length + 1,
+        temp: finalTemp,
+        diff: diff,
+        isPerfect: isPerfect,
+        timestamp: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+      });
+
+      recalcBest26c();
+      saveRecordsLocal();
+      syncRecordToCloud();
+      renderRecordsUI();
+    }
+
+    function recalcBest26c() {
+      const tries = userRecords.game26c.tries || [];
+      if (!tries.length) return;
+      let best = tries[0];
+      tries.forEach(t => {
+        if (t.diff < best.diff) best = t;
+      });
+      userRecords.game26c.bestTemp = best.temp;
+      userRecords.game26c.bestDiff = best.diff;
+      userRecords.game26c.isPerfect = best.diff === 0;
+    }
+
+    /* =========================================================
+       6. UI 기록 렌더링 & 버튼 상태 제어
+       ========================================================= */
+    function renderRecordsUI() {
+      // 10초 게임
+      const tries10s = userRecords.game10s.tries || [];
+      const count10s = tries10s.length;
+      document.getElementById('tryBadge10s').textContent = `도전 기회: ${Math.max(0, 2 - count10s)}회 남음`;
+
+      const btn10s = document.getElementById('btnAction10s');
+      if (count10s === 0) {
+        btn10s.className = 'btn-game-action ready';
+        btn10s.innerHTML = '⏱️ START (1차 시도)';
+      } else if (count10s === 1) {
+        btn10s.className = 'btn-game-action ready';
+        btn10s.innerHTML = '⏱️ 2차 시도 도전하기 (남은 기회 1회)';
+      } else {
+        btn10s.className = 'btn-game-action finished';
+        btn10s.innerHTML = '✅ 2회 도전 완료 (전광판 반영됨)';
+      }
+
+      if (tries10s[0]) {
+        document.getElementById('score10sTry1').textContent = `${tries10s[0].time.toFixed(2)}초`;
+        document.getElementById('diff10sTry1').textContent = `오차: ${tries10s[0].diff.toFixed(2)}초`;
+      }
+      if (tries10s[1]) {
+        document.getElementById('score10sTry2').textContent = `${tries10s[1].time.toFixed(2)}초`;
+        document.getElementById('diff10sTry2').textContent = `오차: ${tries10s[1].diff.toFixed(2)}초`;
+      }
+
+      // Best 강조
+      document.getElementById('card10sTry1').classList.toggle('best', count10s >= 1 && userRecords.game10s.bestTime === tries10s[0]?.time);
+      document.getElementById('card10sTry2').classList.toggle('best', count10s >= 2 && userRecords.game10s.bestTime === tries10s[1]?.time);
+
+      // 26도 게임
+      const tries26c = userRecords.game26c.tries || [];
+      const count26c = tries26c.length;
+      document.getElementById('tryBadge26c').textContent = `도전 기회: ${Math.max(0, 2 - count26c)}회 남음`;
+
+      const btn26c = document.getElementById('btnAction26c');
+      if (count26c === 0) {
+        btn26c.className = 'btn-game-action ready';
+        btn26c.innerHTML = '🌡️ 온도 스윙 시작 (1차 시도)';
+      } else if (count26c === 1) {
+        btn26c.className = 'btn-game-action ready';
+        btn26c.innerHTML = '🌡️ 2차 시도 도전하기 (남은 기회 1회)';
+      } else {
+        btn26c.className = 'btn-game-action finished';
+        btn26c.innerHTML = '✅ 2회 도전 완료 (전광판 반영됨)';
+      }
+
+      if (tries26c[0]) {
+        document.getElementById('score26cTry1').textContent = `${tries26c[0].temp.toFixed(1)}℃`;
+        document.getElementById('diff26cTry1').textContent = `오차: ${tries26c[0].diff.toFixed(1)}℃`;
+      }
+      if (tries26c[1]) {
+        document.getElementById('score26cTry2').textContent = `${tries26c[1].temp.toFixed(1)}℃`;
+        document.getElementById('diff26cTry2').textContent = `오차: ${tries26c[1].diff.toFixed(1)}℃`;
+      }
+
+      document.getElementById('card26cTry1').classList.toggle('best', count26c >= 1 && userRecords.game26c.bestTemp === tries26c[0]?.temp);
+      document.getElementById('card26cTry2').classList.toggle('best', count26c >= 2 && userRecords.game26c.bestTemp === tries26c[1]?.temp);
+    }
+
+    function saveRecordsLocal() {
+      localStorage.setItem(STORAGE_KEY_RECORDS, JSON.stringify(userRecords));
+    }
+
+    /* =========================================================
+       7. 클라우드 전송 및 리더보드 불러오기
+       ========================================================= */
+    function syncRecordToCloud() {
+      if (!window.HVAC || !window.HVAC.cloud || !currentUser.name) return;
+      window.HVAC.cloud.pushGameRecord({
+        name: currentUser.name,
+        dept: currentUser.dept,
+        phoneLast4: currentUser.phoneLast4,
+        email: currentUser.email,
+        game10s: userRecords.game10s,
+        game26c: userRecords.game26c
+      }).then(() => {
+        loadMiniLeaderboard();
+      });
+    }
+
+    function loadMiniLeaderboard() {
+      const listEl = document.getElementById('miniLeaderboardList');
+      if (!listEl) return;
+
+      if (!window.HVAC || !window.HVAC.cloud) {
+        listEl.innerHTML = '<li class="leaderboard-item" style="justify-content:center;color:var(--text-muted);">클라우드 연결 대기 중</li>';
+        return;
+      }
+
+      window.HVAC.cloud.fetchGames().then(list => {
+        if (!list || !list.length) {
+          listEl.innerHTML = '<li class="leaderboard-item" style="justify-content:center;color:var(--text-muted);">아직 등록된 기록이 없습니다. 첫 1위에 도전하세요!</li>';
+          return;
+        }
+
+        // 현재 탭에 맞는 리더보드 필터링 & 정렬
+        let filtered = [];
+        if (currentTab === '10s') {
+          filtered = list
+            .filter(item => item.game10s && item.game10s.bestDiff !== null && item.game10s.bestDiff !== undefined)
+            .sort((a, b) => a.game10s.bestDiff - b.game10s.bestDiff);
+        } else {
+          filtered = list
+            .filter(item => item.game26c && item.game26c.bestDiff !== null && item.game26c.bestDiff !== undefined)
+            .sort((a, b) => a.game26c.bestDiff - b.game26c.bestDiff);
+        }
+
+        if (!filtered.length) {
+          listEl.innerHTML = '<li class="leaderboard-item" style="justify-content:center;color:var(--text-muted);">해당 게임의 참여 기록이 없습니다.</li>';
+          return;
+        }
+
+        const top3 = filtered.slice(0, 3);
+        const medals = ['🥇 1위', '🥈 2위', '🥉 3위'];
+        listEl.innerHTML = top3.map((item, idx) => {
+          const scoreText = (currentTab === '10s')
+            ? `${item.game10s.bestTime.toFixed(2)}초 (오차 ${item.game10s.bestDiff.toFixed(2)}s)`
+            : `${item.game26c.bestTemp.toFixed(1)}℃ (오차 ${item.game26c.bestDiff.toFixed(1)}℃)`;
+          const isPerfect = (currentTab === '10s') ? item.game10s.isPerfect : item.game26c.isPerfect;
+
+          return `
+            <li class="leaderboard-item ${idx === 0 ? 'rank-1' : ''}">
+              <div>
+                <strong>${medals[idx] || (idx + 1) + '위'} ${escapeHtml(item.name)}</strong>
+                <span style="font-size: 11px; opacity: 0.65; margin-left: 4px;">${escapeHtml(item.dept || '')}</span>
+                ${isPerfect ? '<span style="color:#facc15;font-weight:900;margin-left:4px;">🎯 PERFECT!</span>' : ''}
+              </div>
+              <div style="font-family: var(--font-mono); font-weight: 850;">
+                ${scoreText}
+              </div>
+            </li>
+          `;
+        }).join('');
+      }).catch(() => {
+        listEl.innerHTML = '<li class="leaderboard-item" style="justify-content:center;color:var(--text-muted);">기록을 불러오지 못했습니다.</li>';
+      });
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    /* =========================================================
+       8. 축하 폭죽 이펙트 (Confetti Canvas)
+       ========================================================= */
+    function triggerConfetti() {
+      const canvas = document.getElementById('confettiCanvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+
+      const particles = [];
+      const colors = ['#facc15', '#22c55e', '#38bdf8', '#ffffff', '#f43f5e'];
+
+      for (let i = 0; i < 90; i++) {
+        particles.push({
+          x: canvas.width / 2,
+          y: canvas.height * 0.45,
+          vx: (Math.random() - 0.5) * 16,
+          vy: (Math.random() - 0.8) * 18,
+          size: Math.random() * 8 + 4,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          rotation: Math.random() * 360,
+          vRot: (Math.random() - 0.5) * 12,
+          alpha: 1
+        });
+      }
+
+      function render() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        let alive = false;
+        particles.forEach(p => {
+          p.x += p.vx;
+          p.y += p.vy;
+          p.vy += 0.45; // 중력
+          p.rotation += p.vRot;
+          p.alpha -= 0.015;
+
+          if (p.alpha > 0) {
+            alive = true;
+            ctx.save();
+            ctx.globalAlpha = Math.max(0, p.alpha);
+            ctx.translate(p.x, p.y);
+            ctx.rotate((p.rotation * Math.PI) / 180);
+            ctx.fillStyle = p.color;
+            ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+            ctx.restore();
+          }
+        });
+
+        if (alive) {
+          requestAnimationFrame(render);
+        } else {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+      }
+      requestAnimationFrame(render);
+    }
+
+    /* =========================================================
+       9. 실행 시작
+       ========================================================= */
+    document.addEventListener('DOMContentLoaded', () => {
+      initUser();
+      setTimeout(loadMiniLeaderboard, 600);
+      setInterval(loadMiniLeaderboard, 10000); // 10초마다 갱신
+    });
+  </script>
+</body>
+</html>
