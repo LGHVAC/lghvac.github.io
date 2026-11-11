@@ -114,7 +114,13 @@
           data.hero.totalSchedule = '09:00 ~ 18:00';
           migrated = true;
         }
-        (data.sessions || []).forEach(function (s) {
+        (data.sessions || []).forEach(function (s, idx) {
+          if (s.id === 's1' || idx === 0) {
+            if (s.note !== '본부관 별관 1F 학술회의장') { s.note = '본부관 별관 1F 학술회의장'; migrated = true; }
+          } else if (s.note) {
+            s.note = '';
+            migrated = true;
+          }
           if (s.id === 's1' && (s.time === '~ 08:50' || s.time === '~08:50' || !s.minute || s.minute === '-')) { s.time = '08:00 ~ 08:50'; s.minute = '50'; if (s.speaker === '-') s.speaker = ''; migrated = true; }
           if (s.id === 's2' && s.type === 'session' && (s.sublabel || '').includes('Opening')) { s.type = 'general'; migrated = true; }
           if (s.title === '건축설비 측면에서 바라보는 공동주택 공기열원 히트펌프의 역할과 과제') { s.title = '헬로우 히트펌프, 굿바이 보일러'; migrated = true; }
@@ -202,19 +208,21 @@
         const agendaShell = document.querySelector('#agenda .agenda-shell');
         if (!agendaShell || !sessions.length) return;
         agendaShell.querySelectorAll('.agenda-row').forEach(function (r) { r.remove(); });
-        sessions.forEach(function (s) {
+        sessions.forEach(function (s, idx) {
           const typeClass = ['session', 'break', 'meal'].indexOf(s.type) >= 0 ? s.type : '';
           const row = document.createElement('div');
           row.className = ('agenda-row ' + typeClass).trim();
           const spk = cleanSpeaker(s.speaker);
           const speakerVal = (!spk || spk === '-') ? '' : spk;
           const minuteVal = (s.minute && s.minute !== '-') ? s.minute : '';
+          // 첫 번째 세미나 참석자 등록 세션에만 '본부관 별관 1F 학술회의장' 표시, 나머지는 비고 미노출
+          const noteVal = (idx === 0 || s.id === 's1') ? (s.note || '본부관 별관 1F 학술회의장') : '';
           row.innerHTML =
             '<div class="time">' + esc(s.time) + '</div>' +
             '<div class="minute">' + esc(minuteVal) + '</div>' +
             '<div class="topic"><div>' + esc(s.title) + '</div>' + buildMaterialBtn(s, true) + '</div>' +
             '<div class="speaker">' + esc(speakerVal) + '</div>' +
-            '<div class="note">' + esc(s.note || '') + '</div>';
+            '<div class="note">' + (noteVal ? esc(noteVal) : '') + '</div>';
           agendaShell.appendChild(row);
         });
         bindMaterialButtons(agendaShell);
@@ -1686,7 +1694,7 @@
             <div class="minute">50</div>
             <div class="topic">Registration & Welcome (참석자 등록 및 입장 안내)</div>
             <div class="speaker"></div>
-            <div class="note">운영데스크 / 다과</div>
+            <div class="note">본부관 별관 1F 학술회의장</div>
           </div>
 
           <div class="agenda-row">
@@ -1694,7 +1702,7 @@
             <div class="minute">20</div>
             <div class="topic">Opening</div>
             <div class="speaker">ES엔지니어링담당</div>
-            <div class="note">일정안내, 시상</div>
+            <div class="note"></div>
           </div>
 
           <div class="agenda-row session">
@@ -1702,7 +1710,7 @@
             <div class="minute">50</div>
             <div class="topic">국내주거난방의 변천과 현황</div>
             <div class="speaker">여명석 교수</div>
-            <div class="note">서울대학교</div>
+            <div class="note"></div>
           </div>
 
           <div class="agenda-row break">
@@ -1718,7 +1726,7 @@
             <div class="minute">50</div>
             <div class="topic">고밀도 AI 서버의 액체냉각 및 데이터센터 열관리 기술</div>
             <div class="speaker">이성혁 교수</div>
-            <div class="note">중앙대학교</div>
+            <div class="note"></div>
           </div>
 
           <div class="agenda-row break">
@@ -1734,7 +1742,7 @@
             <div class="minute">50</div>
             <div class="topic">국내 전력시장 현황 및 AIDC 전력공급 방안</div>
             <div class="speaker">조홍종 교수</div>
-            <div class="note">단국대학교</div>
+            <div class="note"></div>
           </div>
 
           <div class="agenda-row meal">
@@ -1742,7 +1750,7 @@
             <div class="minute">90</div>
             <div class="topic">기념촬영 및 점심 식사</div>
             <div class="speaker"></div>
-            <div class="note">법학관 5층 청향</div>
+            <div class="note"></div>
           </div>
 
           <div class="agenda-row session">
@@ -1750,7 +1758,7 @@
             <div class="minute">50</div>
             <div class="topic">헬로우 히트펌프, 굿바이 보일러</div>
             <div class="speaker">유정현 수석</div>
-            <div class="note">LHRI (토지주택연구원)</div>
+            <div class="note"></div>
           </div>
 
           <div class="agenda-row break">
@@ -1766,7 +1774,7 @@
             <div class="minute">30</div>
             <div class="topic">에너지컨설팅 사례 발표</div>
             <div class="speaker">오영훈 팀장</div>
-            <div class="note">에너지컨설팅팀</div>
+            <div class="note"></div>
           </div>
 
           <div class="agenda-row break">
@@ -1782,7 +1790,7 @@
             <div class="minute">100</div>
             <div class="topic">테라포밍 또는 찬란한 멸종-그래도 우리는 지구에 살아야 한다</div>
             <div class="speaker">이정모 관장</div>
-            <div class="note">과학커뮤니케이터</div>
+            <div class="note"></div>
           </div>
 
           <div class="agenda-row break">
@@ -1790,7 +1798,7 @@
             <div class="minute">20</div>
             <div class="topic">Wrap up</div>
             <div class="speaker"></div>
-            <div class="note">설문 및 마무리</div>
+            <div class="note"></div>
           </div>
         </div>
       </div>
