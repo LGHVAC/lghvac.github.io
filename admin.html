@@ -1736,6 +1736,39 @@
       background: var(--primary-bright);
     }
 
+    /* 현장 즉석 추가 인원 추첨 버튼 (평소엔 숨김/투명, 마우스 오버 시 표시) */
+    .btn-extra-draw-hidden {
+      opacity: 0;
+      transition: opacity 0.25s ease, background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+      background: rgba(243, 196, 72, 0.14);
+      border: 1.5px dashed rgba(243, 196, 72, 0.7);
+      color: #fef08a;
+      padding: 13px 20px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 850;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      user-select: none;
+    }
+
+    /* 하단 액션 버튼 영역에 마우스가 오면 살짝 힌트(실루엣) 표시 */
+    .stage-action-btn-row:hover .btn-extra-draw-hidden {
+      opacity: 0.25;
+    }
+
+    /* 버튼 위에 직접 호버하면 100% 완전 표시 */
+    .btn-extra-draw-hidden:hover {
+      opacity: 1 !important;
+      background: rgba(243, 196, 72, 0.3) !important;
+      border-style: solid !important;
+      border-color: #f3c448 !important;
+      transform: scale(1.03);
+      box-shadow: 0 0 20px rgba(243, 196, 72, 0.45);
+    }
+
     /* Confetti Canvas 오버레이 */
     #confettiCanvas {
       position: absolute;
@@ -7313,15 +7346,18 @@ ${s3.speaker}님의 '${s3.title}' 세션까지 오전 강연이 모두 종료되
                 <span>📢 [${escapeHtml(currentTier.title)}] 현장 호명 및 참석 확인 중</span>
                 <span style="font-size: 12px; font-weight: 500; color: rgba(255,255,255,0.7);">(부재 시 개별 카드에서 재추첨 가능)</span>
               </div>
-              <div style="display: flex; justify-content: center; align-items: center; gap: 12px; flex-wrap: wrap;">
+              <div class="stage-action-btn-row" style="display: flex; justify-content: center; align-items: center; gap: 12px; flex-wrap: wrap;">
                 <button onclick="confirmCurrentTierDraw()" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #fff; border: none; padding: 13px 28px; border-radius: 12px; font-size: 15px; font-weight: 900; cursor: pointer; box-shadow: 0 4px 18px rgba(16, 185, 129, 0.45); transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
-                  ✅ 당첨 최종 확정하기 (${currentTier.count}명)
+                  ✅ 당첨 최종 확정하기 (${drawnWinners.length}명)
                 </button>
                 <button onclick="redrawCurrentTierConfirm()" style="background: rgba(243, 196, 72, 0.15); border: 1.5px solid #f3c448; color: #f3c448; padding: 13px 22px; border-radius: 12px; font-size: 14px; font-weight: 850; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='rgba(243, 196, 72, 0.25)'" onmouseout="this.style.background='rgba(243, 196, 72, 0.15)'">
                   🔄 이 등수 전체 재추첨
                 </button>
                 <button onclick="rollbackCurrentTierConfirm()" style="background: rgba(239, 68, 68, 0.15); border: 1.5px solid #ef4444; color: #fca5a5; padding: 13px 22px; border-radius: 12px; font-size: 14px; font-weight: 850; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='rgba(239, 68, 68, 0.25)'" onmouseout="this.style.background='rgba(239, 68, 68, 0.15)'">
                   ↩️ 추첨 취소 (롤백)
+                </button>
+                <button class="btn-extra-draw-hidden" onclick="addSingleWinnerToCurrentTier()" title="현장 즉석 추가 추첨 (+1명)">
+                  ➕ 추가 인원 추첨 (+1명)
                 </button>
               </div>
             </div>
@@ -7336,7 +7372,7 @@ ${s3.speaker}님의 '${s3.title}' 세션까지 오전 강연이 모두 종료되
                   <div style="font-size: 12px; color: rgba(255,255,255,0.7);">종합 명부에 최종 등록되었습니다. 필요 시 확정 취소 또는 재추첨이 가능합니다.</div>
                 </div>
               </div>
-              <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <div class="stage-action-btn-row" style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
                 <button onclick="unconfirmCurrentTierConfirm()" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.22); color: rgba(255,255,255,0.85); padding: 9px 16px; border-radius: 10px; font-size: 13px; font-weight: 750; cursor: pointer;">
                   ↩️ 확정 취소 / 롤백
                 </button>
@@ -7345,6 +7381,9 @@ ${s3.speaker}님의 '${s3.title}' 세션까지 오전 강연이 모두 종료되
                 </button>
                 <button onclick="goToNextStepOrComplete()" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #fff; border: none; padding: 9px 20px; border-radius: 10px; font-size: 13px; font-weight: 850; cursor: pointer;">
                   ${isLastStep ? '🏆 전체 당첨자 명부 보기 ➔' : '다음 등수 ➔'}
+                </button>
+                <button class="btn-extra-draw-hidden" onclick="addSingleWinnerToCurrentTier()" title="현장 즉석 추가 추첨 (+1명)" style="padding: 9px 15px; font-size: 12.5px;">
+                  ➕ 추가 추첨 (+1명)
                 </button>
               </div>
             </div>
@@ -7523,6 +7562,98 @@ ${s3.speaker}님의 '${s3.title}' 세션까지 오전 강연이 모두 종료되
       renderStageView();
       updateAllStats();
       showToast(`🔄 1명 재추첨 완료: '${newWinner.name}' 님이 새로 당첨되었습니다!`);
+    }
+
+    // --- 현장 즉석 추가 추첨 기능 (기존 당첨자 유지 + 신규 1명 추가 추첨) ---
+    function addSingleWinnerToCurrentTier() {
+      if (isDrawRolling) return;
+      const sortedTiers = getSortedStageTiers();
+      if (!sortedTiers || stageTierIdx < 0 || stageTierIdx >= sortedTiers.length) return;
+      const currentTier = sortedTiers[stageTierIdx];
+      const tierId = currentTier.id;
+
+      if (!drawState.drawnTiers) drawState.drawnTiers = {};
+      const existingWinners = drawState.drawnTiers[tierId] || [];
+
+      if (existingWinners.length === 0) {
+        alert('먼저 해당 등수의 기본 추첨을 진행해 주세요.');
+        return;
+      }
+
+      // 가용 후보자 계산 (다른 등수 당첨자 제외 + 현재 등수 당첨자 제외)
+      const candidates = getEligibleCandidatesForTier(tierId);
+      const currentWinnerEmails = new Set(
+        existingWinners.map(w => (w.email || '').toLowerCase().replace('@lge.com', ''))
+      );
+      const available = candidates.filter(c =>
+        !currentWinnerEmails.has((c.email || '').toLowerCase().replace('@lge.com', ''))
+      );
+
+      if (available.length === 0) {
+        alert('더 이상 추가 추첨할 수 있는 가용 출석 후보자가 없습니다.');
+        return;
+      }
+
+      // 운영진 확인 팝업
+      const confirmMsg = `🎁 [${currentTier.title}] 현장 즉석 추가 추첨 (+1명)\n\n` +
+        `• 현재 당첨 인원: ${existingWinners.length}명 (그대로 유지)\n` +
+        `• 추가 추첨: +1명 (총 당첨 인원: ${existingWinners.length + 1}명으로 변경)\n` +
+        `• 가용한 추첨 후보 풀: ${available.length}명\n\n` +
+        `현재 당첨자를 유지한 채, 추가 1명을 즉석 추첨하시겠습니까?`;
+
+      if (!confirm(confirmMsg)) {
+        return;
+      }
+
+      // 공정 PRNG 시드 생성
+      const addTimestamp = Date.now();
+      const subSeed = hashString53(`${drawConfig.seedPrefix || '2026_HVAC_10TH'}_EXTRA_${addTimestamp}_RANK${currentTier.rank}_CNT${existingWinners.length}`) >>> 0;
+      const rng = createMulberry32(subSeed);
+      const shuffled = seededShuffle(available, rng);
+      const newCandidate = shuffled[0];
+
+      const newWinner = {
+        name: newCandidate.name,
+        email: newCandidate.email,
+        seq: newCandidate.seq,
+        checkinId: newCandidate.checkinId || ('HVAC-' + String(newCandidate.seq).padStart(3, '0')),
+        tierId: tierId,
+        tierTitle: currentTier.title,
+        prize: currentTier.prize,
+        time: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }),
+        seedCode: `EXTRA-${subSeed.toString(16).toUpperCase()}`
+      };
+
+      // 기존 당첨자 명단 유지하며 새 당첨자 추가
+      existingWinners.push(newWinner);
+      drawState.drawnTiers[tierId] = existingWinners;
+
+      // 추가 당첨자 호명 확인을 위해 확정 상태를 미확정(호명 대기) 상태로 전환
+      if (!drawState.confirmedTiers) drawState.confirmedTiers = {};
+      drawState.confirmedTiers[tierId] = false;
+
+      // 등수 설정 인원수(count) 동기화
+      currentTier.count = existingWinners.length;
+      if (drawConfig && drawConfig.tiers) {
+        const cfgTier = drawConfig.tiers.find(t => t.id === tierId);
+        if (cfgTier) {
+          cfgTier.count = existingWinners.length;
+        }
+        try {
+          localStorage.setItem('hvac_luckydraw_config', JSON.stringify(drawConfig));
+        } catch (e) {}
+      }
+
+      try {
+        localStorage.setItem('hvac_luckydraw_state', JSON.stringify(drawState));
+      } catch (e) {}
+
+      // 축하 폭죽 및 뷰/명부/통계 즉시 갱신
+      runConfetti();
+      renderStageView();
+      renderAllWinnersTable();
+      updateAllStats();
+      showToast(`🎉 [${currentTier.title}] 1명 추가 추첨 완료: '${newWinner.name}' 님이 추가 당첨되었습니다! (총 ${existingWinners.length}명)`);
     }
 
     // --- 럭키드로우 당첨 확정 / 롤백 / 전체 재추첨 엔진 ---
