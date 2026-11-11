@@ -2224,7 +2224,7 @@
         speaker: "ES엔지니어링담당",
         note: "설문 및 마무리",
         bullets: [
-          "모바일 만족도 설문 제출 안내",
+          "모바일 만족도 설문 안내: 현장에서 바로 작성해 주셔도 좋고, 귀가하시면서 편안하게 입력해 주셔도 좋습니다.",
           "대망의 클로징 럭키드로우(1~5등) 현장 추첨 진행",
           "폐회 및 귀가 안내"
         ]
@@ -2272,7 +2272,13 @@
               if (s.id === 's2' && s.type === 'session' && (s.sublabel || '').includes('Opening')) { s.type = 'general'; migrated = true; }
               if (s.title === '건축설비 측면에서 바라보는 공동주택 공기열원 히트펌프의 역할과 과제') { s.title = '헬로우 히트펌프, 굿바이 보일러'; migrated = true; }
               if (s.title === '과학 및 인문학 강의') { s.title = '테라포밍 또는 찬란한 멸종-그래도 우리는 지구에 살아야 한다'; migrated = true; }
-              if (s.id === 's14' && s.time === '17:40 ~ 17:50') { s.time = '17:40 ~ 18:00'; s.minute = '20'; s.title = 'Wrap up 및 클로징 럭키드로우'; migrated = true; }
+              if (s.id === 's14') {
+                if (s.time === '17:40 ~ 17:50') { s.time = '17:40 ~ 18:00'; s.minute = '20'; s.title = 'Wrap up 및 클로징 럭키드로우'; migrated = true; }
+                if (Array.isArray(s.bullets) && (s.bullets[0] === '모바일 만족도 설문 제출 안내' || !s.bullets[0].includes('귀가'))) {
+                  s.bullets[0] = '모바일 만족도 설문 안내: 현장에서 바로 작성해 주셔도 좋고, 귀가하시면서 편안하게 입력해 주셔도 좋습니다.';
+                  migrated = true;
+                }
+              }
             });
             if (migrated) {
               try { localStorage.setItem('hvac_schedule_settings', JSON.stringify(data)); } catch (e) {}
@@ -2936,6 +2942,7 @@
         (s.speaker && s.speaker !== '-');
 
       const isMealSession = (s.id === 's8' || s.type === 'meal' || (s.title || '').includes('점심'));
+      const isClosingSession = (s.id === 's14' || (s.sublabel || '').includes('Closing') || (s.title || '').includes('Wrap up'));
       const btnBottomAction = document.getElementById('btnBottomAction');
       if (btnBottomAction) {
         if (isLectureSession) {
@@ -2958,6 +2965,12 @@
             btnBottomAction.style.color = 'rgba(255, 255, 255, 0.7)';
             btnBottomAction.innerHTML = '🔒 점심 미니게임 (12:30 오픈 예정)';
           }
+        } else if (isClosingSession) {
+          btnBottomAction.style.display = 'flex';
+          btnBottomAction.style.background = 'linear-gradient(135deg, #108548, #0b6837)';
+          btnBottomAction.style.borderColor = 'rgba(74, 222, 128, 0.45)';
+          btnBottomAction.style.color = '#ffffff';
+          btnBottomAction.innerHTML = '📋 모바일 만족도 설문 참여하기 ➔';
         } else {
           btnBottomAction.style.display = 'none';
         }
@@ -3234,10 +3247,11 @@
     const modalQnaContent = document.getElementById('modalQnaContent');
     const modalQnaAuthorName = document.getElementById('modalQnaAuthorName');
 
-    // 하단 '💬 강연 세션 질문하기 ∨' 버튼 누를 때 액션: 점심시간이면 게임 이동, 강연 세션이면 Q&A 팝업 오픈!
+    // 하단 '💬 강연 세션 질문하기 ∨' 버튼 누를 때 액션: 점심시간이면 게임 이동, 클로징이면 설문 이동, 강연 세션이면 Q&A 팝업 오픈!
     document.getElementById('btnBottomAction').addEventListener('click', () => {
       const s = sessions[currentIdx];
       const isMeal = s && (s.id === 's8' || s.type === 'meal' || (s.title || '').includes('점심'));
+      const isClosing = s && (s.id === 's14' || (s.sublabel || '').includes('Closing') || (s.title || '').includes('Wrap up'));
       if (isMeal) {
         const gameCfg = (window.HVAC && window.HVAC.getGameConfig) ? window.HVAC.getGameConfig() : { enabled: false };
         if (!gameCfg.enabled) {
@@ -3245,6 +3259,10 @@
           return;
         }
         window.location.href = './game.html';
+        return;
+      }
+      if (isClosing) {
+        window.location.href = './survey.html';
         return;
       }
       modalQnaBadge.textContent = s.sublabel;
