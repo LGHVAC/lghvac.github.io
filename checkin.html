@@ -1534,12 +1534,12 @@
                 type="text"
                 id="inputName"
                 class="app-input"
-                placeholder="성명 (한글 또는 영문)"
+                placeholder="성명 (한글 입력)"
                 autocomplete="name"
               >
             </div>
-            <small style="display: block; margin-top: 6px; font-size: 11.5px; color: rgba(255, 255, 255, 0.6); letter-spacing: -0.01em;">
-              ※ 사전 등록 명부의 한글 또는 영문 성명을 입력해 주세요.
+            <small id="nameGuideMsg" style="display: block; margin-top: 6px; font-size: 11.5px; color: rgba(255, 255, 255, 0.6); letter-spacing: -0.01em;">
+              ※ 사전 등록 명부의 한글 성명을 입력해 주세요.
             </small>
           </div>
         </div>
@@ -2529,17 +2529,46 @@
       }, 250);
     });
 
-    // 2단계: 이메일 & 성명 유효성 검사 (이메일 2자 이상 & 성명 2자 이상 시 '체크인 완료' 활성화)
+    const nameGuideMsg = document.getElementById('nameGuideMsg');
+    let nameGuideTimer = null;
+    let isNameComposing = false;
+
+    // 2단계: 이메일 & 성명 유효성 검사 (이메일 2자 이상 & 한글 성명 2자 이상 시 '체크인 완료' 활성화)
     function validateStep2() {
       const emailVal = inputEmail ? inputEmail.value.trim() : '';
       const nameVal = inputName ? inputName.value.trim() : '';
-      if (emailVal.length >= 2 && nameVal.length >= 2) {
+      // 성명은 순수 한글(완성형 가-힣) 2자 이상일 때만 유효 (띄어쓰기 허용)
+      const isHangulValid = /^[가-힣\s]{2,}$/.test(nameVal);
+
+      if (emailVal.length >= 2 && isHangulValid) {
         btnOpenConfirmModal.classList.remove('btn-disabled');
         btnOpenConfirmModal.removeAttribute('disabled');
       } else {
         btnOpenConfirmModal.classList.add('btn-disabled');
         btnOpenConfirmModal.setAttribute('disabled', 'true');
       }
+    }
+
+    // 성명 입력 필드: 한글(자모/완성형) 및 공백 이외의 문자(영문, 숫자, 특수문자 등) 즉시 필터링
+    function filterHangulOnly() {
+      if (!inputName) return;
+      const cur = inputName.value;
+      const filtered = cur.replace(/[^ㄱ-ㅎㅏ-ㅣ가-힣\s]/g, '');
+      if (cur !== filtered) {
+        inputName.value = filtered;
+        if (nameGuideMsg) {
+          nameGuideMsg.textContent = '⚠️ 성명은 한글만 입력 가능합니다. (영문/숫자 제외)';
+          nameGuideMsg.style.color = '#f59e0b';
+          clearTimeout(nameGuideTimer);
+          nameGuideTimer = setTimeout(() => {
+            if (nameGuideMsg) {
+              nameGuideMsg.textContent = '※ 사전 등록 명부의 한글 성명을 입력해 주세요.';
+              nameGuideMsg.style.color = 'rgba(255, 255, 255, 0.6)';
+            }
+          }, 2500);
+        }
+      }
+      validateStep2();
     }
 
     if (inputEmail) {
@@ -2558,7 +2587,7 @@
             || JSON.parse(localStorage.getItem('hvac_roster_list') || '[]');
           const matched = roster.find(r => String(r.email || '').toLowerCase().replace(/@lge\.com$/i, '').trim() === cleanEmail);
           if (matched && matched.name && inputName && !inputName.value) {
-            inputName.value = matched.name;
+            inputName.value = String(matched.name).replace(/[^ㄱ-ㅎㅏ-ㅣ가-힣\s]/g, '').trim();
           }
         }
 
@@ -2574,7 +2603,27 @@
     }
 
     if (inputName) {
-      inputName.addEventListener('input', validateStep2);
+      inputName.addEventListener('compositionstart', () => {
+        isNameComposing = true;
+      });
+      inputName.addEventListener('compositionend', () => {
+        isNameComposing = false;
+        filterHangulOnly();
+      });
+      inputName.addEventListener('input', (e) => {
+        if (isNameComposing || e.isComposing) {
+          validateStep2();
+          return;
+        }
+        filterHangulOnly();
+      });
+      inputName.addEventListener('paste', () => {
+        setTimeout(filterHangulOnly, 10);
+      });
+      inputName.addEventListener('blur', () => {
+        isNameComposing = false;
+        filterHangulOnly();
+      });
       inputName.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !btnOpenConfirmModal.disabled) {
           btnOpenConfirmModal.click();
@@ -2604,6 +2653,12 @@
       const rawEmail = inputEmail.value.trim();
       const cleanEmail = rawEmail.toLowerCase().replace('@lge.com', '');
       const rawName = inputName.value.trim();
+
+      if (!/^[가-힣\s]{2,}$/.test(rawName)) {
+        alert('참석자 성명은 한글 2자 이상으로 입력해 주세요.');
+        if (inputName) inputName.focus();
+        return;
+      }
 
       modalValEmail.textContent = cleanEmail;
 
