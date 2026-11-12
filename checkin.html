@@ -2310,11 +2310,11 @@
           <span style="font-size: 14px;">🎫</span>
           <span style="color: rgba(255,255,255,0.7);">입장 순번:</span>
           <strong id="dashAttendeeSeq" style="color: #fff; font-size: 13px;">No. -</strong>
-          <code id="dashAttendeeId" style="background: rgba(16, 185, 129, 0.15); color: #10b981; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: 700;">HVAC-000</code>
+          <code id="dashAttendeeId" style="display: none;">HVAC-000</code>
         </div>
         <div style="display: flex; align-items: center; gap: 6px;">
           <button type="button" id="dashLiveSessionBtn" style="display: none; background: rgba(16, 185, 129, 0.18); border: 1px solid rgba(16, 185, 129, 0.45); color: #34d399; font-weight: 850; font-size: 11px; padding: 3px 9px; border-radius: 99px; cursor: pointer; animation: pulseOngoing 2s infinite;" title="현재 진행/예정 세션으로 바로가기">⚡ LIVE 세션</button>
-          <button type="button" id="dashGiftBadge" onclick="openGiftReceiptModal()" style="display: inline-flex; align-items: center; gap: 4px; background: rgba(245, 158, 11, 0.2); border: 1px solid rgba(245, 158, 11, 0.5); color: #fbbf24; font-weight: 850; font-size: 11px; padding: 3px 9px; border-radius: 99px; cursor: pointer;" title="출석 선물 수령권 열기">🎁 출석 선물권</button>
+          <button type="button" id="dashGiftBadge" onclick="openGiftReceiptModal()" style="display: none; align-items: center; gap: 4px; background: rgba(245, 158, 11, 0.2); border: 1px solid rgba(245, 158, 11, 0.5); color: #fbbf24; font-weight: 850; font-size: 11px; padding: 3px 9px; border-radius: 99px; cursor: pointer;" title="출석 선물 수령권 열기">🎁 출석 선물권</button>
           <div id="dashMilestoneBadge" style="display: none; background: rgba(243, 196, 72, 0.18); border: 1px solid rgba(243, 196, 72, 0.45); color: #f3c448; font-weight: 850; font-size: 11px; padding: 3px 8px; border-radius: 99px; cursor: pointer;" title="경품 수령 안내">
             🎁 이벤트 당첨
           </div>
@@ -2500,7 +2500,7 @@
             <span id="giftAttendeeTypeBadge" class="gift-reg-badge badge-pre">🟢 사전 등록 인원</span>
           </div>
           <div class="gift-seq-num" id="giftAttendeeSeq">No. -</div>
-          <div class="gift-seq-code" id="giftAttendeeId">HVAC-000</div>
+          <div class="gift-seq-code" id="giftAttendeeId" style="display: none;">HVAC-000</div>
         </div>
 
         <!-- 참석자 인적사항 -->
@@ -2573,8 +2573,8 @@
           <div class="ticket-divider"></div>
           <div class="ticket-grid">
             <div>
-              <div class="ticket-lbl">내 출석 등록 번호</div>
-              <div class="ticket-val" id="milestoneCheckinId" style="color: #10b981; font-family: monospace; font-size: 14.5px; font-weight: 850;">-</div>
+              <div class="ticket-lbl">내 입장 순번</div>
+              <div class="ticket-val" id="milestoneCheckinId" style="color: #10b981; font-family: monospace; font-size: 14.5px; font-weight: 850;">No. -</div>
             </div>
             <div>
               <div class="ticket-lbl">당첨자 성명</div>
@@ -3592,7 +3592,7 @@
       const prizeEl = document.getElementById('milestonePrizeName');
       if (prizeEl) prizeEl.textContent = String(prize || '깜짝 이벤트 특별 경품');
       const idEl = document.getElementById('milestoneCheckinId');
-      if (idEl) idEl.textContent = String(id || '');
+      if (idEl) idEl.textContent = 'No. ' + String(seq).padStart(3, '0');
       const nameEl = document.getElementById('milestoneWinnerName');
       if (nameEl) nameEl.textContent = String(uName);
       document.getElementById('modalMilestonePrize').classList.add('show');
@@ -3664,7 +3664,8 @@
       const dept = data.dept || (window.currentCheckinMeta && currentCheckinMeta.dept) || 'ES엔지니어링담당';
 
       document.getElementById('giftAttendeeSeq').textContent = 'No. ' + String(seq).padStart(3, '0');
-      document.getElementById('giftAttendeeId').textContent = checkinId;
+      const gIdEl = document.getElementById('giftAttendeeId');
+      if (gIdEl) gIdEl.style.display = 'none';
       document.getElementById('giftAttendeeName').textContent = name;
       document.getElementById('giftAttendeeDept').textContent = dept;
 
@@ -3890,22 +3891,64 @@
       const dashBadge = document.getElementById('dashGiftBadge');
       if (!dashBadge) return;
       const user = getCheckedUser();
-      if (!user || !user.email) return;
+      if (!user || !user.email) {
+        dashBadge.style.display = 'none';
+        dashBadge.disabled = true;
+        return;
+      }
 
       let status = user.giftStatus || 'unclaimed';
       let receivedAt = user.giftReceivedAt || null;
 
-      if (window.HVAC && HVAC.cloud && HVAC.cloud.getGiftStatus) {
+      const cleanEmail = String(user.email || '').toLowerCase().trim().replace('@lge.com', '').replace(/[.#$\[\]\/]/g, '_');
+
+      // 1. 로컬 레지스트리(hvac_gift_registry)에서 동기 즉시 확인
+      if (status === 'unclaimed' && window.HVAC && HVAC.getGiftRegistry) {
         try {
-          const fresh = await HVAC.cloud.getGiftStatus(user.email);
-          if (fresh && fresh.giftStatus) {
-            status = fresh.giftStatus;
-            receivedAt = fresh.giftReceivedAt;
+          const reg = HVAC.getGiftRegistry();
+          const rec = reg[cleanEmail];
+          if (rec && (rec.giftStatus === 'received' || rec.giftStatus === 'vip')) {
+            status = rec.giftStatus;
+            receivedAt = rec.giftReceivedAt;
+            user.giftStatus = status;
+            user.giftReceivedAt = receivedAt;
+            localStorage.setItem('hvac_user_checked', JSON.stringify(user));
           }
         } catch (e) {}
       }
 
+      // 2. 로컬 출석 명부(hvac_checkin_list)에서 동기 즉시 확인
+      if (status === 'unclaimed') {
+        try {
+          const list = JSON.parse(localStorage.getItem('hvac_checkin_list') || '[]');
+          const item = list.find(it => String(it.email || '').toLowerCase().trim().replace('@lge.com', '').replace(/[.#$\[\]\/]/g, '_') === cleanEmail);
+          if (item && (item.giftStatus === 'received' || item.giftStatus === 'vip')) {
+            status = item.giftStatus;
+            receivedAt = item.giftReceivedAt;
+            user.giftStatus = status;
+            user.giftReceivedAt = receivedAt;
+            localStorage.setItem('hvac_user_checked', JSON.stringify(user));
+          }
+        } catch (e) {}
+      }
+
+      // 동기 UI 즉시 반영 (새로고침 시 깜빡임 없이 즉시 반영)
       updateGiftReceiptUI(status, receivedAt);
+
+      // 3. 클라우드 최신 동기화 (비동기)
+      if (window.HVAC && HVAC.cloud && HVAC.cloud.getGiftStatus) {
+        try {
+          const fresh = await HVAC.cloud.getGiftStatus(user.email);
+          if (fresh && fresh.giftStatus && fresh.giftStatus !== status) {
+            status = fresh.giftStatus;
+            receivedAt = fresh.giftReceivedAt;
+            user.giftStatus = status;
+            user.giftReceivedAt = receivedAt;
+            localStorage.setItem('hvac_user_checked', JSON.stringify(user));
+            updateGiftReceiptUI(status, receivedAt);
+          }
+        } catch (e) {}
+      }
     }
 
     function updateGiftReceiptUI(status, receivedAt) {
@@ -3914,54 +3957,18 @@
       const btnVip = document.getElementById('btnGiftReceiptVip');
       const dashBadge = document.getElementById('dashGiftBadge');
 
-      if (!badgeContainer || !btnConfirm || !btnVip) return;
-
+      const isClaimed = (status === 'received' || status === 'vip');
       const timeText = receivedAt ? `(${receivedAt})` : '';
 
-      if (status === 'received') {
-        badgeContainer.innerHTML = `<span class="badge-status-received">✅ 선물 수령 완료 ${timeText}</span>`;
-        btnConfirm.classList.add('completed');
-        btnConfirm.disabled = true;
-        btnConfirm.innerHTML = '✅ 선물 수령완료';
-        btnVip.style.display = 'none';
-        if (dashBadge) {
-          // 수령 완료 시 회색으로 흐리게 처리
-          dashBadge.innerHTML = '🎁 수령완료';
-          dashBadge.style.color = 'rgba(255, 255, 255, 0.45)';
-          dashBadge.style.borderColor = 'rgba(255, 255, 255, 0.15)';
-          dashBadge.style.background = 'rgba(255, 255, 255, 0.05)';
-          dashBadge.style.opacity = '0.45';
-          dashBadge.style.filter = 'grayscale(1)';
-          dashBadge.style.cursor = 'default';
-        }
-      } else if (status === 'vip') {
-        badgeContainer.innerHTML = `<span class="badge-status-vip">👑 VIP 별도수령 완료 ${timeText}</span>`;
-        btnConfirm.style.display = 'none';
-        btnVip.classList.add('completed');
-        btnVip.disabled = true;
-        btnVip.innerHTML = '👑 VIP 별도수령 완료';
-        if (dashBadge) {
-          // VIP 별도수령 완료 시 회색으로 흐리게 처리
-          dashBadge.innerHTML = '👑 VIP 수령완료';
-          dashBadge.style.color = 'rgba(255, 255, 255, 0.45)';
-          dashBadge.style.borderColor = 'rgba(255, 255, 255, 0.15)';
-          dashBadge.style.background = 'rgba(255, 255, 255, 0.05)';
-          dashBadge.style.opacity = '0.45';
-          dashBadge.style.filter = 'grayscale(1)';
-          dashBadge.style.cursor = 'default';
-        }
-      } else {
-        // 미수령 상태: 원본 강조 상태 복원
-        badgeContainer.innerHTML = '<span class="badge-status-unclaimed">⚪ 선물 미수령 (운영 데스크 방문 대기)</span>';
-        btnConfirm.classList.remove('completed');
-        btnConfirm.disabled = false;
-        btnConfirm.innerHTML = '🎁 선물 수령확인 (운영진 전용)';
-        btnConfirm.style.display = 'flex';
-        btnVip.classList.remove('completed');
-        btnVip.disabled = false;
-        btnVip.innerHTML = '👑 VIP 별도수령';
-        btnVip.style.display = 'flex';
-        if (dashBadge) {
+      // 대시보드 상단 출석 선물권 배지 제어
+      if (dashBadge) {
+        if (isClaimed) {
+          // 사용자 요청 반영: 수령 완료 시 상단 바에서 완전히 숨김(없앰) & 비활성화
+          dashBadge.style.display = 'none';
+          dashBadge.disabled = true;
+        } else {
+          // 미수령 시에만 선물권 노출
+          dashBadge.style.display = 'inline-flex';
           dashBadge.innerHTML = '🎁 출석 선물권';
           dashBadge.style.color = '#fbbf24';
           dashBadge.style.borderColor = 'rgba(245, 158, 11, 0.5)';
@@ -3969,6 +3976,34 @@
           dashBadge.style.opacity = '1';
           dashBadge.style.filter = 'none';
           dashBadge.style.cursor = 'pointer';
+          dashBadge.disabled = false;
+        }
+      }
+
+      // 모달 내부 상태 및 버튼 제어
+      if (badgeContainer && btnConfirm && btnVip) {
+        if (status === 'received') {
+          badgeContainer.innerHTML = `<span class="badge-status-received">✅ 선물 수령 완료 ${timeText}</span>`;
+          btnConfirm.classList.add('completed');
+          btnConfirm.disabled = true;
+          btnConfirm.innerHTML = '✅ 선물 수령완료';
+          btnVip.style.display = 'none';
+        } else if (status === 'vip') {
+          badgeContainer.innerHTML = `<span class="badge-status-vip">👑 VIP 별도수령 완료 ${timeText}</span>`;
+          btnConfirm.style.display = 'none';
+          btnVip.classList.add('completed');
+          btnVip.disabled = true;
+          btnVip.innerHTML = '👑 VIP 별도수령 완료';
+        } else {
+          badgeContainer.innerHTML = '<span class="badge-status-unclaimed">⚪ 선물 미수령 (운영 데스크 방문 대기)</span>';
+          btnConfirm.classList.remove('completed');
+          btnConfirm.disabled = false;
+          btnConfirm.innerHTML = '🎁 선물 수령확인 (운영진 전용)';
+          btnConfirm.style.display = 'flex';
+          btnVip.classList.remove('completed');
+          btnVip.disabled = false;
+          btnVip.innerHTML = '👑 VIP 별도수령';
+          btnVip.style.display = 'flex';
         }
       }
     }
@@ -3982,12 +4017,12 @@
 
       const btnConfirm = document.getElementById('btnGiftReceiptConfirm');
       const btnVip = document.getElementById('btnGiftReceiptVip');
-      btnConfirm.disabled = true;
-      btnVip.disabled = true;
+      if (btnConfirm) btnConfirm.disabled = true;
+      if (btnVip) btnVip.disabled = true;
 
       const isVip = (targetStatus === 'vip');
-      if (isVip) btnVip.innerHTML = '⏳ 처리 중...';
-      else btnConfirm.innerHTML = '⏳ 확인 중...';
+      if (isVip && btnVip) btnVip.innerHTML = '⏳ 처리 중...';
+      else if (btnConfirm) btnConfirm.innerHTML = '⏳ 확인 중...';
 
       try {
         let result = null;
@@ -4023,17 +4058,52 @@
 
         // 중복 수령 방지 체크: 이미 다른 기기나 운영진이 수령 처리 완료한 경우
         if (result && result.alreadyClaimed) {
-          alert('⚠️ 이미 선물을 수령하셨습니다.\n\n• 수령 상태: ' + (result.giftStatus === 'vip' ? '👑 VIP 별도수령' : '🎁 선물 수령완료') + '\n• 수령 일시: ' + (result.giftReceivedAt || '확인 완료'));
+          user.giftStatus = result.giftStatus;
+          user.giftReceivedAt = result.giftReceivedAt;
+          try { localStorage.setItem('hvac_user_checked', JSON.stringify(user)); } catch (e) {}
           updateGiftReceiptUI(result.giftStatus, result.giftReceivedAt);
+          alert('⚠️ 이미 선물을 수령하셨습니다.\n\n• 수령 상태: ' + (result.giftStatus === 'vip' ? '👑 VIP 별도수령' : '🎁 선물 수령완료') + '\n• 수령 일시: ' + (result.giftReceivedAt || '확인 완료'));
+          closeGiftReceiptModal();
           return;
         }
 
         if (result && result.success) {
+          // 1. 현재 사용자 로컬 세션에 수령 상태 즉시 영구 저장
+          user.giftStatus = result.giftStatus;
+          user.giftReceivedAt = result.giftReceivedAt;
+          try {
+            localStorage.setItem('hvac_user_checked', JSON.stringify(user));
+          } catch (e) {}
+
+          // 2. 로컬 출석 명부 hvac_checkin_list 동기 업데이트
+          try {
+            const list = JSON.parse(localStorage.getItem('hvac_checkin_list') || '[]');
+            const cleanEmail = String(user.email || '').toLowerCase().trim().replace('@lge.com', '').replace(/[.#$\[\]\/]/g, '_');
+            const item = list.find(it => String(it.email || '').toLowerCase().trim().replace('@lge.com', '').replace(/[.#$\[\]\/]/g, '_') === cleanEmail);
+            if (item) {
+              item.giftStatus = result.giftStatus;
+              item.giftReceivedAt = result.giftReceivedAt;
+              localStorage.setItem('hvac_checkin_list', JSON.stringify(list));
+            }
+          } catch (e) {}
+
+          // 3. 로컬 선물 레지스트리 영구 저장
+          if (window.HVAC && HVAC.saveGiftToRegistry) {
+            const cleanEmail = String(user.email || '').toLowerCase().trim().replace('@lge.com', '').replace(/[.#$\[\]\/]/g, '_');
+            HVAC.saveGiftToRegistry(cleanEmail, {
+              giftStatus: result.giftStatus,
+              giftReceivedAt: result.giftReceivedAt
+            });
+          }
+
+          // 4. 대시보드 UI 즉시 갱신 (선물권 버튼 즉시 숨김 처리)
           updateGiftReceiptUI(result.giftStatus, result.giftReceivedAt);
+
           const msg = (result.giftStatus === 'vip')
             ? '👑 VIP 별도수령 확인이 정상 완료되었습니다.\n출석부에 [VIP 별도수령]으로 안전하게 기록되었습니다.'
-            : '🎁 선물 수령 확인이 완료되었습니다!\n[선물 수령완료] 상태로 출석부에 안전하게 저장되었습니다.';
+            : '🎁 선물 수령 확인이 완료되었습니다!\n출석부에 [선물 수령완료]로 기록되었으며, 상단 선물권은 수령 완료 처리되었습니다.';
           alert(msg);
+          closeGiftReceiptModal();
         }
       } catch (err) {
         console.error(err);
@@ -4174,7 +4244,8 @@
       document.getElementById('menuUserName').textContent = formatUserNameWithTitle(checkinData);
       document.getElementById('menuUserEmail').textContent = email.includes('@') ? email : email + '@lge.com';
       document.getElementById('dashAttendeeSeq').textContent = 'No. ' + String(seq).padStart(3, '0');
-      document.getElementById('dashAttendeeId').textContent = checkinId;
+      const dashIdEl = document.getElementById('dashAttendeeId');
+      if (dashIdEl) dashIdEl.style.display = 'none';
 
       const badge = document.getElementById('dashMilestoneBadge');
       if (isMilestoneWinner) {
@@ -4185,8 +4256,9 @@
         badge.style.display = 'none';
       }
 
-      // 대시보드 화면 활성화
+      // 대시보드 화면 활성화 및 출석 선물권 상태 동기화
       showScreen('dash');
+      syncDashboardGiftBadge();
       const initialIdx = findCurrentOrUpcomingSessionIndex(sessions);
       renderSession(initialIdx);
 
@@ -5237,7 +5309,8 @@
               }
             }
             document.getElementById('dashAttendeeSeq').textContent = 'No. ' + String(seq).padStart(3, '0');
-            document.getElementById('dashAttendeeId').textContent = checkinId || ('HVAC-' + String(seq).padStart(3, '0'));
+            const dashIdEl = document.getElementById('dashAttendeeId');
+            if (dashIdEl) dashIdEl.style.display = 'none';
             const badge = document.getElementById('dashMilestoneBadge');
             if (parsed.isMilestoneWinner) {
               badge.style.display = 'inline-block';
@@ -5248,6 +5321,7 @@
             }
 
             showScreen('dash');
+            syncDashboardGiftBadge();
             const targetIdx = findCurrentOrUpcomingSessionIndex(sessions);
             renderSession(targetIdx);
 
