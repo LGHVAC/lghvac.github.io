@@ -81,7 +81,7 @@
     if (/qna\.html$/.test(p)) return 'qna';
     if (/quiz\.html$/.test(p)) return 'quiz';
     if (/game\.html$/.test(p)) return 'game';
-    if (/lunch-screen\.html$/.test(p)) return 'lunch-screen';
+    if (/game-leaderboard\.html$/.test(p) || /lunch-screen\.html$/.test(p)) return 'game-leaderboard';
     return 'index';
   }
 
@@ -1265,7 +1265,7 @@
         }
 
         // 6) 점심 미니게임 변경 감지 (admin, lunch-screen, game)
-        if ((pId === 'admin' || pId === 'lunch-screen' || pId === 'game') && (forceAll || (meta.games && meta.games > lastSeenMeta.games))) {
+        if ((pId === 'admin' || pId === 'lunch-screen' || pId === 'game-leaderboard' || pId === 'game') && (forceAll || (meta.games && meta.games > lastSeenMeta.games))) {
           lastSeenMeta.games = meta.games || Date.now();
           tasks.push(
             fetch(cloudPath('games/submissions'), { cache: 'no-store' })
