@@ -325,71 +325,20 @@
       }
 
       /**
-       * 복호화된 대시보드 문서를 브라우저 DOM에 마운트하고 스크립트 순차 실행
+       * 복호화된 대시보드 문서를 브라우저에 네이티브로 마운트
        */
       function mountDecryptedDashboard(decryptedHtml) {
         setMessage('🔓 인증 성공! 대시보드를 로드합니다...', 'info');
 
-        // 1. Parse HTML
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(decryptedHtml, 'text/html');
-
-        // 2. Title 및 메타 업데이트
-        if (doc.title) document.title = doc.title;
-
-        // 3. 게이트웨이 스타일 및 박스 제거
-        const gatewayStyle = document.getElementById('gatewayStyles');
-        if (gatewayStyle) gatewayStyle.remove();
-        const gatewayBox = document.getElementById('lockGateway');
-        if (gatewayBox) gatewayBox.remove();
-
-        // 4. 스타일 및 리소스 헤드 주입
-        doc.head.querySelectorAll('style, link[rel="stylesheet"]').forEach(el => {
-          document.head.appendChild(document.importNode(el, true));
-        });
-
-        // 5. Body 요소들 복사 (스크립트 제외)
-        const bodyNodes = Array.from(doc.body.childNodes).filter(node => node.nodeName !== 'SCRIPT');
-        bodyNodes.forEach(node => {
-          document.body.appendChild(document.importNode(node, true));
-        });
-
-        // 6. 스크립트 순차 실행
-        const scripts = Array.from(doc.querySelectorAll('script'));
-
-        function executeNextScript(index) {
-          if (index >= scripts.length) {
-            // 모든 스크립트 로드 완료 후 대시보드 초기화
-            setTimeout(() => {
-              if (typeof window.initDashboard === 'function') {
-                window.initDashboard();
-              }
-            }, 50);
-            return;
-          }
-
-          const orig = scripts[index];
-          const scriptEl = document.createElement('script');
-
-          Array.from(orig.attributes).forEach(attr => {
-            scriptEl.setAttribute(attr.name, attr.value);
-          });
-
-          if (orig.src) {
-            scriptEl.onload = () => executeNextScript(index + 1);
-            scriptEl.onerror = () => {
-              console.error('스크립트 로드 실패:', orig.src);
-              executeNextScript(index + 1);
-            };
-            document.body.appendChild(scriptEl);
-          } else {
-            scriptEl.textContent = orig.textContent;
-            document.body.appendChild(scriptEl);
-            executeNextScript(index + 1);
-          }
+        try {
+          // 브라우저의 네이티브 HTML 파서를 통해 전체 문서(Head, Body, Scripts)를 완전하게 교체 실행
+          document.open();
+          document.write(decryptedHtml);
+          document.close();
+        } catch (e) {
+          console.error('document.write fallback:', e);
+          location.reload();
         }
-
-        executeNextScript(0);
       }
 
       /**
