@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>클로징 럭키드로우 발표 무대 (사회자용) | 제10회 2026 HVAC 전문가 세미나</title>
+  <link rel="icon" href="./assets/favicon.ico">
+  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  <script src="./assets/hvac-core.js"></script>
+  <style>
+    :root {
+      --bg: #030805;
+      --card-border: rgba(243, 196, 72, 0.35);
+      --gold: #f3c448;
+      --gold-light: #ffd900;
+      --gold-bright: #fde047;
+      --green: #10b981;
+      --text: #ffffff;
+      --text-muted: #94a3b8;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: "Pretendard Variable", Pretendard, -apple-system, sans-serif; }
+    
+    body {
+      background: radial-gradient(circle at 50% 20%, #0d2e1b 0%, #030805 80%);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+      user-select: none;
+    }
+
+    /* 전체화면 무대 래퍼 */
+    .stage-wrapper {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 24px 32px 36px;
+      position: relative;
+      max-width: 1600px;
+      width: 100%;
+      margin: 0 auto;
+      min-height: 100vh;
+    }
+
+    /* 폭죽 Confetti 캔버스 */
+    #confettiCanvas {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 9999;
+    }
+
+    /* 무대 상단 바 */
+    .stage-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      padding-bottom: 18px;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .stage-rank-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: linear-gradient(135deg, rgba(243, 196, 72, 0.25), rgba(212, 160, 23, 0.15));
+      border: 1.5px solid rgba(243, 196, 72, 0.55);
+      color: #fde047;
+      padding: 8px 18px;
+      border-radius: 99px;
+      font-size: 15px;
+      font-weight: 850;
+      letter-spacing: 0.02em;
+      box-shadow: 0 0 16px rgba(243, 196, 72, 0.25);
+    }
+
+    .stage-seed-badge {
+      font-family: monospace;
+      font-size: 12px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      padding: 6px 12px;
+      border-radius: 8px;
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .btn-stage {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #fff;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 13.5px;
+      font-weight: 750;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+      text-decoration: none;
+    }
+
+    .btn-stage:hover:not(:disabled) {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: rgba(255, 255, 255, 0.4);
+      transform: translateY(-1px);
+    }
+
+    .btn-stage:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .btn-stage.gold {
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.25), rgba(217, 119, 6, 0.4));
+      border-color: rgba(251, 191, 36, 0.6);
+      color: #fde047;
+      box-shadow: 0 0 10px rgba(245, 158, 11, 0.25);
+    }
+
+    .btn-stage.gold:hover {
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.35), rgba(217, 119, 6, 0.5));
+      border-color: #fde047;
+      box-shadow: 0 0 16px rgba(245, 158, 11, 0.4);
+    }
+
+    /* 무대 중앙 콘텐츠 */
+    .stage-center {
+      text-align: center;
+      margin: 20px 0;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .seminar-subtitle {
+      font-size: 14px;
+      font-weight: 850;
+      letter-spacing: 0.2em;
+      color: var(--gold-bright);
+      text-transform: uppercase;
+      margin-bottom: 8px;
+      text-shadow: 0 0 12px rgba(243, 196, 72, 0.5);
+    }
+
+    .stage-rank-title {
+      font-size: 52px;
+      font-weight: 950;
+      color: #fff;
+      margin-bottom: 12px;
+      text-shadow: 0 0 35px rgba(243, 196, 72, 0.45);
+      letter-spacing: -0.02em;
+      transition: all 0.3s ease;
+    }
+
+    .stage-rank-title.is-first {
+      color: #fde047;
+      text-shadow: 0 0 45px rgba(253, 224, 71, 0.8), 0 0 80px rgba(245, 158, 11, 0.5);
+      transform: scale(1.05);
+    }
+
+    .stage-prize-meta {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      background: rgba(0, 0, 0, 0.45);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      padding: 10px 24px;
+      border-radius: 99px;
+      font-size: 16px;
+      color: rgba(255, 255, 255, 0.9);
+      margin-bottom: 28px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .prize-name-tag {
+      color: #fde047;
+      font-weight: 900;
+      font-size: 18px;
+      text-shadow: 0 0 10px rgba(243, 196, 72, 0.4);
+    }
+
+    .meta-divider {
+      color: rgba(255, 255, 255, 0.3);
+    }
+
+    /* 슬롯머신 그리드 */
+    .slots-grid {
+      display: flex;
+      justify-content: center;
+      align-items: stretch;
+      gap: 20px;
+      flex-wrap: wrap;
+      margin: 10px 0 32px;
+      width: 100%;
+      max-width: 1300px;
+    }
+
+    .slot-card {
+      background: linear-gradient(180deg, rgba(20, 42, 28, 0.85) 0%, rgba(9, 22, 14, 0.95) 100%);
+      border: 2px solid rgba(243, 196, 72, 0.3);
+      border-radius: 18px;
+      padding: 24px 20px;
+      min-width: 220px;
+      flex: 1 1 200px;
+      max-width: 280px;
+      text-align: center;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6);
+      position: relative;
+      transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .slot-card.winner {
+      background: linear-gradient(180deg, rgba(28, 62, 38, 0.95) 0%, rgba(12, 32, 18, 0.95) 100%);
+      border-color: #fde047;
+      box-shadow: 0 0 30px rgba(243, 196, 72, 0.4), inset 0 0 15px rgba(243, 196, 72, 0.2);
+      transform: translateY(-4px) scale(1.02);
+    }
+
+    .slot-card.rolling {
+      border-color: #38bdf8;
+      box-shadow: 0 0 25px rgba(56, 189, 248, 0.5);
+      animation: pulseRolling 0.8s infinite alternate ease-in-out;
+    }
+
+    @keyframes pulseRolling {
+      from { transform: scale(1); border-color: rgba(56, 189, 248, 0.5); }
+      to { transform: scale(1.03); border-color: #38bdf8; box-shadow: 0 0 30px rgba(56, 189, 248, 0.7); }
+    }
+
+    .slot-num-badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 850;
+      letter-spacing: 0.1em;
+      color: rgba(255, 255, 255, 0.55);
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    .slot-name {
+      font-size: 30px;
+      font-weight: 900;
+      color: #fff;
+      margin: 6px 0;
+      letter-spacing: -0.01em;
+      min-height: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .slot-id-tag {
+      display: inline-block;
+      font-family: monospace;
+      font-size: 13px;
+      color: #34d399;
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      padding: 3px 8px;
+      border-radius: 6px;
+      margin-bottom: 6px;
+    }
+
+    .slot-dept {
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.7);
+      margin-top: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .slot-actions {
+      margin-top: 14px;
+      padding-top: 10px;
+      border-top: 1px dashed rgba(255, 255, 255, 0.12);
+    }
+
+    .btn-redraw {
+      background: rgba(245, 158, 11, 0.15);
+      border: 1px solid rgba(245, 158, 11, 0.4);
+      color: #fbbf24;
+      font-size: 11px;
+      font-weight: 750;
+      padding: 4px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-redraw:hover {
+      background: rgba(245, 158, 11, 0.3);
+      border-color: #fbbf24;
+    }
+
+    /* 메인 추첨 버튼 */
+    .btn-start-draw {
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 50%, #b45309 100%);
+      color: #ffffff;
+      border: none;
+      padding: 18px 48px;
+      border-radius: 99px;
+      font-size: 22px;
+      font-weight: 950;
+      cursor: pointer;
+      box-shadow: 0 10px 30px rgba(245, 158, 11, 0.45), 0 0 20px rgba(245, 158, 11, 0.3);
+      transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      letter-spacing: -0.01em;
+    }
+
+    .btn-start-draw:hover:not(:disabled) {
+      transform: translateY(-3px) scale(1.04);
+      box-shadow: 0 14px 40px rgba(245, 158, 11, 0.6), 0 0 30px rgba(245, 158, 11, 0.5);
+    }
+
+    .btn-start-draw:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* 하단 네비게이션 및 컨트롤 바 */
+    .stage-bottom-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      padding-top: 18px;
+    }
+
+    .sequence-text {
+      font-size: 13.5px;
+      color: rgba(255, 255, 255, 0.65);
+    }
+
+    .bottom-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+  </style>
+</head>
+<body>
+  <!-- 폭죽 캔버스 -->
+  <canvas id="confettiCanvas"></canvas>
+
+  <div class="stage-wrapper">
+    <!-- 무대 상단 바 -->
+    <header class="stage-header">
+      <div class="header-left">
+        <span class="stage-rank-pill" id="stageRankPill">
+          <span>단계 1 / 3</span> · <strong id="stageCurrentRankLabel">3등 (우수상)</strong>
+        </span>
+        <span class="stage-seed-badge" id="stageSeedBadge" title="공정성 검증 시드">
+          🔒 Seed: <span id="stageSeedText">2026_HVAC_10TH...</span>
+        </span>
+      </div>
+
+      <div class="header-right">
+        <button class="btn-stage" id="btnPrevStage" onclick="prevTierStage()">◀ 이전 등수</button>
+        <button class="btn-stage" id="btnNextStage" onclick="nextTierStage()">다음 등수 ▶</button>
+        <button class="btn-stage" id="btnResetConfirm" onclick="resetDrawStatePrompt()" style="background: rgba(239,68,68,0.15); border-color: rgba(239,68,68,0.35); color: #fca5a5;">🧹 전체 초기화</button>
+        <button class="btn-stage gold" id="btnFullscreen" onclick="toggleFullscreen()">⛶ 전체화면 전광판</button>
+        <a class="btn-stage" href="./admin.html" target="_blank" style="border-color: rgba(255,255,255,0.35);">⚙️ 관리자 콘솔 ↗</a>
+      </div>
+    </header>
+
+    <!-- 무대 중앙 메인 -->
+    <main class="stage-center">
+      <div class="seminar-subtitle">2026 HVAC EXPERT SEMINAR · LUCKY DRAW</div>
+      <h1 class="stage-rank-title" id="stageRankTitle">3등 (우수상)</h1>
+
+      <div class="stage-prize-meta">
+        <span>경품:</span>
+        <span class="prize-name-tag" id="stagePrizeNameTag">LG 퓨리케어 에어로미니</span>
+        <span class="meta-divider">|</span>
+        <span>선정 인원: <strong id="stagePrizeCount" style="color: #fff;">3명</strong></span>
+        <span class="meta-divider">|</span>
+        <span id="stageEligibleMeta">추첨 대상: <strong id="stageCandidatesCount" style="color: #38bdf8;">205명</strong></span>
+      </div>
+
+      <!-- 슬롯 카드 컨테이너 -->
+      <div class="slots-grid" id="slotsContainer">
+        <!-- JS 동적 렌더링 -->
+      </div>
+
+      <!-- 추첨 액션 버튼 영역 -->
+      <div id="drawActionArea">
+        <button class="btn-start-draw" id="btnStartDraw" onclick="startCurrentTierDraw()">
+          🎲 <span id="btnStartDrawText">3등 (우수상) 추첨 시작하기</span>
+        </button>
+      </div>
+
+      <!-- 추가 추첨 / 현장 호명 바 -->
+      <div id="extraActionsBar" style="margin-top: 18px; display: none;">
+        <button class="btn-stage gold" onclick="addSingleWinner()" style="font-size: 14px; padding: 10px 20px;">
+          ➕ 1명 추가 추첨 (+1명)
+        </button>
+        <button class="btn-stage" onclick="runConfettiEffect()" style="font-size: 14px; padding: 10px 20px; margin-left: 10px;">
+          🎉 축하 폭죽 발사
+        </button>
+      </div>
+    </main>
+
+    <!-- 무대 하단 진행 바 -->
+    <footer class="stage-bottom-bar">
+      <div class="sequence-text" id="stageSequenceText">
+        진행 순서: 👉 [3등 (우수상)] ➔ 2등 ➔ 1등
+      </div>
+
+      <div class="bottom-actions">
+        <button class="btn-stage" onclick="runConfettiEffect()">🎉 폭죽 효과</button>
+        <button class="btn-stage gold" id="btnStepOrNext" onclick="nextTierStage()">다음 등수 발표하기 ➔</button>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    // =========================================================
+    // 클로징 럭키드로우 독립 발표 무대 엔진 (사회자/프로젝터 전광판용)
+    // =========================================================
+    const DEFAULT_TIERS = [
+      { id: 'tier_3', rank: 3, title: '3등 (우수상)', prize: 'LG 퓨리케어 에어로미니', count: 3 },
+      { id: 'tier_2', rank: 2, title: '2등 (최우수상)', prize: 'LG 스타일러 오브제컬렉션', count: 2 },
+      { id: 'tier_1', rank: 1, title: '1등 (대상)', prize: 'LG 그램 Pro 16인치 노트북', count: 1 }
+    ];
+
+    let drawConfig = { tiers: DEFAULT_TIERS, seedPrefix: '2026_HVAC_10TH_SEMINAR', onlyMatched: true, excludeMilestones: false, requireSurvey: false };
+    let drawState = { drawnTiers: {}, confirmedTiers: {} };
+    let checkinList = [];
+    let blockedUsers = [];
+    let stageTierIdx = 0;
+    let isDrawRolling = false;
+
+    // 초기화 및 동기화
+    function initStageSystem() {
+      // 1. 설정 로드
+      try {
+        const sCfg = localStorage.getItem('hvac_luckydraw_config');
+        if (sCfg) drawConfig = { ...drawConfig, ...JSON.parse(sCfg) };
+      } catch (e) {}
+
+      // 2. 상태 로드
+      try {
+        const sState = localStorage.getItem('hvac_luckydraw_state');
+        if (sState) drawState = JSON.parse(sState);
+      } catch (e) {}
+
+      // 3. 출석자 로드
+      try {
+        const sAtt = localStorage.getItem('hvac_checkin_list');
+        if (sAtt) checkinList = JSON.parse(sAtt);
+      } catch (e) {}
+
+      // 4. 차단 계정 로드
+      try {
+        const sBlock = localStorage.getItem('hvac_blocked_users');
+        if (sBlock) blockedUsers = JSON.parse(sBlock);
+      } catch (e) {}
+
+      renderStageView();
+    }
+
+    // 발표 순서: 마지막 등수(3등)부터 1등 순차 발표
+    function getSortedStageTiers() {
+      if (!drawConfig || !drawConfig.tiers || drawConfig.tiers.length === 0) return DEFAULT_TIERS;
+      return [...drawConfig.tiers].sort((a, b) => Number(b.rank) - Number(a.rank));
+    }
+
+    // 상위 등수 추첨 시 이전(하위) 등수 당첨자 제외 필터링
+    function getEligibleCandidates(tierId) {
+      const drawnTiers = (drawState && drawState.drawnTiers) ? drawState.drawnTiers : {};
+      const blocked = blockedUsers || [];
+
+      const alreadyWonEmails = new Set();
+      const alreadyWonIds = new Set();
+      const alreadyWonSeqs = new Set();
+
+      for (const tId in drawnTiers) {
+        if (tId !== tierId && Array.isArray(drawnTiers[tId])) {
+          drawnTiers[tId].forEach(w => {
+            if (w.email) alreadyWonEmails.add(w.email.toLowerCase().trim().replace('@lge.com', ''));
+            if (w.checkinId) alreadyWonIds.add(String(w.checkinId).toUpperCase().trim());
+            if (w.seq) alreadyWonSeqs.add(String(w.seq));
+          });
+        }
+      }
+
+      return checkinList.filter(att => {
+        const cleanEmail = (att.email || '').toLowerCase().trim().replace('@lge.com', '');
+        const cId = (att.checkinId || '').toUpperCase().trim();
+        const sVal = String(att.seq || '');
+
+        if (blocked.some(b => b.toLowerCase().replace('@lge.com', '') === cleanEmail)) return false;
+
+        const cat = String(att.category || att.type || '').trim().toLowerCase();
+        const dept = String(att.dept || att.org || '').trim().toLowerCase();
+        const pos = String(att.position || '').trim().toLowerCase();
+
+        // 사외 및 하이엠 제외
+        if (cat.includes('사외') || dept.includes('사외') || pos.includes('강사') || pos.includes('교수') || pos.includes('학생') || cat.includes('외부')) return false;
+        if (cat.includes('하이엠') || dept.includes('하이엠') || cleanEmail.includes('him.co.kr')) return false;
+
+        // 다른 등수 이미 당첨된 사람 완벽 제외
+        if (alreadyWonEmails.has(cleanEmail)) return false;
+        if (cId && alreadyWonIds.has(cId)) return false;
+        if (sVal && alreadyWonSeqs.has(sVal)) return false;
+
+        return true;
+      });
+    }
+
+    // 무대 화면 렌더링
+    function renderStageView() {
+      const sortedTiers = getSortedStageTiers();
+      if (!sortedTiers.length) return;
+
+      if (stageTierIdx < 0) stageTierIdx = 0;
+      if (stageTierIdx >= sortedTiers.length) stageTierIdx = sortedTiers.length - 1;
+
+      const currentTier = sortedTiers[stageTierIdx];
+      const tierId = currentTier.id;
+
+      // 헤더 라벨 갱신
+      document.getElementById('stageRankPill').innerHTML = `<span>단계 ${stageTierIdx + 1} / ${sortedTiers.length}</span> · <strong>${escapeHtml(currentTier.title)}</strong>`;
+      document.getElementById('stageCurrentRankLabel').textContent = currentTier.title;
+      
+      const rankTitleEl = document.getElementById('stageRankTitle');
+      rankTitleEl.textContent = currentTier.title;
+      const isFirst = (Number(currentTier.rank) === 1);
+      rankTitleEl.classList.toggle('is-first', isFirst);
+
+      document.getElementById('stagePrizeNameTag').textContent = currentTier.prize;
+      document.getElementById('stagePrizeCount').textContent = `${currentTier.count}명`;
+
+      // 후보자 풀 및 이전 당첨자 제외 계산
+      const candidates = getEligibleCandidates(tierId);
+      const drawnTiers = (drawState && drawState.drawnTiers) ? drawState.drawnTiers : {};
+      let totalOtherWinnersCount = 0;
+      for (const tId in drawnTiers) {
+        if (tId !== tierId && Array.isArray(drawnTiers[tId])) totalOtherWinnersCount += drawnTiers[tId].length;
+      }
+
+      const countEl = document.getElementById('stageCandidatesCount');
+      if (countEl) {
+        if (totalOtherWinnersCount > 0) {
+          countEl.innerHTML = `${candidates.length}명 <span style="font-size: 13px; font-weight: normal; color: rgba(255,255,255,0.7);">(전체 ${checkinList.length}명 중 이전 당첨자 ${totalOtherWinnersCount}명 제외)</span>`;
+        } else {
+          countEl.textContent = `${candidates.length}명`;
+        }
+      }
+
+      document.getElementById('stageSeedText').textContent = `${drawConfig.seedPrefix || '2026_HVAC'}_TIER${currentTier.rank}`;
+
+      // 진행 순서 텍스트
+      const seqStr = sortedTiers.map((t, idx) => {
+        if (idx === stageTierIdx) return `👉 [${t.title}]`;
+        return t.title.split(' ')[0];
+      }).join(' ➔ ');
+      document.getElementById('stageSequenceText').textContent = `진행 순서: ${seqStr}`;
+
+      // 이전/다음 버튼 제어
+      document.getElementById('btnPrevStage').disabled = (stageTierIdx === 0);
+      document.getElementById('btnNextStage').disabled = (stageTierIdx === sortedTiers.length - 1);
+
+      // 슬롯 카드 렌더링
+      const slotsContainer = document.getElementById('slotsContainer');
+      const drawnWinners = (drawState && drawState.drawnTiers) ? drawState.drawnTiers[tierId] : null;
+
+      if (drawnWinners && drawnWinners.length > 0) {
+        slotsContainer.innerHTML = drawnWinners.map((w, idx) => `
+          <div class="slot-card winner">
+            <span class="slot-num-badge">SLOT #${idx + 1}</span>
+            <div class="slot-name">${escapeHtml(w.name)}</div>
+            <div><span class="slot-id-tag">${w.seq ? '#' + w.seq : ''} ${escapeHtml(w.checkinId || '')}</span></div>
+            <div class="slot-dept">${escapeHtml(w.dept || w.org || '참석자')}</div>
+            <div class="slot-actions">
+              <button class="btn-redraw" onclick="redrawSingleWinner(${idx})">🔄 1명 재추첨</button>
+            </div>
+          </div>
+        `).join('');
+
+        document.getElementById('drawActionArea').style.display = 'none';
+        document.getElementById('extraActionsBar').style.display = 'block';
+      } else {
+        const slotCount = Math.max(1, currentTier.count);
+        slotsContainer.innerHTML = Array.from({ length: slotCount }).map((_, idx) => `
+          <div class="slot-card" id="slotCard_${idx}">
+            <span class="slot-num-badge">SLOT #${idx + 1}</span>
+            <div class="slot-name" style="color: rgba(255,255,255,0.4); font-size: 34px;">???</div>
+            <div><span class="slot-id-tag" style="opacity: 0.5;">HVAC-???</span></div>
+            <div class="slot-dept" style="color: rgba(255,255,255,0.4);">추첨 대기 중</div>
+          </div>
+        `).join('');
+
+        document.getElementById('drawActionArea').style.display = 'block';
+        document.getElementById('btnStartDrawText').textContent = `${currentTier.title} 추첨 시작하기 (${slotCount}명 동시 추첨)`;
+        document.getElementById('extraActionsBar').style.display = 'none';
+      }
+    }
+
+    // 등수 이동
+    function prevTierStage() {
+      if (stageTierIdx > 0) {
+        stageTierIdx--;
+        renderStageView();
+      }
+    }
+
+    function nextTierStage() {
+      const sortedTiers = getSortedStageTiers();
+      if (stageTierIdx < sortedTiers.length - 1) {
+        stageTierIdx++;
+        renderStageView();
+      }
+    }
+
+    // 셔플 및 시드 RNG
+    function hashString53(str) {
+      let h1 = 0xdeadbeef ^ 0, h2 = 0x41c64e6d ^ 0;
+      for (let i = 0; i < str.length; i++) {
+        const ch = str.charCodeAt(i);
+        h1 = Math.imul(h1 ^ ch, 2654435761);
+        h2 = Math.imul(h2 ^ ch, 1597334677);
+      }
+      h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+      h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+      return 4294967296 * (2097151 & h2) + (h1 >>> 0);
+    }
+
+    function createMulberry32(a) {
+      return function() {
+        let t = a += 0x6D2B79F5;
+        t = Math.imul(t ^ (t >>> 15), t | 1);
+        t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+      };
+    }
+
+    function seededShuffle(arr, rng) {
+      const copy = [...arr];
+      for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(rng() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy;
+    }
+
+    // 추첨 시작 애니메이션
+    async function startCurrentTierDraw() {
+      if (isDrawRolling) return;
+      const sortedTiers = getSortedStageTiers();
+      const currentTier = sortedTiers[stageTierIdx];
+      const tierId = currentTier.id;
+
+      const candidates = getEligibleCandidates(tierId);
+      if (candidates.length === 0) {
+        alert('추첨 가능한 출석 대상자가 없습니다. 출석자 명부를 확인해 주세요.');
+        return;
+      }
+
+      isDrawRolling = true;
+      const btn = document.getElementById('btnStartDraw');
+      btn.disabled = true;
+
+      // 슬롯 카드 롤링 애니메이션
+      const slotCards = document.querySelectorAll('.slot-card');
+      slotCards.forEach(c => c.classList.add('rolling'));
+
+      const startTime = Date.now();
+      const rollDuration = 3200; // 3.2초
+
+      const rollTimer = setInterval(() => {
+        slotCards.forEach(card => {
+          const rand = candidates[Math.floor(Math.random() * candidates.length)];
+          const nameEl = card.querySelector('.slot-name');
+          const idEl = card.querySelector('.slot-id-tag');
+          if (nameEl && rand) nameEl.textContent = rand.name;
+          if (idEl && rand) idEl.textContent = rand.checkinId || ('HVAC-' + rand.seq);
+        });
+      }, 70);
+
+      // 공정 시드 생성
+      const drawTimestamp = Date.now();
+      const candidateHash = hashString53(candidates.map(c => c.email).join(','));
+      const seedString = `${drawConfig.seedPrefix || '2026_HVAC_10TH'}_TIME${drawTimestamp}_RANK${currentTier.rank}_HASH${candidateHash}`;
+      const seed32 = hashString53(seedString) >>> 0;
+      const rng = createMulberry32(seed32);
+
+      const shuffled = seededShuffle(candidates, rng);
+      const pickCount = Math.min(currentTier.count, shuffled.length);
+      const winners = shuffled.slice(0, pickCount).map((c, i) => ({
+        name: c.name,
+        email: c.email,
+        seq: c.seq,
+        checkinId: c.checkinId || ('HVAC-' + String(c.seq).padStart(3, '0')),
+        dept: c.dept || c.org || '참석자',
+        tierId: tierId,
+        tierTitle: currentTier.title,
+        prize: currentTier.prize,
+        time: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }),
+        seedCode: `${currentTier.rank}-${(seed32 % 10000).toString().padStart(4, '0')}`
+      }));
+
+      setTimeout(async () => {
+        clearInterval(rollTimer);
+        slotCards.forEach(c => c.classList.remove('rolling'));
+
+        if (!drawState.drawnTiers) drawState.drawnTiers = {};
+        drawState.drawnTiers[tierId] = winners;
+        try {
+          localStorage.setItem('hvac_luckydraw_state', JSON.stringify(drawState));
+        } catch (e) {}
+
+        // 클라우드 저장 지원
+        if (window.HVAC && HVAC.cloud && HVAC.cloud.saveLuckyDraw) {
+          try { await HVAC.cloud.saveLuckyDraw(drawState); } catch (e) {}
+        }
+
+        isDrawRolling = false;
+        btn.disabled = false;
+
+        runConfettiEffect();
+        renderStageView();
+      }, rollDuration);
+    }
+
+    // 1명 현장 재추첨
+    async function redrawSingleWinner(slotIdx) {
+      const sortedTiers = getSortedStageTiers();
+      const currentTier = sortedTiers[stageTierIdx];
+      const tierId = currentTier.id;
+
+      const existingWinners = drawState.drawnTiers[tierId] || [];
+      if (!existingWinners[slotIdx]) return;
+
+      const oldWinner = existingWinners[slotIdx];
+      if (!confirm(`'${oldWinner.name}' 님이 부재중입니까?\n공정하게 1명을 즉석 재추첨합니다.`)) return;
+
+      const candidates = getEligibleCandidates(tierId);
+      const currentWinnerEmails = new Set(existingWinners.map(w => (w.email || '').toLowerCase().replace('@lge.com', '')));
+      const available = candidates.filter(c => !currentWinnerEmails.has((c.email || '').toLowerCase().replace('@lge.com', '')));
+
+      if (available.length === 0) {
+        alert('더 이상 재추첨할 수 있는 가용 후보자가 없습니다.');
+        return;
+      }
+
+      const subSeed = hashString53(`${drawConfig.seedPrefix}_REDRAW_${Date.now()}`) >>> 0;
+      const rng = createMulberry32(subSeed);
+      const shuffled = seededShuffle(available, rng);
+      const newCand = shuffled[0];
+
+      const newWinner = {
+        name: newCand.name,
+        email: newCand.email,
+        seq: newCand.seq,
+        checkinId: newCand.checkinId || ('HVAC-' + String(newCand.seq).padStart(3, '0')),
+        dept: newCand.dept || newCand.org || '참석자',
+        tierId: tierId,
+        tierTitle: currentTier.title,
+        prize: currentTier.prize,
+        time: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }),
+        seedCode: `REDRAW-${subSeed.toString(16).toUpperCase()}`
+      };
+
+      existingWinners[slotIdx] = newWinner;
+      drawState.drawnTiers[tierId] = existingWinners;
+      try {
+        localStorage.setItem('hvac_luckydraw_state', JSON.stringify(drawState));
+      } catch (e) {}
+
+      runConfettiEffect();
+      renderStageView();
+    }
+
+    // +1명 추가 추첨
+    function addSingleWinner() {
+      const sortedTiers = getSortedStageTiers();
+      const currentTier = sortedTiers[stageTierIdx];
+      const tierId = currentTier.id;
+
+      const existingWinners = drawState.drawnTiers[tierId] || [];
+      const candidates = getEligibleCandidates(tierId);
+      const currentWinnerEmails = new Set(existingWinners.map(w => (w.email || '').toLowerCase().replace('@lge.com', '')));
+      const available = candidates.filter(c => !currentWinnerEmails.has((c.email || '').toLowerCase().replace('@lge.com', '')));
+
+      if (available.length === 0) {
+        alert('더 이상 추가 추첨할 수 있는 가용 후보자가 없습니다.');
+        return;
+      }
+
+      if (!confirm(`🎁 [${currentTier.title}] 현장 즉석 1명 추가 추첨\n현재 ${existingWinners.length}명 유지 + 1명 신규 추첨하시겠습니까?`)) return;
+
+      const subSeed = hashString53(`${drawConfig.seedPrefix}_EXTRA_${Date.now()}`) >>> 0;
+      const rng = createMulberry32(subSeed);
+      const shuffled = seededShuffle(available, rng);
+      const newCand = shuffled[0];
+
+      existingWinners.push({
+        name: newCand.name,
+        email: newCand.email,
+        seq: newCand.seq,
+        checkinId: newCand.checkinId || ('HVAC-' + String(newCand.seq).padStart(3, '0')),
+        dept: newCand.dept || newCand.org || '참석자',
+        tierId: tierId,
+        tierTitle: currentTier.title,
+        prize: currentTier.prize,
+        time: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }),
+        seedCode: `EXTRA-${subSeed.toString(16).toUpperCase()}`
+      });
+
+      drawState.drawnTiers[tierId] = existingWinners;
+      try {
+        localStorage.setItem('hvac_luckydraw_state', JSON.stringify(drawState));
+      } catch (e) {}
+
+      runConfettiEffect();
+      renderStageView();
+    }
+
+    // 전체 초기화
+    function resetDrawStatePrompt() {
+      if (!confirm('⚠️ [클로징 럭키드로우 전체 추첨 결과 초기화]\n모든 등수의 당첨자 결과가 초기화됩니다. 계속하시겠습니까?')) return;
+      drawState = { drawnTiers: {}, confirmedTiers: {} };
+      try {
+        localStorage.setItem('hvac_luckydraw_state', JSON.stringify(drawState));
+      } catch (e) {}
+      renderStageView();
+    }
+
+    // 전체화면 토글
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(e => {});
+        document.getElementById('btnFullscreen').textContent = '✕ 전체화면 종료 (ESC)';
+      } else {
+        if (document.exitFullscreen) document.exitFullscreen().catch(e => {});
+        document.getElementById('btnFullscreen').textContent = '⛶ 전체화면 전광판';
+      }
+    }
+
+    // 폭죽 효과
+    let confettiTimer = null;
+    function runConfettiEffect() {
+      const canvas = document.getElementById('confettiCanvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+
+      const colors = ['#f59e0b', '#fbbf24', '#fde047', '#10b981', '#38bdf8', '#ffffff'];
+      const particles = Array.from({ length: 140 }).map(() => ({
+        x: canvas.width / 2,
+        y: canvas.height * 0.45,
+        vx: (Math.random() - 0.5) * 24,
+        vy: (Math.random() - 0.7) * 24,
+        size: Math.random() * 8 + 4,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        rotation: Math.random() * 360,
+        vr: (Math.random() - 0.5) * 15,
+        opacity: 1
+      }));
+
+      const start = Date.now();
+      if (confettiTimer) cancelAnimationFrame(confettiTimer);
+
+      function frame() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        let alive = false;
+        particles.forEach(p => {
+          p.x += p.vx;
+          p.y += p.vy;
+          p.vy += 0.4; // 중력
+          p.rotation += p.vr;
+          p.opacity -= 0.008;
+
+          if (p.opacity > 0) {
+            alive = true;
+            ctx.save();
+            ctx.translate(p.x, p.y);
+            ctx.rotate(p.rotation * Math.PI / 180);
+            ctx.globalAlpha = Math.max(0, p.opacity);
+            ctx.fillStyle = p.color;
+            ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+            ctx.restore();
+          }
+        });
+
+        if (alive && (Date.now() - start < 4000)) {
+          confettiTimer = requestAnimationFrame(frame);
+        } else {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+      }
+      frame();
+    }
+
+    // HTML 특수문자 이스케이프
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    // 키보드 단축키
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'Space' && e.target === document.body) {
+        e.preventDefault();
+        startCurrentTierDraw();
+      } else if (e.code === 'ArrowRight' && e.target === document.body) {
+        nextTierStage();
+      } else if (e.code === 'ArrowLeft' && e.target === document.body) {
+        prevTierStage();
+      }
+    });
+
+    // 스토리지 변경 실시간 감지
+    window.addEventListener('storage', (e) => {
+      if (e.key === 'hvac_luckydraw_state' || e.key === 'hvac_checkin_list' || e.key === 'hvac_luckydraw_config') {
+        initStageSystem();
+      }
+    });
+
+    window.addEventListener('DOMContentLoaded', initStageSystem);
+  </script>
+</body>
+</html>
