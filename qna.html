@@ -1310,13 +1310,25 @@
       const now = new Date();
       const timeStr = now.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
 
+      let checkedUser = null;
+      try {
+        const rawU = localStorage.getItem('hvac_user_checked') || localStorage.getItem('hvac_checkin_user');
+        if (rawU) checkedUser = JSON.parse(rawU);
+      } catch (e) {}
+
       const newQ = {
         id: Date.now(),
         session: sessionKey,
         sessionName: sessionNames[sessionKey] || '강연 질의',
         author: author,
+        userName: (checkedUser && checkedUser.name) ? checkedUser.name : author,
+        checkinSeq: (checkedUser && checkedUser.seq) ? checkedUser.seq : null,
+        checkinId: (checkedUser && checkedUser.checkinId) ? checkedUser.checkinId : (checkedUser && checkedUser.seq ? ('HVAC-' + String(checkedUser.seq).padStart(3, '0')) : ''),
+        authorEmail: (checkedUser && checkedUser.email) ? checkedUser.email : '',
+        userDept: (checkedUser && (checkedUser.dept || checkedUser.org)) ? (checkedUser.dept || checkedUser.org) : '',
         content: content,
         time: timeStr,
+        timestamp: Date.now(),
         likes: 1,
         isLiked: true,
         isStarred: false,

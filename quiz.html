@@ -1678,15 +1678,25 @@
       let answeredCount = 0;
       let firstTryCount = 0;
       let retryCount = 0;
+      const sessionScores = {};
+      const sessionAnswered = {};
 
       document.querySelectorAll('.quiz-card').forEach(card => {
         const qid = card.getAttribute('data-quiz-id');
+        const rawSNum = card.getAttribute('data-session-num');
+        const sNum = (rawSNum !== null && !isNaN(parseInt(rawSNum, 10))) ? parseInt(rawSNum, 10) : 1;
         const correctOpt = card.getAttribute('data-correct');
         const st = normalizeQuizState(userAnswers[qid], correctOpt);
 
+        if (sessionScores[sNum] === undefined) sessionScores[sNum] = 0;
+        if (sessionAnswered[sNum] === undefined) sessionAnswered[sNum] = 0;
+
         if (st && st.isDone) {
           answeredCount++;
-          currentScore += (Number(st.score) || 0);
+          const sc = (Number(st.score) || 0);
+          currentScore += sc;
+          sessionScores[sNum] += sc;
+          sessionAnswered[sNum]++;
           if (st.status === 'correct') {
             if (st.attemptCount === 1) firstTryCount++;
             else retryCount++;
@@ -1715,17 +1725,24 @@
         if (!Array.isArray(subList)) subList = Object.values(subList).filter(Boolean);
         
         const subRecord = {
+          seq: user.seq || null,
+          checkinSeq: user.seq || null,
           checkinId: user.checkinId || (user.seq ? 'HVAC-' + String(user.seq).padStart(3, '0') : '-'),
           name: user.name || '참석자',
           email: user.email || '미체크인(현장참석자)',
           empNo: user.empNo || user.employeeId || '',
+          dept: user.dept || user.org || '',
+          category: user.type || user.category || '사전등록',
           solved: answeredCount,
           answeredCount: answeredCount,
           total: totalQuizzes,
           score: currentScore,
+          sessionScores: sessionScores,
+          sessionAnswered: sessionAnswered,
           firstTryCount: firstTryCount,
           retryCount: retryCount,
-          updatedAt: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+          updatedAt: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+          timestamp: Date.now()
         };
 
         const existingIdx = subList.findIndex(item => (item.email && item.email === user.email) || (item.checkinId && item.checkinId === subRecord.checkinId && item.checkinId !== '-'));

@@ -999,7 +999,8 @@
       dept: '',
       phoneLast4: '',
       email: '',
-      checkinId: ''
+      checkinId: '',
+      seq: null
     };
 
     let userRecords = {
@@ -1030,6 +1031,7 @@
           currentUser.dept = parsed.dept || '';
           currentUser.email = parsed.email || '';
           currentUser.checkinId = parsed.checkinId || '';
+          currentUser.seq = parsed.seq || null;
           currentUser.phoneLast4 = parsed.phoneLast4 || (parsed.phone ? parsed.phone.slice(-4) : (parsed.empNo ? parsed.empNo.slice(-4) : (parsed.checkinId ? parsed.checkinId.slice(-4) : '')));
         }
       } catch (e) {}
@@ -1685,6 +1687,8 @@
         dept: currentUser.dept,
         phoneLast4: currentUser.phoneLast4,
         email: currentUser.email,
+        checkinId: currentUser.checkinId || (currentUser.seq ? ('HVAC-' + String(currentUser.seq).padStart(3, '0')) : ''),
+        seq: currentUser.seq,
         game10s: userRecords.game10s,
         game26c: userRecords.game26c
       }).then(() => {

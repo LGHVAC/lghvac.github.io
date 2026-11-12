@@ -3709,6 +3709,17 @@
       const timeStr = now.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
       const qSessionKey = resolveQnaSessionKey(s, currentIdx);
 
+      let uInfo = null;
+      try {
+        const rawU = localStorage.getItem('hvac_user_checked');
+        if (rawU) uInfo = JSON.parse(rawU);
+      } catch (e) {}
+      const realName = (uInfo && uInfo.name) ? uInfo.name : ((window.currentUser && window.currentUser.name) ? window.currentUser.name : author);
+      const cSeq = (uInfo && uInfo.seq) ? uInfo.seq : ((window.currentUser && window.currentUser.seq) ? window.currentUser.seq : null);
+      const cId = (uInfo && uInfo.checkinId) ? uInfo.checkinId : (cSeq ? ('HVAC-' + String(cSeq).padStart(3, '0')) : '');
+      const cEmail = (uInfo && uInfo.email) ? uInfo.email : ((window.currentUser && window.currentUser.email) ? window.currentUser.email : '');
+      const cDept = (uInfo && (uInfo.dept || uInfo.org)) ? (uInfo.dept || uInfo.org) : '';
+
       try {
         let qList = [];
         const saved = localStorage.getItem('hvac_qna_list');
@@ -3718,8 +3729,14 @@
           session: qSessionKey,
           sessionName: (s.sublabel || 'Session') + ' · ' + (s.title || '').slice(0, 16),
           author: author,
+          userName: realName,
+          checkinSeq: cSeq,
+          checkinId: cId,
+          authorEmail: cEmail,
+          userDept: cDept,
           content: content,
           time: timeStr,
+          timestamp: Date.now(),
           likes: 1,
           isLiked: true,
           isStarred: false,
