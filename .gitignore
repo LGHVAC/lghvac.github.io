@@ -13,6 +13,11 @@
 *attendee*
 *winner*
 
+# 웹 페이지 예외 허용 (HTML 파일 배포 보장)
+!checkin.html
+!attendance-dashboard.html
+!quiz-winners.html
+
 # 2. 관리자 전체 백업 및 로컬 데이터 덤프 파일
 *backup*.json
 *operational_backup*.json

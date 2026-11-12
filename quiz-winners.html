@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>세션별 퀴즈 Top 3 당첨자 발표 (사회자용) | 제10회 2026 HVAC 전문가 세미나</title>
+  <link rel="icon" href="./assets/favicon.ico">
+  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  <script src="./assets/hvac-core.js"></script>
+  <style>
+    :root {
+      --bg: #040c07;
+      --card-bg: rgba(14, 28, 19, 0.82);
+      --card-border: rgba(243, 196, 72, 0.28);
+      --primary: #10b981;
+      --gold: #f3c448;
+      --gold-light: #ffd900;
+      --text: #ffffff;
+      --text-muted: #94a3b8;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: "Pretendard Variable", Pretendard, -apple-system, sans-serif; }
+    body {
+      background: radial-gradient(circle at 50% 15%, #0e2718 0%, var(--bg) 75%);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 20px 24px 60px;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    /* 상단 헤더 배너 */
+    .winners-hero-header {
+      background: linear-gradient(180deg, rgba(22, 44, 30, 0.95) 0%, rgba(10, 22, 14, 0.95) 100%);
+      border: 1.5px solid var(--card-border);
+      border-radius: 20px;
+      padding: 22px 28px;
+      margin-bottom: 24px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero-badge-pill {
+      display: inline-block;
+      background: rgba(243, 196, 72, 0.15);
+      border: 1px solid var(--gold);
+      color: var(--gold-light);
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: 0.08em;
+      padding: 4px 12px;
+      border-radius: 999px;
+      margin-bottom: 8px;
+    }
+
+    .hero-title {
+      font-size: 23px;
+      font-weight: 950;
+      color: #ffffff;
+      letter-spacing: -0.02em;
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .hero-desc {
+      font-size: 14px;
+      color: rgba(255, 255, 255, 0.8);
+      margin-bottom: 12px;
+    }
+
+    .rules-banner {
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 10px 16px;
+      font-size: 12.5px;
+      display: flex;
+      gap: 18px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .rule-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .rule-item.ok { color: #34d399; font-weight: 750; }
+    .rule-item.no { color: #f87171; font-weight: 750; }
+    .rule-item.star { color: var(--gold-light); font-weight: 850; }
+
+    /* 툴바 */
+    .hero-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 16px;
+      padding-top: 14px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .btn-action {
+      background: linear-gradient(135deg, rgba(243, 196, 72, 0.22) 0%, rgba(217, 119, 6, 0.22) 100%);
+      border: 1.5px solid var(--gold);
+      color: var(--gold-light);
+      padding: 9px 18px;
+      border-radius: 10px;
+      font-size: 13.5px;
+      font-weight: 900;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .btn-action:hover {
+      background: var(--gold);
+      color: #040906;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 18px rgba(243, 196, 72, 0.4);
+    }
+
+    .btn-action.sec {
+      background: rgba(255, 255, 255, 0.06);
+      border-color: rgba(255, 255, 255, 0.2);
+      color: #ffffff;
+    }
+
+    .btn-action.sec:hover {
+      background: rgba(16, 185, 129, 0.2);
+      border-color: #10b981;
+      color: #34d399;
+    }
+
+    /* 6개 세션 그리드 */
+    .sessions-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+      gap: 20px;
+    }
+
+    @media (max-width: 900px) {
+      .sessions-grid { grid-template-columns: 1fr; }
+    }
+
+    .session-winner-card {
+      background: var(--card-bg);
+      border: 1.5px solid var(--card-border);
+      border-radius: 18px;
+      padding: 20px;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+      transition: transform 0.2s;
+    }
+
+    .session-winner-card:hover {
+      transform: translateY(-2px);
+      border-color: rgba(243, 196, 72, 0.55);
+    }
+
+    .session-card-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 14px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .session-card-head .sess-id {
+      font-size: 11px;
+      font-weight: 900;
+      color: var(--gold-light);
+      letter-spacing: 0.06em;
+    }
+
+    .session-card-head .sess-title {
+      font-size: 16px;
+      font-weight: 900;
+      color: #ffffff;
+      margin-top: 2px;
+    }
+
+    .session-card-head .sess-speaker {
+      font-size: 12.5px;
+      color: var(--text-muted);
+      margin-top: 1px;
+    }
+
+    .top3-pill {
+      background: rgba(243, 196, 72, 0.15);
+      border: 1px solid rgba(243, 196, 72, 0.45);
+      color: var(--gold-light);
+      font-size: 11.5px;
+      font-weight: 850;
+      padding: 3px 9px;
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+
+    /* 당첨자 아이템 행 */
+    .winner-rank-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 14px;
+      background: rgba(255, 255, 255, 0.035);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 12px;
+      margin-bottom: 8px;
+      transition: background 0.2s;
+    }
+
+    .winner-rank-item:hover {
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    .rank-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .rank-medal-badge {
+      font-size: 13px;
+      font-weight: 950;
+      min-width: 52px;
+    }
+
+    .rank-1 .rank-medal-badge { color: #ffd900; }
+    .rank-2 .rank-medal-badge { color: #cbd5e1; }
+    .rank-3 .rank-medal-badge { color: #d97706; }
+
+    .winner-name-wrap {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .winner-name {
+      font-size: 14.5px;
+      font-weight: 900;
+      color: #ffffff;
+    }
+
+    .winner-seq-tag {
+      font-size: 11px;
+      font-weight: 800;
+      color: #34d399;
+      font-family: monospace;
+    }
+
+    .winner-meta {
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.55);
+      margin-top: 2px;
+    }
+
+    .rank-right {
+      text-align: right;
+    }
+
+    .winner-score {
+      font-size: 15px;
+      font-weight: 950;
+      color: var(--gold-light);
+    }
+
+    .winner-time {
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.45);
+      margin-top: 2px;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 24px 0;
+      color: rgba(255, 255, 255, 0.4);
+      font-size: 13px;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- 상단 헤더 배너 (이미지 구성 100% 반영) -->
+    <header class="winners-hero-header">
+      <div class="hero-badge-pill">SESSION QUIZ WINNERS</div>
+      <h1 class="hero-title">
+        <span>☕ 세션별 퀴즈 Top 3 당첨자 (스타벅스 커피 쿠폰)</span>
+      </h1>
+      <p class="hero-desc">각 세션별 퀴즈 최고 득점자 및 최단시간 제출자 1~3위(Top 3)를 자동 집계합니다.</p>
+
+      <!-- 당첨 기준 및 예외 규정 배너 -->
+      <div class="rules-banner">
+        <div class="rule-item ok">
+          <span>✔ 증정 대상:</span>
+          <span>사전등록 · 초대(VIP) · 하이엠 인원</span>
+        </div>
+        <div class="rule-item no">
+          <span>✕ 자동 제외:</span>
+          <span>사외 인원(강사/교수/학생) 및 운영진</span>
+        </div>
+        <div class="rule-item star">
+          <span>⭐ 산정 기준:</span>
+          <span>① 가장 높은 점수 &gt; ② 가장 빠른 제출 시각</span>
+        </div>
+      </div>
+
+      <!-- 액션 툴바 -->
+      <div class="hero-toolbar">
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+          <button class="btn-action" onclick="exportQuizSessionWinnersCsv()">
+            📥 세션별 Top 3 당첨자 CSV 다운로드
+          </button>
+          <button class="btn-action sec" onclick="loadQuizWinners(true)">
+            🔄 순위 새로고침
+          </button>
+        </div>
+
+        <div style="display: flex; gap: 8px;">
+          <button class="btn-action sec" id="btnFullscreenToggle" onclick="toggleFullScreen()">
+            🖥️ 전체화면
+          </button>
+          <a class="btn-action sec" href="./admin.html" style="text-decoration: none;">
+            ⚙️ 관리자 콘솔 ➔
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <!-- 세션별 당첨자 그리드 (Session 0 ~ Session 5) -->
+    <main class="sessions-grid" id="quizSessionWinnersGrid">
+      <!-- JS 동적 렌더링 -->
+    </main>
+  </div>
+
+  <script>
+    // 세션 정보 정의 (오프닝 + 세션 1~5)
+    const QUIZ_SESSION_INFO = [
+      { num: 0, tag: 'OPENING · 오프닝 퀴즈', speaker: 'ES엔지니어링담당', title: '세미나 개회 및 아이스브레이킹 퀴즈' },
+      { num: 1, tag: 'KEYNOTE 1 · 주거난방', speaker: '여명석 교수 (서울대)', title: '국내 주거난방의 변천과 현황' },
+      { num: 2, tag: 'KEYNOTE 2 · 액체냉각', speaker: '이성혁 교수 (중앙대)', title: 'AI 데이터센터 냉각 솔루션 기술 동향' },
+      { num: 3, tag: 'KEYNOTE 3 · 전력시장', speaker: '조홍종 교수 (단국대)', title: '분산형 전원 체계와 AIDC 전력망의 미래' },
+      { num: 4, tag: 'INSIGHT 1 · 히트펌프', speaker: '유정현 수석 (LHRI)', title: '헬로우 히트펌프, 굿바이 보일러' },
+      { num: 5, tag: 'INSIGHT 2 · 컨설팅', speaker: '오영훈 팀장 (에너지컨설팅팀)', title: 'Building Decarbonization 종합 솔루션' }
+    ];
+
+    function getCheckinList() {
+      try {
+        return JSON.parse(localStorage.getItem('hvac_checkin_list') || '[]');
+      } catch (e) {
+        return [];
+      }
+    }
+
+    function getQuizSubmissions() {
+      try {
+        const raw = localStorage.getItem('hvac_quiz_submissions');
+        if (!raw) return [];
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) return parsed;
+        if (typeof parsed === 'object') return Object.values(parsed).filter(Boolean);
+        return [];
+      } catch (e) {
+        return [];
+      }
+    }
+
+    function getQuizConfig() {
+      try {
+        return JSON.parse(localStorage.getItem('hvac_quiz_config') || '[]');
+      } catch (e) {
+        return [];
+      }
+    }
+
+    function escapeHtml(str) {
+      return String(str == null ? '' : str).replace(/[&<>"']/g, m => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
+      }[m]));
+    }
+
+    function findCheckinAttendeeInfo(name, email) {
+      const list = getCheckinList();
+      const cleanEmail = String(email || '').toLowerCase().replace('@lge.com', '').trim();
+      return list.find(att => {
+        const attClean = String(att.email || '').toLowerCase().replace('@lge.com', '').trim();
+        return (cleanEmail && attClean === cleanEmail) || (att.name && att.name === name);
+      }) || null;
+    }
+
+    function isQuizWinnerEligible(att, sub) {
+      const email = String((att && att.email) || (sub && sub.email) || '').toLowerCase().replace('@lge.com', '').trim();
+      const cat = String((att && (att.category || att.type)) || (sub && sub.category) || '').trim();
+
+      // 사외 인원 제외
+      if (cat.includes('사외') || cat.includes('외부') || cat.includes('강사') || cat.includes('교수') || cat.includes('학생')) return false;
+
+      // 세미나 운영진 제외
+      if ((att && att.isOperator) || (sub && sub.isOperator)) return false;
+      if (window.HVAC && window.HVAC.isOperatorEmail && window.HVAC.isOperatorEmail(email)) return false;
+
+      return true; // 사전등록, 초대(VIP), 하이엠 등 증정 대상
+    }
+
+    function getSessionQuizTop3(targetSNum) {
+      const subs = getQuizSubmissions();
+      const quizList = getQuizConfig();
+      const candidates = [];
+
+      subs.forEach(sub => {
+        const att = findCheckinAttendeeInfo(sub.name, sub.email);
+        if (!isQuizWinnerEligible(att, sub)) return;
+
+        let score = 0;
+        let answered = 0;
+
+        if (sub.sessionScores && sub.sessionScores[targetSNum] !== undefined) {
+          score = Number(sub.sessionScores[targetSNum]) || 0;
+          answered = Number(sub.sessionAnswered && sub.sessionAnswered[targetSNum]) || (score > 0 ? 1 : 0);
+        } else if (sub.answers) {
+          const sessQuestions = quizList.filter(q => Number(q.sessionNum) === targetSNum);
+          sessQuestions.forEach(q => {
+            const st = sub.answers[q.id];
+            if (st && st.isDone) {
+              answered++;
+              score += (Number(st.score) || 0);
+            }
+          });
+        } else {
+          const sessQuestions = quizList.filter(q => Number(q.sessionNum) === targetSNum);
+          if (sessQuestions.length > 0 && Number(sub.score) > 0) {
+            score = Math.round((Number(sub.score) / (quizList.length || 11)) * sessQuestions.length * 10) / 10;
+            answered = sessQuestions.length;
+          }
+        }
+
+        if (score <= 0 && answered === 0) return;
+
+        let ts = sub.timestamp || 0;
+        if (!ts && sub.updatedAt) {
+          try {
+            const todayStr = new Date().toISOString().slice(0, 10);
+            ts = new Date(`${todayStr} ${sub.updatedAt}`).getTime();
+          } catch (e) {
+            ts = Date.now();
+          }
+        }
+        if (!ts) ts = 9999999999999;
+
+        const seq = (att && att.seq) || sub.seq || null;
+        const checkinId = (att && att.checkinId) || sub.checkinId || (seq ? ('HVAC-' + String(seq).padStart(3, '0')) : '-');
+        const name = (att && att.name) || sub.name || '참석자';
+        const dept = (att && (att.dept || att.org)) || sub.dept || 'ES엔지니어링담당';
+        const category = (att && (att.category || att.type)) || sub.category || '사전등록';
+
+        candidates.push({
+          name,
+          seq,
+          checkinId,
+          dept,
+          category,
+          score,
+          timestamp: ts,
+          timeText: sub.updatedAt || new Date(ts).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
+        });
+      });
+
+      // 정렬: ① 높은 점수 > ② 빠른 제출 시각
+      candidates.sort((a, b) => {
+        if (b.score !== a.score) return b.score - a.score;
+        return a.timestamp - b.timestamp;
+      });
+
+      return candidates.slice(0, 3);
+    }
+
+    function loadQuizWinners(showFeedback = false) {
+      const container = document.getElementById('quizSessionWinnersGrid');
+      if (!container) return;
+
+      container.innerHTML = QUIZ_SESSION_INFO.map(sess => {
+        const top3 = getSessionQuizTop3(sess.num);
+        let itemsHtml = '';
+
+        if (top3.length === 0) {
+          itemsHtml = '<div class="empty-state">아직 세션 퀴즈 제출자가 없습니다.</div>';
+        } else {
+          itemsHtml = top3.map((w, idx) => {
+            const medalClass = `rank-${idx + 1}`;
+            const medal = idx === 0 ? '🥇 1등' : (idx === 1 ? '🥈 2등' : '🥉 3등');
+            const seqTag = w.seq ? '#' + w.seq : '-';
+            const scoreFormatted = (w.score % 1 === 0 ? w.score.toFixed(0) : w.score.toFixed(1));
+
+            return `
+              <div class="winner-rank-item ${medalClass}">
+                <div class="rank-left">
+                  <span class="rank-medal-badge">${medal}</span>
+                  <div>
+                    <div class="winner-name-wrap">
+                      <strong class="winner-name">${escapeHtml(w.name)}</strong>
+                      <span class="winner-seq-tag">(${seqTag}, ${escapeHtml(w.checkinId)})</span>
+                    </div>
+                    <div class="winner-meta">
+                      ${escapeHtml(w.dept)} · <span style="color: #94a3b8;">${escapeHtml(w.category)}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="rank-right">
+                  <div class="winner-score">${scoreFormatted}점</div>
+                  <div class="winner-time">${w.timeText}</div>
+                </div>
+              </div>
+            `;
+          }).join('');
+        }
+
+        return `
+          <article class="session-winner-card">
+            <div class="session-card-head">
+              <div>
+                <span class="sess-id">SESSION ${sess.num}</span>
+                <h3 class="sess-title">${escapeHtml(sess.tag)}</h3>
+                <div class="sess-speaker">${escapeHtml(sess.speaker)}</div>
+              </div>
+              <span class="top3-pill">☕ Top 3 쿠폰</span>
+            </div>
+            <div>
+              ${itemsHtml}
+            </div>
+          </article>
+        `;
+      }).join('');
+
+      if (showFeedback) {
+        alert('🔄 세션별 퀴즈 Top 3 당첨자 순위가 최신 데이터로 새로고침되었습니다.');
+      }
+    }
+
+    function exportQuizSessionWinnersCsv() {
+      let csv = '\uFEFF세션번호,세션구분,세션주제및연사,순위,체크인순번,체크인ID,성명,소속(조직),구분,세션점수,제출시각,당첨경품,지급상태\n';
+      QUIZ_SESSION_INFO.forEach(sess => {
+        const top3 = getSessionQuizTop3(sess.num);
+        if (top3.length === 0) {
+          csv += `"세션 ${sess.num}","${sess.tag}","${(sess.title || '').replace(/"/g, '""')} (연사: ${(sess.speaker || '').replace(/"/g, '""')})","-","-","-","(해당 세션 당첨자 없음)","-","-",0,"-","스타벅스 아메리카노 모바일 쿠폰","미지급"\n`;
+        } else {
+          top3.forEach((w, rankIdx) => {
+            const seqStr = w.seq ? '#' + w.seq : '-';
+            const checkinIdStr = w.checkinId || '-';
+            const nameStr = (w.name || '').replace(/"/g, '""');
+            const deptStr = (w.dept || '-').replace(/"/g, '""');
+            const catStr = (w.category || '사전등록').replace(/"/g, '""');
+            const scoreStr = (w.score % 1 === 0 ? w.score.toFixed(0) : w.score.toFixed(1));
+            const timeStr = w.timeText || '-';
+            csv += `"세션 ${sess.num}","${sess.tag}","${(sess.title || '').replace(/"/g, '""')} (연사: ${(sess.speaker || '').replace(/"/g, '""')})",${rankIdx + 1},"${seqStr}","${checkinIdStr}","${nameStr}","${deptStr}","${catStr}",${scoreStr},"${timeStr}","스타벅스 아메리카노 모바일 쿠폰","현장지급/모바일발송"\n`;
+          });
+        }
+      });
+
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `HVAC_2026_Quiz_Session_Top3_Winners_${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function toggleFullScreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else {
+        document.exitFullscreen().catch(() => {});
+      }
+    }
+
+    function updateFullscreenBtnState() {
+      const btn = document.getElementById('btnFullscreenToggle');
+      if (btn) {
+        btn.textContent = document.fullscreenElement ? '🗗 창 모드로 복귀 (ESC)' : '🖥️ 전체화면';
+      }
+    }
+
+    document.addEventListener('fullscreenchange', updateFullscreenBtnState);
+
+    window.addEventListener('DOMContentLoaded', () => {
+      loadQuizWinners();
+      setInterval(loadQuizWinners, 4000);
+    });
+
+    window.addEventListener('storage', (e) => {
+      if (e.key === 'hvac_quiz_submissions') loadQuizWinners();
+    });
+  </script>
+</body>
+</html>

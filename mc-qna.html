@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>사회자(MC) 세션별 Q&A 진행 화면 | 제10회 2026 HVAC 전문가 세미나</title>
+  <link rel="icon" href="./assets/favicon.ico">
+  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  <script src="./assets/hvac-core.js"></script>
+  <style>
+    :root {
+      --bg: #030805;
+      --card-bg: rgba(12, 26, 17, 0.88);
+      --card-border: rgba(16, 185, 129, 0.28);
+      --primary: #10b981;
+      --primary-light: #34d399;
+      --gold: #f3c448;
+      --gold-light: #ffd900;
+      --text: #ffffff;
+      --text-muted: #94a3b8;
+      --mc-font-size: 20px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: "Pretendard Variable", Pretendard, -apple-system, sans-serif; }
+    body {
+      background: #020704;
+      color: var(--text);
+      min-height: 100vh;
+      padding: 18px 24px 60px;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    /* 상단 헤더 & 컨트롤 바 */
+    .mc-header-card {
+      background: linear-gradient(180deg, rgba(16, 36, 24, 0.95) 0%, rgba(8, 18, 12, 0.95) 100%);
+      border: 1px solid var(--card-border);
+      border-radius: 18px;
+      padding: 18px 24px;
+      margin-bottom: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+    }
+
+    .mc-brand-wrap {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .mc-badge {
+      background: linear-gradient(135deg, #a855f7 0%, #6366f1 100%);
+      color: #fff;
+      font-size: 11.5px;
+      font-weight: 900;
+      padding: 4px 10px;
+      border-radius: 8px;
+    }
+
+    .mc-title {
+      font-size: 20px;
+      font-weight: 950;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .mc-sub {
+      font-size: 12.5px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    /* 툴바 컨트롤 그룹 */
+    .mc-ctrl-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    /* Q&A 타이머 */
+    .mc-timer-box {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(0, 0, 0, 0.45);
+      border: 1.5px solid rgba(243, 196, 72, 0.4);
+      padding: 6px 12px;
+      border-radius: 12px;
+    }
+
+    .mc-timer-label {
+      font-size: 11.5px;
+      color: var(--gold);
+      font-weight: 850;
+    }
+
+    .mc-timer-time {
+      font-size: 22px;
+      font-weight: 950;
+      color: var(--gold-light);
+      font-family: monospace;
+      min-width: 65px;
+      text-align: center;
+    }
+
+    .mc-timer-time.urgent {
+      color: #ef4444;
+      animation: timerBlink 1s infinite;
+    }
+
+    @keyframes timerBlink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    .btn-timer {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #fff;
+      padding: 5px 9px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-timer:hover {
+      background: rgba(243, 196, 72, 0.2);
+      border-color: var(--gold);
+      color: var(--gold-light);
+    }
+
+    /* 폰트 조절 버튼 */
+    .font-ctrls {
+      display: inline-flex;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .btn-font {
+      background: none;
+      border: none;
+      color: #ffffff;
+      padding: 7px 12px;
+      font-size: 13px;
+      font-weight: 850;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn-font:hover {
+      background: rgba(255, 255, 255, 0.12);
+    }
+
+    .btn-fullscreen {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: #ffffff;
+      border: 1px solid #34d399;
+      padding: 8px 16px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 900;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .btn-fullscreen:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+    }
+
+    /* 세션 필터 칩 탭 */
+    .session-filter-nav {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 18px;
+      overflow-x: auto;
+      padding-bottom: 6px;
+    }
+
+    .session-chip {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: var(--text-muted);
+      padding: 8px 16px;
+      border-radius: 999px;
+      font-size: 13.5px;
+      font-weight: 800;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s;
+    }
+
+    .session-chip:hover {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .session-chip.active {
+      background: rgba(16, 185, 129, 0.22);
+      border-color: #10b981;
+      color: #34d399;
+      font-weight: 950;
+      box-shadow: 0 0 15px rgba(16, 185, 129, 0.25);
+    }
+
+    /* 상태 바 */
+    .status-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      padding: 0 4px;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .sort-group {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .sort-btn {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: var(--text-muted);
+      padding: 5px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 750;
+      cursor: pointer;
+    }
+
+    .sort-btn.active {
+      background: rgba(243, 196, 72, 0.18);
+      border-color: var(--gold);
+      color: var(--gold-light);
+      font-weight: 900;
+    }
+
+    /* 질문 카드 그리드 / 리스트 */
+    .qna-list {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .mc-qna-card {
+      background: var(--card-bg);
+      border: 1.5px solid var(--card-border);
+      border-radius: 18px;
+      padding: 22px 26px;
+      box-shadow: 0 6px 25px rgba(0, 0, 0, 0.4);
+      transition: all 0.2s ease;
+      position: relative;
+    }
+
+    .mc-qna-card:hover {
+      border-color: rgba(16, 185, 129, 0.5);
+      background: rgba(16, 34, 22, 0.95);
+    }
+
+    .mc-qna-card.pinned {
+      border: 2px solid var(--gold);
+      background: linear-gradient(180deg, rgba(243, 196, 72, 0.12) 0%, rgba(14, 30, 20, 0.92) 100%);
+      box-shadow: 0 0 35px rgba(243, 196, 72, 0.2);
+    }
+
+    .mc-qna-card.answered {
+      opacity: 0.45;
+      background: rgba(0, 0, 0, 0.4);
+      border-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .session-badge {
+      font-size: 12px;
+      font-weight: 850;
+      color: #34d399;
+      background: rgba(16, 185, 129, 0.18);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      padding: 4px 10px;
+      border-radius: 6px;
+    }
+
+    .like-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: rgba(243, 196, 72, 0.18);
+      border: 1px solid rgba(243, 196, 72, 0.5);
+      color: #ffd900;
+      font-size: 15px;
+      font-weight: 950;
+      padding: 4px 14px;
+      border-radius: 999px;
+    }
+
+    .card-question {
+      font-size: var(--mc-font-size);
+      font-weight: 850;
+      line-height: 1.5;
+      color: #ffffff;
+      margin-bottom: 16px;
+      word-break: keep-all;
+    }
+
+    .card-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      padding-top: 12px;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .author-info {
+      font-size: 13.5px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .author-name {
+      color: #ffffff;
+      font-weight: 850;
+    }
+
+    .checkin-id-tag {
+      background: rgba(16, 185, 129, 0.15);
+      color: #10b981;
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 12px;
+      font-weight: 750;
+    }
+
+    .action-btn-group {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn-mc-action {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      color: #fff;
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-mc-action.pin {
+      border-color: rgba(243, 196, 72, 0.5);
+      color: var(--gold-light);
+    }
+
+    .btn-mc-action.pin.active {
+      background: var(--gold);
+      color: #040906;
+      font-weight: 950;
+    }
+
+    .btn-mc-action.done {
+      border-color: rgba(16, 185, 129, 0.4);
+      color: #34d399;
+    }
+
+    .btn-mc-action.done.active {
+      background: #10b981;
+      color: #ffffff;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- 사회자 전용 헤더 카드 -->
+    <header class="mc-header-card">
+      <div class="mc-brand-wrap">
+        <span class="mc-badge">MC VIEW</span>
+        <div>
+          <h1 class="mc-title">🎤 사회자(MC) 세션별 질의응답 진행 화면</h1>
+          <div class="mc-sub">포디움 / 무대 태블릿 전용 고독성 Q&A 뷰어</div>
+        </div>
+      </div>
+
+      <div class="mc-ctrl-group">
+        <!-- Q&A 타이머 -->
+        <div class="mc-timer-box">
+          <span class="mc-timer-label">Q&A 타이머</span>
+          <span class="mc-timer-time" id="mcTimerDisplay">05:00</span>
+          <button class="btn-timer" onclick="setTimerSec(180)">3분</button>
+          <button class="btn-timer" onclick="setTimerSec(300)">5분</button>
+          <button class="btn-timer" id="btnTimerToggle" onclick="toggleTimer()">시작</button>
+          <button class="btn-timer" onclick="resetTimer()">리셋</button>
+        </div>
+
+        <!-- 폰트 크기 다단계 조절기 -->
+        <div class="font-ctrls">
+          <button class="btn-font" onclick="adjustFontSize(-2)" title="폰트 축소">A-</button>
+          <button class="btn-font" onclick="resetFontSize()" title="기본 폰트">A</button>
+          <button class="btn-font" onclick="adjustFontSize(2)" title="폰트 확대">A+</button>
+        </div>
+
+        <!-- 전체화면 토글 -->
+        <button class="btn-fullscreen" id="btnFullscreenToggle" onclick="toggleFullScreen()">
+          🖥️ 전체화면 확대
+        </button>
+
+        <a class="btn-timer" href="./admin.html" style="text-decoration: none; padding: 8px 12px; border-color: rgba(243,196,72,0.4); color: #ffd900;">
+          ⚙️ 관리자 ➔
+        </a>
+      </div>
+    </header>
+
+    <!-- 세션 필터 칩 탭 바 -->
+    <nav class="session-filter-nav" id="sessionFilterNav">
+      <button class="session-chip active" onclick="filterSession('all')">전체 세션</button>
+      <button class="session-chip" onclick="filterSession('k1')">Keynote 1 · 주거난방</button>
+      <button class="session-chip" onclick="filterSession('k2')">Keynote 2 · 액체냉각</button>
+      <button class="session-chip" onclick="filterSession('k3')">Keynote 3 · 전력망</button>
+      <button class="session-chip" onclick="filterSession('i1')">Insight 1 · 히트펌프</button>
+      <button class="session-chip" onclick="filterSession('i2')">Insight 2 · 에너지</button>
+      <button class="session-chip" onclick="filterSession('sp')">Special · 인문학</button>
+    </nav>
+
+    <!-- 실시간 상태 및 정렬 컨트롤 바 -->
+    <div class="status-bar">
+      <div>
+        <span style="color: #34d399; font-weight: 850;">● 실시간 질문 수신 중</span>
+        <span style="margin-left: 8px;" id="qnaCountText">총 0건</span>
+      </div>
+
+      <div class="sort-group">
+        <button class="sort-btn active" id="sortLikeBtn" onclick="setSortMode('like')">👍 공감 많은 순 ↓</button>
+        <button class="sort-btn" id="sortTimeBtn" onclick="setSortMode('time')">⏱️ 최신순</button>
+        <button class="sort-btn" id="pinToggleBtn" onclick="togglePinTop()">⭐ 추천 고정: ON</button>
+        <button class="sort-btn" onclick="loadQnaList(true)">🔄 새로고침</button>
+      </div>
+    </div>
+
+    <!-- Q&A 질문 목록 컨테이너 -->
+    <main class="qna-list" id="mcQnaList">
+      <!-- JS 동적 렌더링 -->
+    </main>
+  </div>
+
+  <script>
+    let currentSessionFilter = 'all';
+    let currentSortMode = 'like';
+    let isPinTop = true;
+    let baseFontSize = 20;
+
+    let timerInterval = null;
+    let timerSec = 300;
+    let isTimerRunning = false;
+
+    function getQnaList() {
+      try {
+        return JSON.parse(localStorage.getItem('hvac_qna_list') || '[]');
+      } catch (e) {
+        return [];
+      }
+    }
+
+    function saveQnaList(list) {
+      try {
+        localStorage.setItem('hvac_qna_list', JSON.stringify(list));
+        if (window.HVAC && HVAC.cloud && HVAC.cloud.pushQnaList) {
+          HVAC.cloud.pushQnaList(list);
+        }
+      } catch (e) {}
+    }
+
+    function escapeHtml(str) {
+      return String(str == null ? '' : str).replace(/[&<>"']/g, m => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
+      }[m]));
+    }
+
+    function filterSession(sessKey) {
+      currentSessionFilter = sessKey;
+      document.querySelectorAll('.session-chip').forEach(chip => {
+        chip.classList.toggle('active', chip.getAttribute('onclick').includes(`'${sessKey}'`));
+      });
+      loadQnaList();
+    }
+
+    function setSortMode(mode) {
+      currentSortMode = mode;
+      document.getElementById('sortLikeBtn').classList.toggle('active', mode === 'like');
+      document.getElementById('sortTimeBtn').classList.toggle('active', mode === 'time');
+      loadQnaList();
+    }
+
+    function togglePinTop() {
+      isPinTop = !isPinTop;
+      const btn = document.getElementById('pinToggleBtn');
+      btn.textContent = `⭐ 추천 고정: ${isPinTop ? 'ON' : 'OFF'}`;
+      btn.classList.toggle('active', isPinTop);
+      loadQnaList();
+    }
+
+    function togglePinCard(id) {
+      const list = getQnaList();
+      const item = list.find(q => q.id === id);
+      if (item) {
+        item.isPinned = !item.isPinned;
+        saveQnaList(list);
+        loadQnaList();
+      }
+    }
+
+    function toggleDoneCard(id) {
+      const list = getQnaList();
+      const item = list.find(q => q.id === id);
+      if (item) {
+        item.isAnswered = !item.isAnswered;
+        saveQnaList(list);
+        loadQnaList();
+      }
+    }
+
+    function loadQnaList(showFeedback = false) {
+      let list = getQnaList();
+
+      // 세션 필터링
+      if (currentSessionFilter !== 'all') {
+        list = list.filter(q => (q.session || '').toLowerCase().includes(currentSessionFilter));
+      }
+
+      // 정렬
+      if (currentSortMode === 'like') {
+        list.sort((a, b) => (Number(b.likes) || 0) - (Number(a.likes) || 0));
+      } else {
+        list.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+      }
+
+      // 추천 고정 우선 정렬
+      if (isPinTop) {
+        list.sort((a, b) => (b.isPinned ? 1 : 0) - (a.isPinned ? 1 : 0));
+      }
+
+      document.getElementById('qnaCountText').textContent = `총 ${list.length}건`;
+      const container = document.getElementById('mcQnaList');
+
+      if (list.length === 0) {
+        container.innerHTML = `
+          <div style="text-align: center; padding: 60px 20px; color: var(--text-muted); background: var(--card-bg); border-radius: 18px; border: 1px dashed var(--card-border);">
+            <div style="font-size: 32px; margin-bottom: 8px;">💬</div>
+            <div style="font-size: 16px; font-weight: 800; color: #fff;">수신된 세션 질문이 없습니다.</div>
+            <p style="font-size: 13px; margin-top: 4px;">참석자가 등록한 질문이 실시간으로 표출됩니다.</p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = list.map(q => {
+        const isPinned = !!q.isPinned;
+        const isAnswered = !!q.isAnswered;
+        const seqText = q.authorSeq ? `#${q.authorSeq}` : '';
+        const idText = q.authorCheckinId || '';
+        const nameText = q.authorName || '참석자';
+
+        return `
+          <article class="mc-qna-card ${isPinned ? 'pinned' : ''} ${isAnswered ? 'answered' : ''}">
+            <div class="card-top">
+              <span class="session-badge">${escapeHtml(q.sessionTitle || q.session || '세션 질문')}</span>
+              <span class="like-badge">👍 ${q.likes || 0}</span>
+            </div>
+
+            <div class="card-question">
+              ${escapeHtml(q.content || '')}
+            </div>
+
+            <div class="card-footer">
+              <div class="author-info">
+                <span>작성자:</span>
+                <strong class="author-name">${escapeHtml(nameText)}</strong>
+                ${idText ? `<span class="checkin-id-tag">${escapeHtml(seqText)} ${escapeHtml(idText)}</span>` : ''}
+                <span style="font-size: 12px; margin-left: 4px;">(${q.time || '방금 전'})</span>
+              </div>
+
+              <div class="action-btn-group">
+                <button class="btn-mc-action pin ${isPinned ? 'active' : ''}" onclick="togglePinCard('${q.id}')">
+                  ${isPinned ? '⭐ 채택됨' : '☆ 사회자 채택'}
+                </button>
+                <button class="btn-mc-action done ${isAnswered ? 'active' : ''}" onclick="toggleDoneCard('${q.id}')">
+                  ${isAnswered ? '✅ 답변완료' : '⚪ 답변완료 처리'}
+                </button>
+              </div>
+            </div>
+          </article>
+        `;
+      }).join('');
+
+      if (showFeedback) {
+        const btn = document.querySelector('.status-bar button:last-child');
+        if (btn) {
+          const orig = btn.textContent;
+          btn.textContent = '✅ 최신 갱신됨';
+          setTimeout(() => { btn.textContent = orig; }, 1200);
+        }
+      }
+    }
+
+    // 폰트 크기 조절
+    function adjustFontSize(delta) {
+      baseFontSize = Math.min(32, Math.max(16, baseFontSize + delta));
+      document.documentElement.style.setProperty('--mc-font-size', baseFontSize + 'px');
+    }
+
+    function resetFontSize() {
+      baseFontSize = 20;
+      document.documentElement.style.setProperty('--mc-font-size', '20px');
+    }
+
+    // 타이머 제어
+    function formatTime(sec) {
+      const m = Math.floor(sec / 60);
+      const s = sec % 60;
+      return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+    }
+
+    function setTimerSec(sec) {
+      clearInterval(timerInterval);
+      isTimerRunning = false;
+      timerSec = sec;
+      document.getElementById('mcTimerDisplay').textContent = formatTime(timerSec);
+      document.getElementById('mcTimerDisplay').classList.remove('urgent');
+      document.getElementById('btnTimerToggle').textContent = '시작';
+    }
+
+    function toggleTimer() {
+      if (isTimerRunning) {
+        clearInterval(timerInterval);
+        isTimerRunning = false;
+        document.getElementById('btnTimerToggle').textContent = '계속';
+      } else {
+        isTimerRunning = true;
+        document.getElementById('btnTimerToggle').textContent = '일시정지';
+        timerInterval = setInterval(() => {
+          timerSec--;
+          const disp = document.getElementById('mcTimerDisplay');
+          disp.textContent = formatTime(Math.max(0, timerSec));
+          if (timerSec <= 60) {
+            disp.classList.add('urgent');
+          }
+          if (timerSec <= 0) {
+            clearInterval(timerInterval);
+            isTimerRunning = false;
+            document.getElementById('btnTimerToggle').textContent = '종료';
+          }
+        }, 1000);
+      }
+    }
+
+    function resetTimer() {
+      clearInterval(timerInterval);
+      isTimerRunning = false;
+      timerSec = 300;
+      document.getElementById('mcTimerDisplay').textContent = '05:00';
+      document.getElementById('mcTimerDisplay').classList.remove('urgent');
+      document.getElementById('btnTimerToggle').textContent = '시작';
+    }
+
+    // 전체화면 토글 & ESC 키 양방향 감지
+    function toggleFullScreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else {
+        document.exitFullscreen().catch(() => {});
+      }
+    }
+
+    function updateFullscreenBtnState() {
+      const btn = document.getElementById('btnFullscreenToggle');
+      if (btn) {
+        if (document.fullscreenElement) {
+          btn.innerHTML = '🗗 창 모드로 복귀 (ESC)';
+          btn.style.background = 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)';
+          btn.style.borderColor = '#fbbf24';
+        } else {
+          btn.innerHTML = '🖥️ 전체화면 확대';
+          btn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+          btn.style.borderColor = '#34d399';
+        }
+      }
+    }
+
+    document.addEventListener('fullscreenchange', updateFullscreenBtnState);
+
+    // 자동 실행 및 3.5초 주기 실시간 갱신
+    window.addEventListener('DOMContentLoaded', () => {
+      loadQnaList();
+      setInterval(loadQnaList, 3500);
+    });
+
+    window.addEventListener('storage', (e) => {
+      if (e.key === 'hvac_qna_list') loadQnaList();
+    });
+  </script>
+</body>
+</html>
