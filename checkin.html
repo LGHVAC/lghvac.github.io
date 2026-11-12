@@ -2045,14 +2045,11 @@
             </div>
           </div>
           <ul class="menu-list">
-            <li class="menu-item" id="menuItemMiniGame" style="color: #f3c448; font-weight: 850;">🎮 점심 미니게임 (10초/26℃)</li>
-            <li class="menu-item" id="menuItemMissionPopup">🎯 오늘의 미션 현황</li>
-            <li class="menu-item" id="menuItemMissions">✨ 오늘의 퀴즈 챌린지</li>
-            <li class="menu-item" id="menuItemSurvey">📋 만족도 설문 참여</li>
-            <li class="menu-item" id="menuItemQna">✍️ 실시간 세션 Q&A</li>
             <li class="menu-item" id="menuItemTimetable">📅 행사 시간표 보기</li>
+            <li class="menu-item" id="menuItemQna">✍️ 실시간 세션 Q&A</li>
+            <li class="menu-item" id="menuItemMissions">✨ 오늘의 퀴즈 챌린지</li>
+            <li class="menu-item" id="menuItemMiniGame" style="color: #f3c448; font-weight: 850;">🎮 점심 미니게임</li>
             <li class="menu-item" id="menuItemMap">🗺️ 행사장 안내 약도</li>
-            <li class="menu-item" id="menuItemHome">🏠 세미나 메인 홈</li>
             <li class="menu-item" id="menuItemKakao">💬 카카오톡 공식 채널</li>
             <li class="menu-item" id="menuItemLogout" style="color: #ff5366;">⏻ 체크아웃 (재입력)</li>
           </ul>
@@ -2359,7 +2356,7 @@
   <!-- =========================================================
        MODAL 2: '오늘의 미션을 확인해 보세요' 팝업
   ========================================================= -->
-  <div class="mission-modal" id="modalMission">
+  <div class="mission-modal" id="modalMission" style="display: none !important;">
     <div class="mission-card">
       <h3>오늘의 미션을 확인해 보세요</h3>
       <p class="desc">세미나 퀴즈 미션을 모두 마치고 클로징 럭키드로우 경품을 받아 보세요!</p>
@@ -3440,6 +3437,38 @@
       }
     }
 
+    function formatUserNameWithTitle(user) {
+      if (!user) return '참석자 님';
+      const name = (user.name || '참석자').trim();
+      const pos = (user.position || user.title || '').trim();
+      if (pos) {
+        return `${name} ${pos}`;
+      }
+      return `${name} 님`;
+    }
+
+    async function syncDashboardGiftBadge() {
+      const dashBadge = document.getElementById('dashGiftBadge');
+      if (!dashBadge) return;
+      const user = getCheckedUser();
+      if (!user || !user.email) return;
+
+      let status = user.giftStatus || 'unclaimed';
+      let receivedAt = user.giftReceivedAt || null;
+
+      if (window.HVAC && HVAC.cloud && HVAC.cloud.getGiftStatus) {
+        try {
+          const fresh = await HVAC.cloud.getGiftStatus(user.email);
+          if (fresh && fresh.giftStatus) {
+            status = fresh.giftStatus;
+            receivedAt = fresh.giftReceivedAt;
+          }
+        } catch (e) {}
+      }
+
+      updateGiftReceiptUI(status, receivedAt);
+    }
+
     function updateGiftReceiptUI(status, receivedAt) {
       const badgeContainer = document.getElementById('giftReceiptStatusBadge');
       const btnConfirm = document.getElementById('btnGiftReceiptConfirm');
@@ -3457,10 +3486,14 @@
         btnConfirm.innerHTML = '✅ 선물 수령완료';
         btnVip.style.display = 'none';
         if (dashBadge) {
-          dashBadge.innerHTML = '✅ 선물 수령완료';
-          dashBadge.style.color = '#34d399';
-          dashBadge.style.borderColor = 'rgba(16, 185, 129, 0.5)';
-          dashBadge.style.background = 'rgba(16, 185, 129, 0.18)';
+          // 수령 완료 시 회색으로 흐리게 처리
+          dashBadge.innerHTML = '🎁 수령완료';
+          dashBadge.style.color = 'rgba(255, 255, 255, 0.45)';
+          dashBadge.style.borderColor = 'rgba(255, 255, 255, 0.15)';
+          dashBadge.style.background = 'rgba(255, 255, 255, 0.05)';
+          dashBadge.style.opacity = '0.45';
+          dashBadge.style.filter = 'grayscale(1)';
+          dashBadge.style.cursor = 'default';
         }
       } else if (status === 'vip') {
         badgeContainer.innerHTML = `<span class="badge-status-vip">👑 VIP 별도수령 완료 ${timeText}</span>`;
@@ -3469,13 +3502,17 @@
         btnVip.disabled = true;
         btnVip.innerHTML = '👑 VIP 별도수령 완료';
         if (dashBadge) {
-          dashBadge.innerHTML = '👑 VIP 별도수령';
-          dashBadge.style.color = '#fbbf24';
-          dashBadge.style.borderColor = 'rgba(245, 158, 11, 0.5)';
-          dashBadge.style.background = 'rgba(245, 158, 11, 0.2)';
+          // VIP 별도수령 완료 시 회색으로 흐리게 처리
+          dashBadge.innerHTML = '👑 VIP 수령완료';
+          dashBadge.style.color = 'rgba(255, 255, 255, 0.45)';
+          dashBadge.style.borderColor = 'rgba(255, 255, 255, 0.15)';
+          dashBadge.style.background = 'rgba(255, 255, 255, 0.05)';
+          dashBadge.style.opacity = '0.45';
+          dashBadge.style.filter = 'grayscale(1)';
+          dashBadge.style.cursor = 'default';
         }
       } else {
-        // 미수령 상태
+        // 미수령 상태: 원본 강조 상태 복원
         badgeContainer.innerHTML = '<span class="badge-status-unclaimed">⚪ 선물 미수령 (운영 데스크 방문 대기)</span>';
         btnConfirm.classList.remove('completed');
         btnConfirm.disabled = false;
@@ -3488,6 +3525,11 @@
         if (dashBadge) {
           dashBadge.innerHTML = '🎁 출석 선물권';
           dashBadge.style.color = '#fbbf24';
+          dashBadge.style.borderColor = 'rgba(245, 158, 11, 0.5)';
+          dashBadge.style.background = 'rgba(245, 158, 11, 0.2)';
+          dashBadge.style.opacity = '1';
+          dashBadge.style.filter = 'none';
+          dashBadge.style.cursor = 'pointer';
         }
       }
     }
@@ -3672,8 +3714,8 @@
         localStorage.setItem('hvac_checkin_list', JSON.stringify(list));
       } catch (e) {}
 
-      // 대시보드 프로필 및 순번 갱신
-      document.getElementById('menuUserName').textContent = name;
+      // 대시보드 프로필 및 순번 갱신 (이름 + " " + 호칭)
+      document.getElementById('menuUserName').textContent = formatUserNameWithTitle(checkinData);
       document.getElementById('menuUserEmail').textContent = email.includes('@') ? email : email + '@lge.com';
       document.getElementById('dashAttendeeSeq').textContent = 'No. ' + String(seq).padStart(3, '0');
       document.getElementById('dashAttendeeId').textContent = checkinId;
@@ -4702,7 +4744,7 @@
               return;
             }
 
-            document.getElementById('menuUserName').textContent = parsed.name;
+            document.getElementById('menuUserName').textContent = formatUserNameWithTitle(parsed);
             document.getElementById('menuUserEmail').textContent = parsed.email.includes('@') ? parsed.email : parsed.email + '@lge.com';
 
             let seq = parsed.seq;
