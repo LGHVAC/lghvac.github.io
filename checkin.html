@@ -901,6 +901,251 @@
       transition: font-size 0.18s ease;
     }
 
+    .speaker-clickable {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      padding: 4px 10px 4px 6px;
+      margin-left: -6px;
+      border-radius: 10px;
+      background: rgba(16, 185, 129, 0.08);
+      border: 1px solid rgba(16, 185, 129, 0.25);
+    }
+
+    .speaker-clickable:hover {
+      background: rgba(16, 185, 129, 0.18);
+      border-color: rgba(16, 185, 129, 0.5);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    .spk-txt-link {
+      color: #ffffff;
+      font-weight: 850;
+      letter-spacing: -0.01em;
+    }
+
+    .speaker-clickable:hover .spk-txt-link {
+      color: #34d399;
+    }
+
+    .spk-badge-pill {
+      font-size: 11px;
+      font-weight: 800;
+      background: rgba(16, 185, 129, 0.22);
+      border: 1px solid rgba(16, 185, 129, 0.5);
+      color: #6ee7b7;
+      padding: 2px 7px;
+      border-radius: 99px;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      letter-spacing: -0.02em;
+    }
+
+    /* 강사 프로필 상세 모달 */
+    .speaker-profile-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.82);
+      backdrop-filter: blur(8px);
+      z-index: 220;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .speaker-profile-modal.show {
+      display: flex;
+      animation: modalFadeIn 0.22s ease-out;
+    }
+
+    .speaker-profile-card {
+      background: linear-gradient(165deg, #102418 0%, #08140c 100%);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      border-radius: 20px;
+      max-width: 440px;
+      width: 100%;
+      padding: 22px 20px 20px;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.95), 0 0 35px rgba(16, 185, 129, 0.2);
+      color: #fff;
+      max-height: 90vh;
+      overflow-y: auto;
+      scrollbar-width: thin;
+    }
+
+    .spk-modal-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+
+    .spk-badge {
+      background: #022c22;
+      border: 1px solid #10b981;
+      color: #34d399;
+      font-size: 10.5px;
+      font-weight: 900;
+      letter-spacing: 0.08em;
+      padding: 3px 9px;
+      border-radius: 99px;
+    }
+
+    .spk-close-btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #cbd5e1;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      font-size: 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+
+    .spk-close-btn:hover {
+      background: rgba(239, 68, 68, 0.2);
+      border-color: #ef4444;
+      color: #fff;
+    }
+
+    .spk-modal-hero {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .spk-hero-info {
+      flex: 1;
+    }
+
+    .spk-org {
+      font-size: 12.5px;
+      color: #94a3b8;
+      margin-bottom: 4px;
+      font-weight: 700;
+    }
+
+    .spk-name {
+      font-size: 21px;
+      font-weight: 900;
+      color: #ffffff;
+      margin-bottom: 6px;
+      letter-spacing: -0.02em;
+    }
+
+    .spk-session-tag {
+      font-size: 11px;
+      font-weight: 800;
+      color: #fbbf24;
+      background: rgba(245, 158, 11, 0.15);
+      border: 1px solid rgba(245, 158, 11, 0.35);
+      padding: 2px 8px;
+      border-radius: 6px;
+      display: inline-block;
+    }
+
+    .spk-photo-wrap {
+      width: 82px;
+      height: 82px;
+      border-radius: 16px;
+      overflow: hidden;
+      border: 2px solid rgba(16, 185, 129, 0.5);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+      flex-shrink: 0;
+      background: #000;
+    }
+
+    .spk-photo-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .spk-topic-box {
+      margin-top: 14px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-left: 3px solid #10b981;
+      padding: 10px 14px;
+      border-radius: 8px;
+    }
+
+    .spk-topic-lbl {
+      font-size: 10.5px;
+      font-weight: 800;
+      color: #34d399;
+      letter-spacing: 0.05em;
+      margin-bottom: 3px;
+    }
+
+    .spk-topic-title {
+      font-size: 13.5px;
+      font-weight: 850;
+      color: #f1f5f9;
+      line-height: 1.4;
+    }
+
+    .spk-bio-section {
+      margin-top: 14px;
+    }
+
+    .spk-bio-title {
+      font-size: 12px;
+      font-weight: 850;
+      color: #fbbf24;
+      margin-bottom: 8px;
+      letter-spacing: -0.01em;
+    }
+
+    .spk-bio-list {
+      margin: 0;
+      padding-left: 18px;
+      font-size: 12.5px;
+      line-height: 1.6;
+      color: rgba(255, 255, 255, 0.85);
+    }
+
+    .spk-bio-list li {
+      margin-bottom: 4px;
+    }
+
+    .spk-modal-foot {
+      margin-top: 18px;
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .btn-spk-close {
+      width: 100%;
+      padding: 10px;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #fff;
+      font-size: 13.5px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-spk-close:hover {
+      background: #10b981;
+      border-color: #10b981;
+      color: #041008;
+    }
+
     .session-bullets {
       list-style: none;
       padding: 0;
@@ -2396,6 +2641,45 @@
   </div>
 
   <!-- =========================================================
+       강사(연사) 프로필 상세 모달 (NEW)
+  ========================================================= -->
+  <div class="speaker-profile-modal" id="modalSpeakerProfile" style="display: none;">
+    <div class="speaker-profile-card">
+      <div class="spk-modal-head">
+        <span class="spk-badge">EXPERT SPEAKER</span>
+        <button type="button" class="spk-close-btn" onclick="closeSpeakerProfileModal()" aria-label="닫기">✕</button>
+      </div>
+
+      <div class="spk-modal-hero">
+        <div class="spk-hero-info">
+          <p class="spk-org" id="spkModalOrg">서울대학교</p>
+          <h3 class="spk-name" id="spkModalName">여명석 교수</h3>
+          <span class="spk-session-tag" id="spkModalSessionTag">Keynote Session 1</span>
+        </div>
+        <div class="spk-photo-wrap">
+          <img id="spkModalPhoto" src="./assets/yeo-myungseok.jpg" alt="강사 사진">
+        </div>
+      </div>
+
+      <div class="spk-topic-box">
+        <div class="spk-topic-lbl">강연 주제</div>
+        <div class="spk-topic-title" id="spkModalTopic">국내주거난방의 변천과 현황</div>
+      </div>
+
+      <div class="spk-bio-section">
+        <div class="spk-bio-title">주요 약력 및 활동</div>
+        <ul class="spk-bio-list" id="spkModalBioList">
+          <!-- JS 동적 렌더링 -->
+        </ul>
+      </div>
+
+      <div class="spk-modal-foot">
+        <button type="button" class="btn-spk-close" onclick="closeSpeakerProfileModal()">닫기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================
        MODAL 3: 행사 시간표 바텀시트
   ========================================================= -->
   <div class="timetable-modal" id="modalTimetable">
@@ -3437,6 +3721,161 @@
       }
     }
 
+    // =========================================================
+    // 강사(연사) 6인 상세 프로필 데이터 및 팝업 제어
+    // =========================================================
+    const SPEAKER_PROFILES = {
+      'yeo': {
+        key: 'yeo',
+        name: '여명석 교수',
+        org: '서울대학교',
+        topic: '국내주거난방의 변천과 현황',
+        photo: './assets/yeo-myungseok.jpg',
+        sessionTag: 'Keynote Session 1',
+        bio: [
+          "'27년 대한설비공학회장",
+          "현) 서울대학교 공과대학 건축학과 교수",
+          "현) 서울대학교 탄소중립 캠퍼스 추진단 단장",
+          "전) 중앙환경분쟁조정위원회 위원",
+          "전) 서울대학교 건축학과장"
+        ]
+      },
+      'lee_sh': {
+        key: 'lee_sh',
+        name: '이성혁 교수',
+        org: '중앙대학교',
+        topic: '고밀도 AI 서버의 액체냉각 및 데이터센터 열관리 기술',
+        photo: './assets/lee-sunghyuk.jpg',
+        sessionTag: 'Keynote Session 2',
+        bio: [
+          "현) 중앙대학교 기계공학부 교수",
+          "전) 대한기계학회 열공학부문 회장",
+          "전) 중앙대학교 차세대에너지안전연구소 소장",
+          "전) 중앙대학교 기계공학부 학과장"
+        ]
+      },
+      'cho': {
+        key: 'cho',
+        name: '조홍종 교수',
+        org: '단국대학교',
+        topic: '국내 전력시장 현황 및 AIDC 전력공급 방안',
+        photo: './assets/cho-hongjong.jpg',
+        sessionTag: 'Keynote Session 3',
+        bio: [
+          "현) 한국자원경제학회 회장",
+          "현) 국가기후위기대응위원회 위원",
+          "현) 산업통상부 정책자문위원회 위원",
+          "현) 제12차 전력수급기본계획 위원",
+          "현) 전력비용평가위원회 위원"
+        ]
+      },
+      'yoo': {
+        key: 'yoo',
+        name: '유정현 수석',
+        org: 'LHRI (토지주택연구원)',
+        topic: '헬로우 히트펌프, 굿바이 보일러',
+        photo: './assets/yoo-junghyun.jpg',
+        sessionTag: 'Insight Session 1',
+        bio: [
+          "현) LH 토지주택연구원 수석연구원",
+          "현) 국가 건설기준위원회 위원(기계부문)",
+          "현) 대한설비공학회 ZEB 전문위원",
+          "제로에너지건축물과 공동주택 에너지시스템 연구",
+          "공기열원 히트펌프 및 분산에너지 연구"
+        ]
+      },
+      'oh': {
+        key: 'oh',
+        name: '오영훈 팀장',
+        org: 'ES에너지컨설팅팀',
+        topic: 'Retrofit 및 미진입시장 공략을 위한 차별화 솔루션',
+        photo: './assets/oh-younghoon.jpg',
+        sessionTag: 'Insight Session 2',
+        bio: [
+          "현) ES사업본부 ES에너지컨설팅팀 팀장",
+          "대형 상업용 빌딩·산업 플랜트·데이터센터 고효율 공조 진단 총괄",
+          "고객 맞춤형 HVAC 엔지니어링 최적화 및 OPEX 절감 컨설팅 수행",
+          "탄소중립 ESCO 및 고효율 열원 개보수 실증 프로젝트 리드"
+        ]
+      },
+      'lee_jm': {
+        key: 'lee_jm',
+        name: '이정모 관장',
+        org: '과학커뮤니케이터',
+        topic: '테라포밍 또는 찬란한 멸종-그래도 우리는 지구에 살아야 한다',
+        photo: './assets/lee-jungmo.jpg',
+        sessionTag: 'Special Lecture',
+        bio: [
+          "현) 과학 커뮤니케이터 및 과학관 전문가",
+          "전) 국립과천과학관 관장",
+          "전) 서울시립과학관 관장",
+          "전) 서대문자연사박물관 관장",
+          "저서 《찬란한 멸종》, 《공생 멸종 진화》 등 다수 집필 및 강연"
+        ]
+      }
+    };
+
+    function findSpeakerProfile(text) {
+      if (!text) return null;
+      const t = String(text);
+      if (t.includes('여명석')) return SPEAKER_PROFILES['yeo'];
+      if (t.includes('이성혁')) return SPEAKER_PROFILES['lee_sh'];
+      if (t.includes('조홍종')) return SPEAKER_PROFILES['cho'];
+      if (t.includes('유정현')) return SPEAKER_PROFILES['yoo'];
+      if (t.includes('오영훈')) return SPEAKER_PROFILES['oh'];
+      if (t.includes('이정모')) return SPEAKER_PROFILES['lee_jm'];
+      return null;
+    }
+
+    function openSpeakerProfileModal(key) {
+      const spk = SPEAKER_PROFILES[key];
+      if (!spk) return;
+
+      const orgEl = document.getElementById('spkModalOrg');
+      const nameEl = document.getElementById('spkModalName');
+      const tagEl = document.getElementById('spkModalSessionTag');
+      const topicEl = document.getElementById('spkModalTopic');
+      const photoEl = document.getElementById('spkModalPhoto');
+      const ulEl = document.getElementById('spkModalBioList');
+
+      if (orgEl) orgEl.textContent = spk.org;
+      if (nameEl) nameEl.textContent = spk.name;
+      if (tagEl) tagEl.textContent = spk.sessionTag;
+      if (topicEl) topicEl.textContent = spk.topic;
+      if (photoEl) {
+        photoEl.src = spk.photo;
+        photoEl.alt = spk.name + ' 강사 사진';
+      }
+      if (ulEl) {
+        ulEl.innerHTML = spk.bio.map(b => '<li>' + escapeHtml(b) + '</li>').join('');
+      }
+
+      const modal = document.getElementById('modalSpeakerProfile');
+      if (modal) {
+        modal.style.display = 'flex';
+        modal.classList.add('show');
+      }
+    }
+
+    function closeSpeakerProfileModal() {
+      const modal = document.getElementById('modalSpeakerProfile');
+      if (modal) {
+        modal.classList.remove('show');
+        modal.style.display = 'none';
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const modalSpk = document.getElementById('modalSpeakerProfile');
+      if (modalSpk) {
+        modalSpk.addEventListener('click', (e) => {
+          if (e.target === modalSpk) {
+            closeSpeakerProfileModal();
+          }
+        });
+      }
+    });
+
     function formatUserNameWithTitle(user) {
       if (!user) return '참석자 님';
       const name = (user.name || '참석자').trim();
@@ -4058,10 +4497,21 @@
         const cleanSpk = (s.speaker || '').trim();
         if (!cleanSpk || cleanSpk === '-') {
           sSpeaker.style.display = 'none';
-          sSpeaker.textContent = '';
+          sSpeaker.innerHTML = '';
         } else {
           sSpeaker.style.display = '';
-          sSpeaker.textContent = cleanSpk;
+          const spkProfile = findSpeakerProfile(cleanSpk);
+          if (spkProfile) {
+            // 강사 프로필 팝업이 가능한 연사인 경우 클릭 인터랙션 칩 렌더링
+            sSpeaker.innerHTML = `
+              <span class="speaker-clickable" onclick="openSpeakerProfileModal('${spkProfile.key}')" title="강사 프로필 보기">
+                <span class="spk-txt-link">${escapeHtml(cleanSpk)}</span>
+                <span class="spk-badge-pill">👤 프로필 ↗</span>
+              </span>
+            `;
+          } else {
+            sSpeaker.textContent = cleanSpk;
+          }
         }
       }
 
