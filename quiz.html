@@ -259,7 +259,7 @@
     }
 
     .progress-bar {
-      width: 100px;
+      width: 120px;
       height: 8px;
       background: rgba(255, 255, 255, 0.12);
       border-radius: 99px;
@@ -275,23 +275,6 @@
       transition: width 0.35s ease;
     }
 
-    .btn-reset-quiz {
-      background: rgba(255, 255, 255, 0.08);
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      color: rgba(255, 255, 255, 0.75);
-      font-size: 11px;
-      font-weight: 700;
-      padding: 5px 9px;
-      border-radius: 8px;
-      cursor: pointer;
-      white-space: nowrap;
-      font-family: inherit;
-    }
-
-    .btn-reset-quiz:hover {
-      background: rgba(255, 255, 255, 0.16);
-      color: #fff;
-    }
 
     /* 퀴즈 문제 카드 */
     .quiz-card {
@@ -1189,7 +1172,6 @@
           <div class="progress-bar">
             <div class="progress-fill" id="progressFill"></div>
           </div>
-          <button class="btn-reset-quiz" id="btnResetQuiz" type="button" title="퀴즈 풀이 초기화">🔄 다시 풀기</button>
         </div>
       </div>
     </div>
@@ -2346,39 +2328,6 @@
     initSessionTabsAndRouting();
     updateQuizScoringRuleBanner();
     initCaptureProtection();
-
-
-    // 퀴즈 다시 풀기 (초기화)
-    document.getElementById('btnResetQuiz').addEventListener('click', function () {
-      if (Object.keys(userAnswers).length === 0) {
-        showToast('아직 풀이한 퀴즈가 없습니다.');
-        return;
-      }
-      if (!confirm('퀴즈 풀이 기록을 초기화하고 처음부터 다시 푸시겠습니까?')) return;
-      userAnswers = {};
-      try {
-        localStorage.removeItem('hvac_quiz_answers');
-        localStorage.setItem('hvac_quiz_score', '0');
-      } catch (e) {}
-
-      document.querySelectorAll('.quiz-card').forEach(card => {
-        card.classList.remove('answered-correct', 'answered-wrong', 'card-retrying', 'card-shake');
-        const statusPill = card.querySelector('.quiz-status-pill');
-        if (statusPill) {
-          statusPill.textContent = '';
-          statusPill.className = 'quiz-status-pill';
-        }
-        const explanation = card.querySelector('.quiz-explanation');
-        if (explanation) explanation.classList.remove('show');
-        card.querySelectorAll('.quiz-option-btn').forEach(b => {
-          b.disabled = false;
-          b.classList.remove('selected-correct', 'selected-wrong', 'option-wrong-attempt');
-        });
-      });
-
-      updateQuizSummary();
-      showToast('🔄 퀴즈가 초기화되었습니다. 다시 도전해 보세요!');
-    });
 
     // 만족도 설문 사전 오픈 체크 및 상태 연동
     const btnSurveySubmit = document.getElementById('btnSurveySubmit');
