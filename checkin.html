@@ -3518,6 +3518,18 @@
         return;
       }
 
+      // 🚨 사전 중복 체크: 동일한 이메일로 이미 다른 기기에서 체크인되었거나 관리자가 등록한 경우 즉시 안내
+      try {
+        const localCheckins = (window.HVAC && window.HVAC.read && window.HVAC.read('hvac_checkin_list')) || JSON.parse(localStorage.getItem('hvac_checkin_list') || '[]');
+        const existInLocal = localCheckins.find(it => (it.email || '').toLowerCase().replace('@lge.com', '').trim() === cleanEmail);
+        const myDev = (window.HVAC && window.HVAC.getDeviceId) ? window.HVAC.getDeviceId() : 'dev_local';
+        if (existInLocal && ((existInLocal.activeDeviceId && existInLocal.activeDeviceId !== myDev) || existInLocal.isManual || existInLocal.regMethod === 'manual')) {
+          const reason = existInLocal.isManual ? '관리자 출석부에 의해 이미 수동 등록' : '다른 기기에서 이미 출석 체크';
+          alert(`🚫 [출석 체크 불가 - 중복 체크인 방지]\n\n'${existInLocal.name} (${cleanEmail})' 님은 ${reason}이 완료되었습니다.\n\n• 발급 순번: No. ${existInLocal.seq}\n• 등록 일시: ${existInLocal.checkinTime || '확인됨'}\n\n1인 1기기 보안 정책에 따라 동일한 이름과 이메일로는 다른 기기에서 재체크인할 수 없습니다.\n안내 데스크로 문의해 주시기 바랍니다.`);
+          return;
+        }
+      } catch (e) {}
+
       modalValEmail.textContent = cleanEmail;
 
       // 마스터 Roster 및 운영진 확인
@@ -4212,8 +4224,25 @@
         }
       }
 
+      // 🚨 중복 체크인 차단 응답 처리
+      if (checkinData && (checkinData.alreadyCheckedIn || checkinData.error === 'DEVICE_DUPLICATE_BLOCKED')) {
+        const adminNote = checkinData.isManual ? '관리자 출석부에 의해 이미 수동 등록된 계정입니다.' : '이미 다른 기기에서 출석 체크가 완료되었습니다.';
+        alert(`🚫 [출석 체크 불가 - 중복 체크인 방지]\n\n이미 출석 등록이 완료된 참석자입니다.\n(${adminNote})\n\n• 발급 순번: No. ${checkinData.seq} (${checkinData.checkinId || ''})\n• 등록 성명: ${checkinData.name}\n• 등록 일시: ${checkinData.checkinTime || '등록 완료'}\n\n1인 1기기 세션 보안 및 중복 체크인 방지 정책에 따라, 동일한 이름과 이메일로는 다른 기기에서 재체크인이 불가합니다.\n\n안내 데스크로 문의해 주시기 바랍니다.`);
+        return;
+      }
+
       // 2) 오프라인 또는 로컬 테스트 모드 fallback
       if (!checkinData) {
+        if (existingIdx >= 0) {
+          const exist = list[existingIdx];
+          const myDev = (window.HVAC && window.HVAC.getDeviceId) ? window.HVAC.getDeviceId() : 'dev_local';
+          if ((exist.activeDeviceId && exist.activeDeviceId !== myDev) || exist.isManual || exist.regMethod === 'manual') {
+            const adminNote = exist.isManual ? '관리자 출석부에 의해 이미 수동 등록된 계정입니다.' : '이미 다른 기기에서 출석 체크가 완료되었습니다.';
+            alert(`🚫 [출석 체크 불가 - 중복 체크인 방지]\n\n이미 출석 등록이 완료된 참석자입니다.\n(${adminNote})\n\n• 발급 순번: No. ${exist.seq}\n• 등록 성명: ${exist.name}\n• 등록 일시: ${exist.checkinTime || '-'}\n\n1인 1기기 세션 보안 정책에 따라 동일한 이름과 이메일로는 다른 기기에서 재체크인이 불가합니다.\n안내 데스크로 문의해 주시기 바랍니다.`);
+            return;
+          }
+        }
+
         const isOp = currentCheckinMeta.isOperator || ((window.HVAC && window.HVAC.isOperatorEmail) ? window.HVAC.isOperatorEmail(cleanEmail) : false);
 
         // 카테고리 판별 (사전: 1~199 / 현장추가: 201~299 / 운영진: 301~499 / 외부: 501~699 / VIP: 701~799 / 하이엠: 901~999)

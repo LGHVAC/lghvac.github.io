@@ -1080,6 +1080,25 @@
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (existing) {
         if (existing && existing.seq) {
+          var curDeviceId = getDeviceId();
+          var prevDeviceId = existing.activeDeviceId;
+
+          // 🚨 다른 기기 중복 재체크인 차단: 이미 다른 기기에서 체크인되었거나 관리자에 의해 수동 등록된 경우 차단
+          if ((prevDeviceId && prevDeviceId !== curDeviceId) || existing.isManual || existing.regMethod === 'manual') {
+            return {
+              error: 'DEVICE_DUPLICATE_BLOCKED',
+              alreadyCheckedIn: true,
+              seq: existing.seq,
+              checkinId: existing.checkinId || ('HVAC-' + String(existing.seq).padStart(3, '0')),
+              name: existing.name,
+              email: existing.email,
+              checkinTime: existing.checkinTime,
+              regMethod: existing.regMethod,
+              isManual: !!(existing.isManual || existing.regMethod === 'manual'),
+              message: '동일한 이름과 이메일로는 다른 기기에서 중복 체크인할 수 없습니다.'
+            };
+          }
+
           var updated = Object.assign({}, existing, attendee, {
             seq: existing.seq,
             checkinId: existing.checkinId || ('HVAC-' + String(existing.seq).padStart(3, '0')),
@@ -1087,7 +1106,7 @@
             isOperator: isOp,
             type: isOp ? 'operator' : (existing.type || 'walkin'),
             sessionToken: newSessionToken,
-            activeDeviceId: getDeviceId(),
+            activeDeviceId: curDeviceId,
             activeDeviceType: getDeviceType(),
             lastActiveAt: Date.now(),
             isMilestoneWinner: !!existing.isMilestoneWinner,
