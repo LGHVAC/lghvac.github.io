@@ -415,84 +415,151 @@
       return true; // 사전등록, 초대(VIP), 하이엠 등 증정 대상
     }
 
-    function getSessionQuizTop3(targetSNum) {
+    // ---------------------------------------------------------
+    // 전체 세션 퀴즈 Top 3 산정 (이전 세션 당첨자 중복 제외 및 차순위 자동 배정)
+    // ---------------------------------------------------------
+    function computeAllSessionQuizTop3() {
       const subs = getQuizSubmissions();
       const quizList = getQuizConfig();
-      const candidates = [];
 
-      subs.forEach(sub => {
-        const att = findCheckinAttendeeInfo(sub.name, sub.email);
-        if (!isQuizWinnerEligible(att, sub)) return;
+      const sessionNums = [0, 1, 2, 3, 4, 5];
+      const result = {
+        bySession: {},
+        skippedBySession: {},
+        winnersEmailMap: {}
+      };
 
-        let score = 0;
-        let answered = 0;
+      const wonEmailSet = new Set();
+      const wonCheckinIdSet = new Set();
 
-        if (sub.sessionScores && sub.sessionScores[targetSNum] !== undefined) {
-          score = Number(sub.sessionScores[targetSNum]) || 0;
-          answered = Number(sub.sessionAnswered && sub.sessionAnswered[targetSNum]) || (score > 0 ? 1 : 0);
-        } else if (sub.answers) {
-          const sessQuestions = quizList.filter(q => Number(q.sessionNum) === targetSNum);
-          sessQuestions.forEach(q => {
-            const st = sub.answers[q.id];
-            if (st && st.isDone) {
-              answered++;
-              score += (Number(st.score) || 0);
+      sessionNums.forEach(sNum => {
+        result.bySession[sNum] = [];
+        result.skippedBySession[sNum] = [];
+
+        const candidates = [];
+        subs.forEach(sub => {
+          const att = findCheckinAttendeeInfo(sub.name, sub.email);
+          if (!isQuizWinnerEligible(att, sub)) return;
+
+          let score = 0;
+          let answered = 0;
+
+          if (sub.sessionScores && sub.sessionScores[sNum] !== undefined) {
+            score = Number(sub.sessionScores[sNum]) || 0;
+            answered = Number(sub.sessionAnswered && sub.sessionAnswered[sNum]) || (score > 0 ? 1 : 0);
+          } else if (sub.answers) {
+            const sessQuestions = quizList.filter(q => Number(q.sessionNum) === sNum);
+            sessQuestions.forEach(q => {
+              const st = sub.answers[q.id];
+              if (st && st.isDone) {
+                answered++;
+                score += (Number(st.score) || 0);
+              }
+            });
+          } else {
+            const sessQuestions = quizList.filter(q => Number(q.sessionNum) === sNum);
+            if (sessQuestions.length > 0 && Number(sub.score) > 0) {
+              score = Math.round((Number(sub.score) / (quizList.length || 11)) * sessQuestions.length * 10) / 10;
+              answered = sessQuestions.length;
             }
+          }
+
+          if (score <= 0 && answered === 0) return;
+
+          let ts = sub.timestamp || 0;
+          if (!ts && sub.updatedAt) {
+            try {
+              const todayStr = new Date().toISOString().slice(0, 10);
+              ts = new Date(`${todayStr} ${sub.updatedAt}`).getTime();
+            } catch (e) {
+              ts = Date.now();
+            }
+          }
+          if (!ts) ts = 9999999999999;
+
+          const seq = (att && att.seq) || sub.seq || null;
+          const checkinId = (att && att.checkinId) || sub.checkinId || (seq ? ('HVAC-' + String(seq).padStart(3, '0')) : '-');
+          const name = (att && att.name) || sub.name || '참석자';
+          const dept = (att && (att.dept || att.org)) || sub.dept || 'ES엔지니어링담당';
+          const category = (att && (att.category || att.type)) || sub.category || '사전등록';
+          const email = (att && att.email) || sub.email || '';
+
+          candidates.push({
+            name,
+            seq,
+            checkinId,
+            dept,
+            category,
+            email,
+            score,
+            timestamp: ts,
+            timeText: sub.updatedAt || new Date(ts).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
           });
-        } else {
-          const sessQuestions = quizList.filter(q => Number(q.sessionNum) === targetSNum);
-          if (sessQuestions.length > 0 && Number(sub.score) > 0) {
-            score = Math.round((Number(sub.score) / (quizList.length || 11)) * sessQuestions.length * 10) / 10;
-            answered = sessQuestions.length;
-          }
-        }
-
-        if (score <= 0 && answered === 0) return;
-
-        let ts = sub.timestamp || 0;
-        if (!ts && sub.updatedAt) {
-          try {
-            const todayStr = new Date().toISOString().slice(0, 10);
-            ts = new Date(`${todayStr} ${sub.updatedAt}`).getTime();
-          } catch (e) {
-            ts = Date.now();
-          }
-        }
-        if (!ts) ts = 9999999999999;
-
-        const seq = (att && att.seq) || sub.seq || null;
-        const checkinId = (att && att.checkinId) || sub.checkinId || (seq ? ('HVAC-' + String(seq).padStart(3, '0')) : '-');
-        const name = (att && att.name) || sub.name || '참석자';
-        const dept = (att && (att.dept || att.org)) || sub.dept || 'ES엔지니어링담당';
-        const category = (att && (att.category || att.type)) || sub.category || '사전등록';
-
-        candidates.push({
-          name,
-          seq,
-          checkinId,
-          dept,
-          category,
-          score,
-          timestamp: ts,
-          timeText: sub.updatedAt || new Date(ts).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
         });
+
+        // 정렬: ① 높은 점수 > ② 빠른 제출 시각 > ③ 빠른 순번
+        candidates.sort((a, b) => {
+          if (b.score !== a.score) return b.score - a.score;
+          if (a.timestamp !== b.timestamp) return a.timestamp - b.timestamp;
+          return (a.seq || 9999) - (b.seq || 9999);
+        });
+
+        // 차순위 승계 필터링: 이미 이전 세션에서 당첨된 참가자는 중복 수령 방지를 위해 건너뛰고 차순위자가 승계
+        for (let i = 0; i < candidates.length; i++) {
+          const cand = candidates[i];
+          const cleanEmail = (cand.email || '').toLowerCase().trim().replace('@lge.com', '');
+          const cId = (cand.checkinId || '').trim();
+
+          const isAlreadyWon = (cleanEmail && wonEmailSet.has(cleanEmail)) || (cId && cId !== '-' && wonCheckinIdSet.has(cId));
+
+          if (isAlreadyWon) {
+            result.skippedBySession[sNum].push({
+              name: cand.name,
+              email: cand.email,
+              score: cand.score,
+              originalRank: i + 1,
+              reason: '이전 세션 중복 당첨 제외'
+            });
+            continue; // 차순위자에게 승계
+          }
+
+          result.bySession[sNum].push(cand);
+          if (cleanEmail) wonEmailSet.add(cleanEmail);
+          if (cId && cId !== '-') wonCheckinIdSet.add(cId);
+
+          const winRank = result.bySession[sNum].length;
+          if (cleanEmail) {
+            result.winnersEmailMap[cleanEmail] = {
+              sessionNum: sNum,
+              rank: winRank,
+              name: cand.name,
+              score: cand.score
+            };
+          }
+
+          if (result.bySession[sNum].length >= 3) {
+            break;
+          }
+        }
       });
 
-      // 정렬: ① 높은 점수 > ② 빠른 제출 시각
-      candidates.sort((a, b) => {
-        if (b.score !== a.score) return b.score - a.score;
-        return a.timestamp - b.timestamp;
-      });
+      return result;
+    }
 
-      return candidates.slice(0, 3);
+    function getSessionQuizTop3(targetSNum) {
+      const all = computeAllSessionQuizTop3();
+      return all.bySession[Number(targetSNum)] || [];
     }
 
     function loadQuizWinners(showFeedback = false) {
       const container = document.getElementById('quizSessionWinnersGrid');
       if (!container) return;
 
+      const allData = computeAllSessionQuizTop3();
+
       container.innerHTML = QUIZ_SESSION_INFO.map(sess => {
-        const top3 = getSessionQuizTop3(sess.num);
+        const top3 = allData.bySession[sess.num] || [];
+        const skipped = allData.skippedBySession[sess.num] || [];
         let itemsHtml = '';
 
         if (top3.length === 0) {
@@ -526,6 +593,14 @@
               </div>
             `;
           }).join('');
+
+          if (skipped.length > 0) {
+            itemsHtml += `
+              <div style="margin-top: 8px; padding: 6px 10px; background: rgba(245,158,11,0.1); border: 1px dashed rgba(245,158,11,0.35); border-radius: 6px; font-size: 11px; color: #fbbf24;">
+                ℹ️ <strong>중복 방지 차순위 승계:</strong> 이전 세션 당첨자 ${skipped.map(s => escapeHtml(s.name)).join(', ')} 님 제외 후 차순위자 자동 배정
+              </div>
+            `;
+          }
         }
 
         return `
