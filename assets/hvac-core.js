@@ -1064,13 +1064,14 @@
     var isOp = isOperatorEmail(cleanEmail) || !!attendee.isOperator;
     var newSessionToken = 'tok_' + getDeviceId() + '_' + Date.now();
 
-    // 카테고리 결정: 운영진(300번대) / 외부(500번대) / VIP(700번대) / 사전등록,현장(1번대)
+    // 카테고리 결정: 운영진(300번대) / 외부(500번대) / VIP(700번대) / 하이엠(900번대) / 현장추가(200번대) / 사전등록(1번대)
     var cat = attendee.category;
     if (!cat) {
       if (isOp || attendee.type === 'operator') cat = 'operator';
+      else if (String(attendee.dept || '').includes('하이엠') || String(attendee.position || '').includes('하이엠')) cat = 'him';
       else if (String(attendee.dept || '').includes('사외') || String(attendee.position || '').includes('강사') || String(attendee.position || '').includes('교수') || String(attendee.dept || '').includes('외부')) cat = 'external';
       else if (String(attendee.dept || '').includes('VIP') || String(attendee.position || '').includes('초대')) cat = 'vip';
-      else if (attendee.type === 'pre' || attendee.type === 'matched') cat = 'pre';
+      else if (attendee.type === 'pre' || attendee.type === 'matched' || attendee.type === 'pre_registered') cat = 'pre';
       else cat = 'walkin';
     }
 
@@ -1102,10 +1103,13 @@
           });
         }
 
-        // 2) 신규 체크인: 대역별(1~299, 301~499, 501~699, 701~899) ETag CAS 트랜잭션으로 원자적 순번 증가
+        // 2) 신규 체크인: 대역별(사전 1~199, 현장 201~299, 운영 301~499, 외부 501~699, VIP 701~799, 하이엠 901~999) ETag CAS 트랜잭션으로 원자적 순번 증가
         var baseOffset = 0;
         var counterSubPath = 'checkins/seqCounter';
-        if (cat === 'operator') {
+        if (cat === 'walkin') {
+          baseOffset = 200;
+          counterSubPath = 'checkins/seqCounter_walkin';
+        } else if (cat === 'operator') {
           baseOffset = 300;
           counterSubPath = 'checkins/seqCounter_operator';
         } else if (cat === 'external') {
@@ -1114,6 +1118,9 @@
         } else if (cat === 'vip') {
           baseOffset = 700;
           counterSubPath = 'checkins/seqCounter_vip';
+        } else if (cat === 'him') {
+          baseOffset = 900;
+          counterSubPath = 'checkins/seqCounter_him';
         }
 
         var counterUrl = cloudPath(counterSubPath);
@@ -1187,15 +1194,19 @@
                 return String(r.email || '').toLowerCase().replace('@lge.com', '').trim() === cleanEmail;
               });
 
-              var checkinType = isOp ? 'operator' : (rosterMatch ? 'pre_registered' : (attendee.type || 'walkin'));
+              var checkinType = isOp ? 'operator' : (rosterMatch ? (rosterMatch.type || 'pre_registered') : (attendee.type || 'walkin'));
               var position = attendee.position || (rosterMatch ? (rosterMatch.position || rosterMatch.title || '') : '');
               var dept = attendee.dept || (rosterMatch ? (rosterMatch.dept || '') : '');
               var empNo = attendee.empNo || (rosterMatch ? (rosterMatch.empNo || '') : '');
+              var resolvedCat = attendee.category || (rosterMatch ? (rosterMatch.category || rosterMatch.regMethod) : cat);
+              var resolvedReg = attendee.regMethod || (rosterMatch ? (rosterMatch.regMethod || 'pre') : 'walkin');
 
               var record = Object.assign({}, attendee, {
                 seq: seq,
                 checkinId: 'HVAC-' + String(seq).padStart(3, '0'),
                 cleanEmail: cleanEmail,
+                category: resolvedCat,
+                regMethod: resolvedReg,
                 isOperator: isOp,
                 type: checkinType,
                 position: position,
@@ -1228,13 +1239,32 @@
     var c = getCloudConfig();
     if (!c || !window.fetch) return Promise.resolve(false);
     var itemsMap = {};
-    var maxSeq = 0;
+    var maxPre = 0;
+    var maxWalkin = 200;
+    var maxOp = 300;
+    var maxExt = 500;
+    var maxVip = 700;
+    var maxHim = 900;
     (list || []).forEach(function (item) {
       var k = String(item.email || ('u_' + item.seq)).toLowerCase().replace('@lge.com', '').replace(/[.#$\[\]\/]/g, '_');
       itemsMap[k] = item;
-      if (item.seq && item.seq > maxSeq) maxSeq = Number(item.seq);
+      var s = Number(item.seq) || 0;
+      if (s >= 900 && s < 1000 && s > maxHim) maxHim = s;
+      else if (s >= 700 && s < 900 && s > maxVip) maxVip = s;
+      else if (s >= 500 && s < 700 && s > maxExt) maxExt = s;
+      else if (s >= 300 && s < 500 && s > maxOp) maxOp = s;
+      else if (s >= 200 && s < 300 && s > maxWalkin) maxWalkin = s;
+      else if (s > 0 && s < 200 && s > maxPre) maxPre = s;
     });
-    var body = { items: itemsMap, seqCounter: maxSeq };
+    var body = {
+      items: itemsMap,
+      seqCounter: maxPre,
+      seqCounter_walkin: maxWalkin,
+      seqCounter_operator: maxOp,
+      seqCounter_external: maxExt,
+      seqCounter_vip: maxVip,
+      seqCounter_him: maxHim
+    };
     if (Array.isArray(blocked)) body.blocked = blocked;
     return fetch(cloudPath('checkins'), {
       method: 'PUT',

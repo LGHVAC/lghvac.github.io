@@ -3534,8 +3534,8 @@
       const subEl = document.getElementById('modalConfirmSub');
       const btnConfirmEl = document.getElementById('btnModalConfirm');
 
-      if (isOp) {
-        currentCheckinMeta = { type: 'operator', position: '운영진', dept: '운영팀', empNo: '', isOperator: true };
+      if (isOp || (matchedRoster && (matchedRoster.category === 'operator' || matchedRoster.regMethod === 'operator'))) {
+        currentCheckinMeta = { type: 'operator', category: 'operator', regMethod: 'operator', position: '운영진', dept: '운영팀', empNo: '', isOperator: true };
         if (badgeEl) {
           badgeEl.style.background = 'rgba(168, 85, 247, 0.2)';
           badgeEl.style.color = '#c084fc';
@@ -3550,19 +3550,72 @@
         const pos = matchedRoster.position || matchedRoster.title || '';
         const dept = matchedRoster.dept || '';
         const empNo = matchedRoster.empNo || '';
-        currentCheckinMeta = { type: 'pre_registered', position: pos, dept: dept, empNo: empNo, isOperator: false };
-        if (badgeEl) {
-          badgeEl.style.background = 'rgba(16, 185, 129, 0.2)';
-          badgeEl.style.color = '#10b981';
-          badgeEl.style.borderColor = 'rgba(16, 185, 129, 0.4)';
-          badgeEl.textContent = '🟢 사전 등록 확인';
+        const cat = matchedRoster.category || matchedRoster.regMethod || (
+          String(dept + ' ' + pos).includes('하이엠') ? 'him' :
+          String(dept + ' ' + pos).includes('교수') || String(dept + ' ' + pos).includes('강사') || String(dept + ' ' + pos).includes('사외') || String(dept + ' ' + pos).includes('외부') ? 'external' :
+          String(dept + ' ' + pos).includes('VIP') || String(dept + ' ' + pos).includes('초대') ? 'vip' :
+          'pre'
+        );
+        currentCheckinMeta = {
+          type: (cat === 'walkin' ? 'walkin' : 'pre_registered'),
+          category: cat,
+          regMethod: (cat === 'walkin' ? 'walkin' : 'pre'),
+          position: pos,
+          dept: dept,
+          empNo: empNo,
+          isOperator: false
+        };
+
+        if (cat === 'him') {
+          if (badgeEl) {
+            badgeEl.style.background = 'rgba(20, 184, 166, 0.2)';
+            badgeEl.style.color = '#5eead4';
+            badgeEl.style.borderColor = 'rgba(45, 212, 191, 0.5)';
+            badgeEl.textContent = '🏢 하이엠 참석자 확인';
+          }
+          if (titleEl) titleEl.textContent = '하이엠 참석자 체크인';
+          if (subEl) subEl.textContent = '하이엠 참석 명단과 일치합니다. 아래 정보로 입장 번호표를 발급합니다.';
+        } else if (cat === 'external') {
+          if (badgeEl) {
+            badgeEl.style.background = 'rgba(14, 165, 233, 0.2)';
+            badgeEl.style.color = '#38bdf8';
+            badgeEl.style.borderColor = 'rgba(56, 189, 248, 0.5)';
+            badgeEl.textContent = '🌐 외부 초청 인원 확인';
+          }
+          if (titleEl) titleEl.textContent = '외부 초청 인원 체크인';
+          if (subEl) subEl.textContent = '외부 초청 명단과 일치합니다. 아래 정보로 입장 번호표를 발급합니다.';
+        } else if (cat === 'vip') {
+          if (badgeEl) {
+            badgeEl.style.background = 'rgba(234, 179, 8, 0.2)';
+            badgeEl.style.color = '#fde047';
+            badgeEl.style.borderColor = 'rgba(234, 179, 8, 0.6)';
+            badgeEl.textContent = '👑 VIP 초대 인원 확인';
+          }
+          if (titleEl) titleEl.textContent = 'VIP 초대 인원 체크인';
+          if (subEl) subEl.textContent = 'VIP 초대 명단과 일치합니다. 아래 정보로 입장 번호표를 발급합니다.';
+        } else if (cat === 'walkin') {
+          if (badgeEl) {
+            badgeEl.style.background = 'rgba(245, 158, 11, 0.2)';
+            badgeEl.style.color = '#f59e0b';
+            badgeEl.style.borderColor = 'rgba(245, 158, 11, 0.4)';
+            badgeEl.textContent = '🟡 현장 추가 등록 (Walk-in)';
+          }
+          if (titleEl) titleEl.textContent = '현장 추가 등록 체크인';
+          if (subEl) subEl.textContent = '현장 추가 참석자 명단과 일치합니다. 아래 정보로 입장 번호표를 발급합니다.';
+        } else {
+          if (badgeEl) {
+            badgeEl.style.background = 'rgba(16, 185, 129, 0.2)';
+            badgeEl.style.color = '#10b981';
+            badgeEl.style.borderColor = 'rgba(16, 185, 129, 0.4)';
+            badgeEl.textContent = '🟢 사전 등록 확인';
+          }
+          if (titleEl) titleEl.textContent = '사전 등록 체크인';
+          if (subEl) subEl.textContent = '사전 신청 명단과 일치합니다. 아래 정보로 입장 번호표를 발급합니다.';
         }
-        if (titleEl) titleEl.textContent = '사전 등록 체크인';
-        if (subEl) subEl.textContent = '사전 신청 명단과 일치합니다. 아래 정보로 입장 번호표를 발급합니다.';
         if (btnConfirmEl) btnConfirmEl.textContent = '체크인 완료 (입장)';
         modalValName.textContent = pos ? `${rawName} ${pos}` : rawName;
       } else {
-        currentCheckinMeta = { type: 'walkin', position: '', dept: '', empNo: '', isOperator: false };
+        currentCheckinMeta = { type: 'walkin', category: 'walkin', regMethod: 'walkin', position: '', dept: '', empNo: '', isOperator: false };
         if (badgeEl) {
           badgeEl.style.background = 'rgba(245, 158, 11, 0.2)';
           badgeEl.style.color = '#f59e0b';
@@ -4138,12 +4191,14 @@
 
       let checkinData = null;
 
-      // 1) 클라우드 DB 연결 시: 원자적 트랜잭션 순번(No. 001~200+) 발급 및 실시간 등록 (직급/유형/운영진 메타 반영)
+      // 1) 클라우드 DB 연결 시: 원자적 트랜잭션 순번(대역별 순번) 발급 및 실시간 등록 (직급/유형/운영진 메타 반영)
       if (window.HVAC && HVAC.cloud && HVAC.cloud.getConfig()) {
         try {
           checkinData = await HVAC.cloud.checkin({
             email: cleanEmail,
             name: name,
+            category: currentCheckinMeta.category || 'walkin',
+            regMethod: currentCheckinMeta.regMethod || (currentCheckinMeta.type === 'walkin' ? 'walkin' : 'pre'),
             type: currentCheckinMeta.type,
             position: currentCheckinMeta.position,
             dept: currentCheckinMeta.dept,
@@ -4161,12 +4216,15 @@
       if (!checkinData) {
         const isOp = currentCheckinMeta.isOperator || ((window.HVAC && window.HVAC.isOperatorEmail) ? window.HVAC.isOperatorEmail(cleanEmail) : false);
 
-        // 카테고리 판별 (운영진: 300번대 / 외부: 500번대 / VIP: 700번대 / 일반: 1번대)
-        let category = 'walkin';
-        if (isOp || currentCheckinMeta.type === 'operator') category = 'operator';
-        else if (String(currentCheckinMeta.dept || '').includes('사외') || String(currentCheckinMeta.position || '').includes('강사') || String(currentCheckinMeta.position || '').includes('교수') || String(currentCheckinMeta.dept || '').includes('외부')) category = 'external';
-        else if (String(currentCheckinMeta.dept || '').includes('VIP') || String(currentCheckinMeta.position || '').includes('초대')) category = 'vip';
-        else if (currentCheckinMeta.type === 'matched' || currentCheckinMeta.type === 'pre') category = 'pre';
+        // 카테고리 판별 (사전: 1~199 / 현장추가: 201~299 / 운영진: 301~499 / 외부: 501~699 / VIP: 701~799 / 하이엠: 901~999)
+        let category = currentCheckinMeta.category || 'walkin';
+        if (!currentCheckinMeta.category) {
+          if (isOp || currentCheckinMeta.type === 'operator') category = 'operator';
+          else if (String(currentCheckinMeta.dept || '').includes('하이엠') || String(currentCheckinMeta.position || '').includes('하이엠')) category = 'him';
+          else if (String(currentCheckinMeta.dept || '').includes('사외') || String(currentCheckinMeta.position || '').includes('강사') || String(currentCheckinMeta.position || '').includes('교수') || String(currentCheckinMeta.dept || '').includes('외부')) category = 'external';
+          else if (String(currentCheckinMeta.dept || '').includes('VIP') || String(currentCheckinMeta.position || '').includes('초대')) category = 'vip';
+          else if (currentCheckinMeta.type === 'matched' || currentCheckinMeta.type === 'pre' || currentCheckinMeta.type === 'pre_registered') category = 'pre';
+        }
 
         let seq = 1;
         let checkinId = 'HVAC-001';
@@ -4175,11 +4233,13 @@
           checkinId = list[existingIdx].checkinId || ('HVAC-' + String(seq).padStart(3, '0'));
         } else {
           let base = 0;
-          let limit = 299;
-          if (category === 'operator') { base = 300; limit = 499; }
+          let limit = 199;
+          if (category === 'walkin') { base = 200; limit = 299; }
+          else if (category === 'operator') { base = 300; limit = 499; }
           else if (category === 'external') { base = 500; limit = 699; }
-          else if (category === 'vip') { base = 700; limit = 899; }
-          else { base = 0; limit = 299; }
+          else if (category === 'vip') { base = 700; limit = 799; }
+          else if (category === 'him') { base = 900; limit = 999; }
+          else { base = 0; limit = 199; }
 
           const usedSeqs = list.map(it => Number(it.seq) || 0).filter(s => s > base && s <= limit);
           seq = usedSeqs.length === 0 ? (base + 1) : (Math.max(...usedSeqs) + 1);
@@ -4201,8 +4261,8 @@
         } catch (e) {}
 
         const matchedMilestone = milestones.find(m => parseInt(m.seq, 10) === seq);
-        // 운영진 및 특별 대역(300+, 500+, 700+)은 순번 마일스톤 당첨 제외!
-        const isWinner = (!isOp && category === 'pre' || category === 'walkin') && !!matchedMilestone;
+        // 일반 참석자(pre, walkin)만 순번 마일스톤 당첨! (운영진, 외부, VIP, 하이엠 제외)
+        const isWinner = (!isOp && (category === 'pre' || category === 'walkin')) && !!matchedMilestone;
 
         checkinData = {
           email: cleanEmail,
@@ -4210,8 +4270,8 @@
           seq,
           checkinId,
           category,
-          regMethod: (currentCheckinMeta.type === 'matched' ? 'pre' : 'walkin'),
-          type: currentCheckinMeta.type || (isOp ? 'operator' : 'walkin'),
+          regMethod: (currentCheckinMeta.type === 'walkin' || category === 'walkin') ? 'walkin' : (currentCheckinMeta.regMethod || 'pre'),
+          type: currentCheckinMeta.type || (isOp ? 'operator' : (category === 'walkin' ? 'walkin' : 'pre')),
           position: currentCheckinMeta.position || '',
           dept: currentCheckinMeta.dept || '',
           empNo: currentCheckinMeta.empNo || '',
