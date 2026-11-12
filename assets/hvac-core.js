@@ -840,6 +840,214 @@
   }
 
   // 참석자 체크인: ETag 기반 원자적 순번(1~200+) 발급 및 클라우드 등록 (단일 세션 & 운영진 이월 지원)
+  
+  // =========================================================
+  // 🎁 출석 선물 수령 불변 레지스트리 (Immutable Gift Registry)
+  // 관리자 초기화/리셋 시에도 삭제되지 않는 영구 보존 이력
+  // =========================================================
+  var GIFT_REGISTRY_KEY = 'hvac_gift_registry';
+
+  function getLocalGiftRegistry() {
+    try {
+      return JSON.parse(localStorage.getItem(GIFT_REGISTRY_KEY) || '{}');
+    } catch (e) {
+      return {};
+    }
+  }
+
+  function saveLocalGiftToRegistry(cleanEmail, giftInfo) {
+    var reg = getLocalGiftRegistry();
+    cleanEmail = String(cleanEmail || '').toLowerCase().replace('@lge.com', '').replace(/[.#$\[\]\/]/g, '_');
+    reg[cleanEmail] = Object.assign({}, reg[cleanEmail] || {}, giftInfo, {
+      cleanEmail: cleanEmail,
+      updatedAt: Date.now()
+    });
+    try {
+      localStorage.setItem(GIFT_REGISTRY_KEY, JSON.stringify(reg));
+    } catch (e) {}
+    return reg[cleanEmail];
+  }
+
+  function syncGiftToLocalCheckins(cleanEmail, giftStatus, giftReceivedAt) {
+    try {
+      var list = JSON.parse(localStorage.getItem('hvac_checkin_list') || '[]');
+      var updated = false;
+      list.forEach(function (att) {
+        var k = String(att.email || '').toLowerCase().replace('@lge.com', '').replace(/[.#$\[\]\/]/g, '_');
+        if (k === cleanEmail) {
+          att.giftStatus = giftStatus;
+          att.giftReceivedAt = giftReceivedAt;
+          updated = true;
+        }
+      });
+      if (updated) {
+        localStorage.setItem('hvac_checkin_list', JSON.stringify(list));
+      }
+      var user = JSON.parse(localStorage.getItem('hvac_user_checked') || 'null');
+      if (user) {
+        var uk = String(user.email || '').toLowerCase().replace('@lge.com', '').replace(/[.#$\[\]\/]/g, '_');
+        if (uk === cleanEmail) {
+          user.giftStatus = giftStatus;
+          user.giftReceivedAt = giftReceivedAt;
+          localStorage.setItem('hvac_user_checked', JSON.stringify(user));
+        }
+      }
+    } catch (e) {}
+  }
+
+  // 실시간 선물 수령 상태 확인 (클라우드 & 로컬 동시)
+  function cloudGetGiftStatus(cleanEmail) {
+    cleanEmail = String(cleanEmail || '').toLowerCase().replace('@lge.com', '').replace(/[.#$\[\]\/]/g, '_');
+    var localReg = getLocalGiftRegistry();
+    var localRecord = localReg[cleanEmail] || null;
+
+    var c = getCloudConfig();
+    if (!c || !window.fetch) {
+      return Promise.resolve(localRecord || { giftStatus: 'unclaimed', giftReceivedAt: null });
+    }
+
+    return fetch(cloudPath('gift_receipts/' + cleanEmail), { cache: 'no-store' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (remote) {
+        if (remote && (remote.giftStatus === 'received' || remote.giftStatus === 'vip')) {
+          saveLocalGiftToRegistry(cleanEmail, remote);
+          syncGiftToLocalCheckins(cleanEmail, remote.giftStatus, remote.giftReceivedAt);
+          return remote;
+        }
+        return fetch(cloudPath('checkins/items/' + cleanEmail), { cache: 'no-store' })
+          .then(function (r2) { return r2.ok ? r2.json() : null; })
+          .then(function (item) {
+            if (item && (item.giftStatus === 'received' || item.giftStatus === 'vip')) {
+              var rec = {
+                giftStatus: item.giftStatus,
+                giftReceivedAt: item.giftReceivedAt,
+                cleanEmail: cleanEmail
+              };
+              saveLocalGiftToRegistry(cleanEmail, rec);
+              syncGiftToLocalCheckins(cleanEmail, item.giftStatus, item.giftReceivedAt);
+              return rec;
+            }
+            return localRecord || { giftStatus: 'unclaimed', giftReceivedAt: null };
+          });
+      })
+      .catch(function () {
+        return localRecord || { giftStatus: 'unclaimed', giftReceivedAt: null };
+      });
+  }
+
+  // 🎁 선물 수령 확인 트랜잭션 (다중 기기 동시 수령 원천 차단)
+  function cloudVerifyAndClaimGift(cleanEmail, targetStatus, meta) {
+    cleanEmail = String(cleanEmail || '').toLowerCase().replace('@lge.com', '').replace(/[.#$\[\]\/]/g, '_');
+    targetStatus = (targetStatus === 'vip') ? 'vip' : 'received';
+    meta = meta || {};
+
+    var padZero = function (n) { return String(n).padStart(2, '0'); };
+    var now = new Date();
+    var nowTimeStr = now.getFullYear() + '-' + padZero(now.getMonth() + 1) + '-' + padZero(now.getDate()) + ' ' +
+                     padZero(now.getHours()) + ':' + padZero(now.getMinutes()) + ':' + padZero(now.getSeconds());
+
+    var c = getCloudConfig();
+
+    // 로컬 검증
+    var localReg = getLocalGiftRegistry();
+    var localRecord = localReg[cleanEmail];
+    if (localRecord && (localRecord.giftStatus === 'received' || localRecord.giftStatus === 'vip')) {
+      return Promise.resolve({
+        success: false,
+        alreadyClaimed: true,
+        giftStatus: localRecord.giftStatus,
+        giftReceivedAt: localRecord.giftReceivedAt
+      });
+    }
+
+    if (!c || !window.fetch) {
+      var saved = saveLocalGiftToRegistry(cleanEmail, {
+        giftStatus: targetStatus,
+        giftReceivedAt: nowTimeStr,
+        claimedAt: Date.now(),
+        meta: meta
+      });
+      syncGiftToLocalCheckins(cleanEmail, targetStatus, nowTimeStr);
+      return Promise.resolve({
+        success: true,
+        alreadyClaimed: false,
+        giftStatus: targetStatus,
+        giftReceivedAt: nowTimeStr
+      });
+    }
+
+    var receiptUrl = cloudPath('gift_receipts/' + cleanEmail);
+    var itemUrl = cloudPath('checkins/items/' + cleanEmail);
+
+    return fetch(receiptUrl, { cache: 'no-store' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (remote) {
+        if (remote && (remote.giftStatus === 'received' || remote.giftStatus === 'vip')) {
+          saveLocalGiftToRegistry(cleanEmail, remote);
+          syncGiftToLocalCheckins(cleanEmail, remote.giftStatus, remote.giftReceivedAt);
+          return {
+            success: false,
+            alreadyClaimed: true,
+            giftStatus: remote.giftStatus,
+            giftReceivedAt: remote.giftReceivedAt
+          };
+        }
+
+        var newReceipt = {
+          cleanEmail: cleanEmail,
+          giftStatus: targetStatus,
+          giftReceivedAt: nowTimeStr,
+          claimedAt: Date.now(),
+          meta: meta
+        };
+
+        return fetch(receiptUrl, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newReceipt)
+        }).then(function () {
+          return fetch(itemUrl, { cache: 'no-store' })
+            .then(function (r2) { return r2.ok ? r2.json() : null; })
+            .then(function (checkinItem) {
+              if (checkinItem) {
+                checkinItem.giftStatus = targetStatus;
+                checkinItem.giftReceivedAt = nowTimeStr;
+                return fetch(itemUrl, {
+                  method: 'PUT',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(checkinItem)
+                });
+              }
+            }).catch(function () {});
+        }).then(function () {
+          saveLocalGiftToRegistry(cleanEmail, newReceipt);
+          syncGiftToLocalCheckins(cleanEmail, targetStatus, nowTimeStr);
+          touchCloudMeta('checkins');
+          return {
+            success: true,
+            alreadyClaimed: false,
+            giftStatus: targetStatus,
+            giftReceivedAt: nowTimeStr
+          };
+        });
+      })
+      .catch(function (err) {
+        var saved = saveLocalGiftToRegistry(cleanEmail, {
+          giftStatus: targetStatus,
+          giftReceivedAt: nowTimeStr,
+          claimedAt: Date.now(),
+          meta: meta
+        });
+        syncGiftToLocalCheckins(cleanEmail, targetStatus, nowTimeStr);
+        return {
+          success: true,
+          alreadyClaimed: false,
+          giftStatus: targetStatus,
+          giftReceivedAt: nowTimeStr
+        };
+      });
+  }
+
   function cloudCheckin(attendee) {
     var c = getCloudConfig();
     if (!c || !window.fetch) return Promise.resolve(null);
@@ -1511,6 +1719,8 @@
     getGameConfig: getGameConfig,
     saveGameConfig: saveGameConfig,
     DEFAULT_GAME_CONFIG: DEFAULT_GAME_CONFIG,
+    getGiftRegistry: getLocalGiftRegistry,
+    saveGiftToRegistry: saveLocalGiftToRegistry,
     cloud: {
       getConfig: getCloudConfig,
       poll: pollCloudChanges,
@@ -1524,6 +1734,8 @@
       pushCheckinList: pushCheckinListToCloud,
       pushQnaList: pushQnaListToCloud,
       checkin: cloudCheckin,
+      verifyAndClaimGift: cloudVerifyAndClaimGift,
+      getGiftStatus: cloudGetGiftStatus,
       pushQuizScore: pushQuizScoreToCloud,
       pushSurvey: pushSurveyResponseToCloud,
       pushGameRecord: pushGameRecordToCloud,

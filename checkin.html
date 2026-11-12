@@ -1483,6 +1483,291 @@
       font-weight: 900;
       cursor: pointer;
     }
+  
+    /* -------------------------------------------------------------
+       🎁 전체 화면 출석 선물 수령권 팝업 (Gift Receipt Modal)
+    ------------------------------------------------------------- */
+    .gift-receipt-backdrop {
+      background: radial-gradient(circle at 50% 20%, rgba(16, 185, 129, 0.3) 0%, rgba(4, 9, 6, 0.97) 75%) !important;
+      backdrop-filter: blur(14px) !important;
+      padding: 14px !important;
+      overflow-y: auto !important;
+      z-index: 100000 !important;
+    }
+
+    .gift-receipt-card {
+      width: 100%;
+      max-width: 420px;
+      margin: auto;
+      background: linear-gradient(180deg, #0b1f14 0%, #050d08 100%);
+      border: 2px solid #10b981;
+      border-radius: 24px;
+      box-shadow: 0 0 50px rgba(16, 185, 129, 0.35), 0 20px 50px rgba(0, 0, 0, 0.9);
+      position: relative;
+      overflow: hidden;
+      animation: celebrationPop 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+      text-align: center;
+    }
+
+    .gift-receipt-header {
+      position: relative;
+      padding: 20px 18px 14px;
+      background: linear-gradient(180deg, rgba(16, 185, 129, 0.15) 0%, rgba(0,0,0,0) 100%);
+      border-bottom: 1px solid rgba(16, 185, 129, 0.25);
+    }
+
+    .gift-badge-pill {
+      display: inline-block;
+      background: rgba(16, 185, 129, 0.2);
+      border: 1px solid #10b981;
+      color: #34d399;
+      font-size: 11.5px;
+      font-weight: 900;
+      letter-spacing: 0.04em;
+      padding: 4px 14px;
+      border-radius: 999px;
+      margin-bottom: 8px;
+    }
+
+    .gift-modal-title {
+      font-size: 22px;
+      font-weight: 950;
+      color: #ffffff;
+      letter-spacing: -0.02em;
+      margin-bottom: 4px;
+    }
+
+    .gift-modal-sub {
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.75);
+      margin: 0;
+    }
+
+    .gift-seq-box {
+      background: linear-gradient(135deg, rgba(243, 196, 72, 0.12) 0%, rgba(16, 185, 129, 0.08) 100%);
+      border: 2px solid #f3c448;
+      border-radius: 18px;
+      padding: 16px 14px 14px;
+      margin: 14px 0 12px;
+      box-shadow: 0 0 30px rgba(243, 196, 72, 0.2);
+    }
+
+    .gift-seq-label {
+      font-size: 12px;
+      color: rgba(243, 196, 72, 0.95);
+      font-weight: 850;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 2px;
+    }
+
+    .gift-seq-num {
+      font-size: 42px;
+      font-weight: 950;
+      color: #ffd900;
+      line-height: 1.1;
+      letter-spacing: -0.03em;
+      text-shadow: 0 0 20px rgba(255, 217, 0, 0.45);
+    }
+
+    .gift-seq-code {
+      display: inline-block;
+      margin-top: 6px;
+      background: rgba(16, 185, 129, 0.2);
+      border: 1px solid rgba(16, 185, 129, 0.5);
+      color: #10b981;
+      font-family: monospace;
+      font-size: 13.5px;
+      font-weight: 850;
+      padding: 2px 10px;
+      border-radius: 6px;
+    }
+
+    .gift-attendee-card {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 14px;
+      padding: 12px 14px;
+      margin-bottom: 12px;
+      text-align: left;
+    }
+
+    .gift-attendee-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 4px 0;
+    }
+
+    .gift-attendee-row:not(:last-child) {
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      margin-bottom: 4px;
+      padding-bottom: 6px;
+    }
+
+    .gift-attendee-lbl {
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.6);
+      font-weight: 700;
+    }
+
+    .gift-attendee-val.name {
+      font-size: 17px;
+      font-weight: 900;
+      color: #ffffff;
+    }
+
+    .gift-attendee-val.dept {
+      font-size: 13px;
+      font-weight: 750;
+      color: rgba(255, 255, 255, 0.9);
+      text-align: right;
+    }
+
+    .gift-guide-box {
+      background: rgba(16, 185, 129, 0.12);
+      border: 1.5px solid #10b981;
+      border-radius: 14px;
+      padding: 13px 14px;
+      margin-bottom: 14px;
+      text-align: center;
+    }
+
+    .gift-guide-title {
+      font-size: 15px;
+      font-weight: 950;
+      color: #34d399;
+      line-height: 1.4;
+      margin-bottom: 4px;
+    }
+
+    .gift-guide-sub {
+      font-size: 11.5px;
+      color: rgba(255, 255, 255, 0.7);
+      margin: 0;
+    }
+
+    .gift-status-badge {
+      margin-bottom: 14px;
+      display: inline-block;
+      width: 100%;
+    }
+
+    .badge-status-unclaimed {
+      display: inline-block;
+      width: 100%;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      color: rgba(255, 255, 255, 0.75);
+      font-size: 12.5px;
+      font-weight: 800;
+      padding: 7px 12px;
+      border-radius: 10px;
+    }
+
+    .badge-status-received {
+      display: inline-block;
+      width: 100%;
+      background: rgba(16, 185, 129, 0.2);
+      border: 1.5px solid #10b981;
+      color: #34d399;
+      font-size: 13px;
+      font-weight: 900;
+      padding: 8px 12px;
+      border-radius: 10px;
+    }
+
+    .badge-status-vip {
+      display: inline-block;
+      width: 100%;
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.25) 0%, rgba(217, 119, 6, 0.3) 100%);
+      border: 1.5px solid #f59e0b;
+      color: #fbbf24;
+      font-size: 13px;
+      font-weight: 950;
+      padding: 8px 12px;
+      border-radius: 10px;
+    }
+
+    .btn-gift-confirm {
+      width: 100%;
+      height: 52px;
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      border: 1px solid #34d399;
+      color: #ffffff;
+      font-size: 16px;
+      font-weight: 950;
+      border-radius: 14px;
+      cursor: pointer;
+      box-shadow: 0 6px 20px rgba(16, 185, 129, 0.35);
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .btn-gift-confirm:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(16, 185, 129, 0.45);
+    }
+
+    .btn-gift-confirm:disabled, .btn-gift-confirm.completed {
+      background: rgba(16, 185, 129, 0.2) !important;
+      border-color: rgba(16, 185, 129, 0.4) !important;
+      color: #34d399 !important;
+      cursor: not-allowed !important;
+      box-shadow: none !important;
+      transform: none !important;
+    }
+
+    .btn-gift-vip {
+      width: 100%;
+      height: 44px;
+      margin-top: 10px;
+      background: rgba(243, 196, 72, 0.12);
+      border: 1.5px solid rgba(243, 196, 72, 0.55);
+      color: #ffd900;
+      font-size: 13.5px;
+      font-weight: 850;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .btn-gift-vip:hover:not(:disabled) {
+      background: rgba(243, 196, 72, 0.22);
+      border-color: #ffd900;
+    }
+
+    .btn-gift-vip:disabled, .btn-gift-vip.completed {
+      background: rgba(245, 158, 11, 0.18) !important;
+      border-color: rgba(245, 158, 11, 0.4) !important;
+      color: #fcd34d !important;
+      cursor: not-allowed !important;
+    }
+
+    .btn-gift-close-text {
+      background: none;
+      border: none;
+      color: rgba(255, 255, 255, 0.6);
+      font-size: 13px;
+      font-weight: 750;
+      cursor: pointer;
+      padding: 8px 16px;
+      margin-top: 8px;
+      transition: color 0.2s;
+    }
+
+    .btn-gift-close-text:hover {
+      color: #ffffff;
+      text-decoration: underline;
+    }
+
   </style>
 </head>
 
@@ -1725,6 +2010,7 @@
         </div>
         <div style="display: flex; align-items: center; gap: 6px;">
           <button type="button" id="dashLiveSessionBtn" style="display: none; background: rgba(16, 185, 129, 0.18); border: 1px solid rgba(16, 185, 129, 0.45); color: #34d399; font-weight: 850; font-size: 11px; padding: 3px 9px; border-radius: 99px; cursor: pointer; animation: pulseOngoing 2s infinite;" title="현재 진행/예정 세션으로 바로가기">⚡ LIVE 세션</button>
+          <button type="button" id="dashGiftBadge" onclick="openGiftReceiptModal()" style="display: inline-flex; align-items: center; gap: 4px; background: rgba(245, 158, 11, 0.2); border: 1px solid rgba(245, 158, 11, 0.5); color: #fbbf24; font-weight: 850; font-size: 11px; padding: 3px 9px; border-radius: 99px; cursor: pointer;" title="출석 선물 수령권 열기">🎁 출석 선물권</button>
           <div id="dashMilestoneBadge" style="display: none; background: rgba(243, 196, 72, 0.18); border: 1px solid rgba(243, 196, 72, 0.45); color: #f3c448; font-weight: 850; font-size: 11px; padding: 3px 8px; border-radius: 99px; cursor: pointer;" title="경품 수령 안내">
             🎁 이벤트 당첨
           </div>
@@ -1886,6 +2172,74 @@
   <!-- =========================================================
        MODAL 1-B: N번째 체크인 깜짝 당첨 축하 팝업 (전체화면 축하 뷰)
   ========================================================= -->
+  
+  <!-- =========================================================
+       MODAL: 🎁 출석 선물 수령 전체화면 팝업 (Gift Receipt Modal)
+  ========================================================= -->
+  <div class="modal-backdrop fullscreen-celebration-backdrop gift-receipt-backdrop" id="modalGiftReceipt" role="dialog" aria-modal="true" aria-labelledby="giftModalTitle">
+    <div class="celebration-card gift-receipt-card">
+      <div class="gift-receipt-header">
+        <button type="button" class="celebration-close-btn" onclick="closeGiftReceiptModal()" title="닫기">✕</button>
+        <div class="gift-badge-pill">
+          <span>🎁 2026 HVAC 세미나 현장 등록 완료</span>
+        </div>
+        <h3 class="gift-modal-title" id="giftModalTitle">출석 선물 수령권</h3>
+        <p class="gift-modal-sub">현장 참석 체크인이 정상 완료되었습니다.</p>
+      </div>
+
+      <div class="celebration-body" style="padding: 16px 20px 22px;">
+        <!-- 체크인 번호 대형 표출 -->
+        <div class="gift-seq-box">
+          <div class="gift-seq-label">체크인 순번 (Check-in No.)</div>
+          <div class="gift-seq-num" id="giftAttendeeSeq">No. -</div>
+          <div class="gift-seq-code" id="giftAttendeeId">HVAC-000</div>
+        </div>
+
+        <!-- 참석자 인적사항 -->
+        <div class="gift-attendee-card">
+          <div class="gift-attendee-row">
+            <span class="gift-attendee-lbl">참석자 성명</span>
+            <strong class="gift-attendee-val name" id="giftAttendeeName">-</strong>
+          </div>
+          <div class="gift-attendee-row">
+            <span class="gift-attendee-lbl">소속 부서 / 조직</span>
+            <span class="gift-attendee-val dept" id="giftAttendeeDept">-</span>
+          </div>
+        </div>
+
+        <!-- 운영 데스크 방문 안내 문구 -->
+        <div class="gift-guide-box">
+          <div class="gift-guide-title">운영 데스크로 바로 방문하셔서 선물을 수령하시기 바랍니다.</div>
+          <p class="gift-guide-sub">※ 본 화면을 1층 로비 행사장 운영 데스크 운영진에게 제시해 주세요.</p>
+        </div>
+
+        <!-- 현재 수령 상태 배지 -->
+        <div id="giftReceiptStatusBadge" class="gift-status-badge">
+          <span class="badge-status-unclaimed">⚪ 선물 미수령 (운영 데스크 확인 대기)</span>
+        </div>
+
+        <!-- 하단 액션 버튼부 -->
+        <div class="gift-action-group">
+          <!-- 1) 수령확인 버튼 -->
+          <button type="button" class="btn-gift-confirm" id="btnGiftReceiptConfirm" onclick="handleGiftReceiptClaim('received')">
+            🎁 선물 수령확인 (운영진 전용)
+          </button>
+
+          <!-- 2) VIP 별도수령 버튼 (제일 밑) -->
+          <button type="button" class="btn-gift-vip" id="btnGiftReceiptVip" onclick="handleGiftReceiptClaim('vip')">
+            👑 VIP 별도수령
+          </button>
+        </div>
+
+        <div style="margin-top: 10px; text-align: center;">
+          <button type="button" class="btn-gift-close-text" onclick="closeGiftReceiptModal()">
+            닫기 및 세미나 화면 보기 ➔
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="modal-backdrop fullscreen-celebration-backdrop" id="modalMilestonePrize">
     <div class="celebration-card">
       <div class="celebration-hero-banner">
@@ -2910,6 +3264,183 @@
     }
 
     // 팝업 내 [확인] 클릭 시: 체크인 완료 처리 및 대시보드 진입!
+    
+    // =========================================================
+    // 🎁 출석 선물 수령권 모달 핸들러 & 다중 기기 중복 방어
+    // =========================================================
+    function getCheckedUser() {
+      try {
+        return JSON.parse(localStorage.getItem('hvac_user_checked') || 'null');
+      } catch (e) {
+        return null;
+      }
+    }
+
+    async function openGiftReceiptModal(customData) {
+      const data = customData || getCheckedUser();
+      if (!data) return;
+
+      const modal = document.getElementById('modalGiftReceipt');
+      if (!modal) return;
+
+      const seq = data.seq || 1;
+      const checkinId = data.checkinId || ('HVAC-' + String(seq).padStart(3, '0'));
+      const name = data.name || '-';
+      const dept = data.dept || (window.currentCheckinMeta && currentCheckinMeta.dept) || 'ES엔지니어링담당';
+
+      document.getElementById('giftAttendeeSeq').textContent = 'No. ' + String(seq).padStart(3, '0');
+      document.getElementById('giftAttendeeId').textContent = checkinId;
+      document.getElementById('giftAttendeeName').textContent = name;
+      document.getElementById('giftAttendeeDept').textContent = dept;
+
+      // 초기 상태 로컬 반영
+      updateGiftReceiptUI(data.giftStatus || 'unclaimed', data.giftReceivedAt || null);
+      modal.classList.add('show');
+
+      // 클라우드/영구 레지스트리 비동기 최신 동기화
+      if (window.HVAC && HVAC.cloud && HVAC.cloud.getGiftStatus && data.email) {
+        try {
+          const fresh = await HVAC.cloud.getGiftStatus(data.email);
+          if (fresh && fresh.giftStatus) {
+            updateGiftReceiptUI(fresh.giftStatus, fresh.giftReceivedAt);
+          }
+        } catch (err) {}
+      }
+    }
+
+    function closeGiftReceiptModal() {
+      const modal = document.getElementById('modalGiftReceipt');
+      if (modal) modal.classList.remove('show');
+      if (window._pendingMilestone) {
+        const pm = window._pendingMilestone;
+        window._pendingMilestone = null;
+        setTimeout(() => {
+          openMilestonePrizeModal(pm.seq, pm.milestonePrize, pm.checkinId, pm.name);
+        }, 200);
+      }
+    }
+
+    function updateGiftReceiptUI(status, receivedAt) {
+      const badgeContainer = document.getElementById('giftReceiptStatusBadge');
+      const btnConfirm = document.getElementById('btnGiftReceiptConfirm');
+      const btnVip = document.getElementById('btnGiftReceiptVip');
+      const dashBadge = document.getElementById('dashGiftBadge');
+
+      if (!badgeContainer || !btnConfirm || !btnVip) return;
+
+      const timeText = receivedAt ? `(${receivedAt})` : '';
+
+      if (status === 'received') {
+        badgeContainer.innerHTML = `<span class="badge-status-received">✅ 선물 수령 완료 ${timeText}</span>`;
+        btnConfirm.classList.add('completed');
+        btnConfirm.disabled = true;
+        btnConfirm.innerHTML = '✅ 선물 수령완료';
+        btnVip.style.display = 'none';
+        if (dashBadge) {
+          dashBadge.innerHTML = '✅ 선물 수령완료';
+          dashBadge.style.color = '#34d399';
+          dashBadge.style.borderColor = 'rgba(16, 185, 129, 0.5)';
+          dashBadge.style.background = 'rgba(16, 185, 129, 0.18)';
+        }
+      } else if (status === 'vip') {
+        badgeContainer.innerHTML = `<span class="badge-status-vip">👑 VIP 별도수령 완료 ${timeText}</span>`;
+        btnConfirm.style.display = 'none';
+        btnVip.classList.add('completed');
+        btnVip.disabled = true;
+        btnVip.innerHTML = '👑 VIP 별도수령 완료';
+        if (dashBadge) {
+          dashBadge.innerHTML = '👑 VIP 별도수령';
+          dashBadge.style.color = '#fbbf24';
+          dashBadge.style.borderColor = 'rgba(245, 158, 11, 0.5)';
+          dashBadge.style.background = 'rgba(245, 158, 11, 0.2)';
+        }
+      } else {
+        // 미수령 상태
+        badgeContainer.innerHTML = '<span class="badge-status-unclaimed">⚪ 선물 미수령 (운영 데스크 방문 대기)</span>';
+        btnConfirm.classList.remove('completed');
+        btnConfirm.disabled = false;
+        btnConfirm.innerHTML = '🎁 선물 수령확인 (운영진 전용)';
+        btnConfirm.style.display = 'flex';
+        btnVip.classList.remove('completed');
+        btnVip.disabled = false;
+        btnVip.innerHTML = '👑 VIP 별도수령';
+        btnVip.style.display = 'flex';
+        if (dashBadge) {
+          dashBadge.innerHTML = '🎁 출석 선물권';
+          dashBadge.style.color = '#fbbf24';
+        }
+      }
+    }
+
+    async function handleGiftReceiptClaim(targetStatus) {
+      const user = getCheckedUser();
+      if (!user || !user.email) {
+        alert('출석 체크인 정보를 찾을 수 없습니다.');
+        return;
+      }
+
+      const btnConfirm = document.getElementById('btnGiftReceiptConfirm');
+      const btnVip = document.getElementById('btnGiftReceiptVip');
+      btnConfirm.disabled = true;
+      btnVip.disabled = true;
+
+      const isVip = (targetStatus === 'vip');
+      if (isVip) btnVip.innerHTML = '⏳ 처리 중...';
+      else btnConfirm.innerHTML = '⏳ 확인 중...';
+
+      try {
+        let result = null;
+        if (window.HVAC && HVAC.cloud && HVAC.cloud.verifyAndClaimGift) {
+          result = await HVAC.cloud.verifyAndClaimGift(user.email, targetStatus, {
+            name: user.name,
+            seq: user.seq,
+            dept: user.dept,
+            isVip: isVip
+          });
+        } else {
+          // Fallback 로컬 검증
+          const reg = (window.HVAC && HVAC.getGiftRegistry) ? HVAC.getGiftRegistry() : {};
+          const cleanEmail = user.email.toLowerCase().replace('@lge.com', '');
+          const existing = reg[cleanEmail];
+          if (existing && (existing.giftStatus === 'received' || existing.giftStatus === 'vip')) {
+            result = {
+              success: false,
+              alreadyClaimed: true,
+              giftStatus: existing.giftStatus,
+              giftReceivedAt: existing.giftReceivedAt
+            };
+          } else {
+            const now = new Date();
+            const nowStr = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0') + ' ' +
+                           String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0') + ':' + String(now.getSeconds()).padStart(2,'0');
+            result = { success: true, alreadyClaimed: false, giftStatus: targetStatus, giftReceivedAt: nowStr };
+            if (window.HVAC && HVAC.saveGiftToRegistry) {
+              HVAC.saveGiftToRegistry(cleanEmail, result);
+            }
+          }
+        }
+
+        // 중복 수령 방지 체크: 이미 다른 기기나 운영진이 수령 처리 완료한 경우
+        if (result && result.alreadyClaimed) {
+          alert('⚠️ 이미 선물을 수령하셨습니다.\n\n• 수령 상태: ' + (result.giftStatus === 'vip' ? '👑 VIP 별도수령' : '🎁 선물 수령완료') + '\n• 수령 일시: ' + (result.giftReceivedAt || '확인 완료'));
+          updateGiftReceiptUI(result.giftStatus, result.giftReceivedAt);
+          return;
+        }
+
+        if (result && result.success) {
+          updateGiftReceiptUI(result.giftStatus, result.giftReceivedAt);
+          const msg = (result.giftStatus === 'vip')
+            ? '👑 VIP 별도수령 확인이 정상 완료되었습니다.\n출석부에 [VIP 별도수령]으로 안전하게 기록되었습니다.'
+            : '🎁 선물 수령 확인이 완료되었습니다!\n[선물 수령완료] 상태로 출석부에 안전하게 저장되었습니다.';
+          alert(msg);
+        }
+      } catch (err) {
+        console.error(err);
+        alert('선물 수령 확인 중 오류가 발생했습니다: ' + (err && err.message ? err.message : err));
+        updateGiftReceiptUI(user.giftStatus || 'unclaimed', user.giftReceivedAt || null);
+      }
+    }
+
     btnModalConfirm.addEventListener('click', async () => {
       modalConfirm.classList.remove('show');
 
