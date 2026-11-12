@@ -4089,14 +4089,30 @@
 
       // 2) 오프라인 또는 로컬 테스트 모드 fallback
       if (!checkinData) {
+        const isOp = currentCheckinMeta.isOperator || ((window.HVAC && window.HVAC.isOperatorEmail) ? window.HVAC.isOperatorEmail(cleanEmail) : false);
+
+        // 카테고리 판별 (운영진: 300번대 / 외부: 500번대 / VIP: 700번대 / 일반: 1번대)
+        let category = 'walkin';
+        if (isOp || currentCheckinMeta.type === 'operator') category = 'operator';
+        else if (String(currentCheckinMeta.dept || '').includes('사외') || String(currentCheckinMeta.position || '').includes('강사') || String(currentCheckinMeta.position || '').includes('교수') || String(currentCheckinMeta.dept || '').includes('외부')) category = 'external';
+        else if (String(currentCheckinMeta.dept || '').includes('VIP') || String(currentCheckinMeta.position || '').includes('초대')) category = 'vip';
+        else if (currentCheckinMeta.type === 'matched' || currentCheckinMeta.type === 'pre') category = 'pre';
+
         let seq = 1;
         let checkinId = 'HVAC-001';
         if (existingIdx >= 0 && list[existingIdx].seq) {
           seq = list[existingIdx].seq;
           checkinId = list[existingIdx].checkinId || ('HVAC-' + String(seq).padStart(3, '0'));
         } else {
-          const maxSeq = list.reduce((m, item) => Math.max(m, (item && item.seq) ? Number(item.seq) : 0), 0);
-          seq = Math.max(maxSeq + 1, list.length + 1);
+          let base = 0;
+          let limit = 299;
+          if (category === 'operator') { base = 300; limit = 499; }
+          else if (category === 'external') { base = 500; limit = 699; }
+          else if (category === 'vip') { base = 700; limit = 899; }
+          else { base = 0; limit = 299; }
+
+          const usedSeqs = list.map(it => Number(it.seq) || 0).filter(s => s > base && s <= limit);
+          seq = usedSeqs.length === 0 ? (base + 1) : (Math.max(...usedSeqs) + 1);
           checkinId = 'HVAC-' + String(seq).padStart(3, '0');
         }
 
@@ -4114,16 +4130,17 @@
           else localStorage.setItem('hvac_milestone_events', JSON.stringify(defaultMilestones));
         } catch (e) {}
 
-        const isOp = currentCheckinMeta.isOperator || ((window.HVAC && window.HVAC.isOperatorEmail) ? window.HVAC.isOperatorEmail(cleanEmail) : false);
         const matchedMilestone = milestones.find(m => parseInt(m.seq, 10) === seq);
-        // 운영진은 마일스톤 당첨 제외!
-        const isWinner = (!isOp && !!matchedMilestone);
+        // 운영진 및 특별 대역(300+, 500+, 700+)은 순번 마일스톤 당첨 제외!
+        const isWinner = (!isOp && category === 'pre' || category === 'walkin') && !!matchedMilestone;
 
         checkinData = {
           email: cleanEmail,
           name,
           seq,
           checkinId,
+          category,
+          regMethod: (currentCheckinMeta.type === 'matched' ? 'pre' : 'walkin'),
           type: currentCheckinMeta.type || (isOp ? 'operator' : 'walkin'),
           position: currentCheckinMeta.position || '',
           dept: currentCheckinMeta.dept || '',

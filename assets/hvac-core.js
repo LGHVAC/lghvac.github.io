@@ -1060,6 +1060,16 @@
     var isOp = isOperatorEmail(cleanEmail) || !!attendee.isOperator;
     var newSessionToken = 'tok_' + getDeviceId() + '_' + Date.now();
 
+    // 카테고리 결정: 운영진(300번대) / 외부(500번대) / VIP(700번대) / 사전등록,현장(1번대)
+    var cat = attendee.category;
+    if (!cat) {
+      if (isOp || attendee.type === 'operator') cat = 'operator';
+      else if (String(attendee.dept || '').includes('사외') || String(attendee.position || '').includes('강사') || String(attendee.position || '').includes('교수') || String(attendee.dept || '').includes('외부')) cat = 'external';
+      else if (String(attendee.dept || '').includes('VIP') || String(attendee.position || '').includes('초대')) cat = 'vip';
+      else if (attendee.type === 'pre' || attendee.type === 'matched') cat = 'pre';
+      else cat = 'walkin';
+    }
+
     // 1) 이미 체크인한 사용자인지 먼저 확인 (재접속 시 기존 순번 유지 & 활성 세션 토큰 갱신)
     return fetch(existingUrl, { cache: 'no-store' })
       .then(function (r) { return r.ok ? r.json() : null; })
@@ -1068,6 +1078,7 @@
           var updated = Object.assign({}, existing, attendee, {
             seq: existing.seq,
             checkinId: existing.checkinId || ('HVAC-' + String(existing.seq).padStart(3, '0')),
+            category: existing.category || cat,
             isOperator: isOp,
             type: isOp ? 'operator' : (existing.type || 'walkin'),
             sessionToken: newSessionToken,
@@ -1087,14 +1098,27 @@
           });
         }
 
-        // 2) 신규 체크인: ETag CAS 트랜잭션으로 원자적 순번 증가 (최대 6회 재시도)
-        var counterUrl = cloudPath('checkins/seqCounter');
+        // 2) 신규 체크인: 대역별(1~299, 301~499, 501~699, 701~899) ETag CAS 트랜잭션으로 원자적 순번 증가
+        var baseOffset = 0;
+        var counterSubPath = 'checkins/seqCounter';
+        if (cat === 'operator') {
+          baseOffset = 300;
+          counterSubPath = 'checkins/seqCounter_operator';
+        } else if (cat === 'external') {
+          baseOffset = 500;
+          counterSubPath = 'checkins/seqCounter_external';
+        } else if (cat === 'vip') {
+          baseOffset = 700;
+          counterSubPath = 'checkins/seqCounter_vip';
+        }
+
+        var counterUrl = cloudPath(counterSubPath);
         function allocateSeq(attempt) {
           return fetch(counterUrl, { headers: { 'X-Firebase-ETag': 'true' }, cache: 'no-store' })
             .then(function (res) {
               var etag = res.headers.get('ETag');
               return res.json().then(function (curVal) {
-                var nextSeq = (typeof curVal === 'number' && curVal > 0 ? curVal : 0) + 1;
+                var nextSeq = (typeof curVal === 'number' && curVal >= baseOffset ? curVal : baseOffset) + 1;
                 var putHeaders = { 'Content-Type': 'application/json' };
                 if (etag) putHeaders['If-Match'] = etag;
                 return fetch(counterUrl, {
