@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="ko" data-hvac-page="attendance-dashboard">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -604,6 +604,10 @@
     }
 
     function refreshDashboard(showToastFeedback = false) {
+      // 수동 새로고침 버튼 클릭 시 클라우드 강제 동기화 트리거
+      if (showToastFeedback && window.HVAC && HVAC.cloud && typeof HVAC.cloud.restart === 'function') {
+        try { HVAC.cloud.restart(); } catch (e) {}
+      }
       const list = getCheckinList();
       const blocked = getBlockedList();
       const milestones = getMilestones();
@@ -825,7 +829,8 @@
     // 초기 실행 및 5초 주기 자동 갱신
     window.addEventListener('DOMContentLoaded', () => {
       refreshDashboard();
-      setInterval(refreshDashboard, 4000);
+      // 3초 주기 자동 갱신 (새로고침 버튼 없이도 실시간 3초 내 자동 반영)
+      setInterval(refreshDashboard, 3000);
     });
 
     window.addEventListener('storage', (e) => {

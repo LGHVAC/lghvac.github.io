@@ -82,6 +82,9 @@
     if (/quiz\.html$/.test(p)) return 'quiz';
     if (/game\.html$/.test(p)) return 'game';
     if (/game-leaderboard\.html$/.test(p) || /lunch-screen\.html$/.test(p)) return 'game-leaderboard';
+    if (/attendance-dashboard\.html$/.test(p)) return 'attendance-dashboard';
+    if (/mc-qna\.html$/.test(p)) return 'qna';
+    if (/quiz-winners\.html$/.test(p)) return 'quiz';
     return 'index';
   }
 
@@ -1406,7 +1409,7 @@
         }
 
         // 3) 출석 명부 변경 감지 (admin 및 checkin 차단 확인용)
-        if ((pId === 'admin' || pId === 'checkin') && (forceAll || (meta.checkins && meta.checkins > lastSeenMeta.checkins))) {
+        if ((pId === 'admin' || pId === 'checkin' || pId === 'attendance-dashboard') && (forceAll || (meta.checkins && meta.checkins > lastSeenMeta.checkins))) {
           lastSeenMeta.checkins = meta.checkins || Date.now();
           tasks.push(
             fetch(cloudPath('checkins'), { cache: 'no-store' })
@@ -1526,7 +1529,7 @@
     if (pollTimer) clearInterval(pollTimer);
     if (!getCloudConfig()) return;
     pollCloudChanges(true);
-    var intervalMs = (pageId() === 'admin' || pageId() === 'qna') ? 4000 : 8000;
+    var intervalMs = (pageId() === 'admin' || pageId() === 'qna' || pageId() === 'attendance-dashboard') ? 3000 : 8000;
     pollTimer = setInterval(function () {
       pollCloudChanges(false);
     }, intervalMs);
