@@ -858,19 +858,47 @@
       50% { transform: scale(1.25); opacity: 1; }
     }
 
+    /* 세션 카드 폰트 크기 다단계 스케일링 */
+    .session-card {
+      --bullet-font-size: 15.5px;
+      --bullet-line-height: 1.62;
+      --title-font-size: 27px;
+      --speaker-font-size: 16px;
+    }
+    .session-card.font-sm {
+      --bullet-font-size: 14px;
+      --bullet-line-height: 1.5;
+      --title-font-size: 24px;
+      --speaker-font-size: 14.5px;
+    }
+    .session-card.font-md {
+      --bullet-font-size: 15.5px;
+      --bullet-line-height: 1.62;
+      --title-font-size: 27px;
+      --speaker-font-size: 16px;
+    }
+    .session-card.font-lg {
+      --bullet-font-size: 18px;
+      --bullet-line-height: 1.7;
+      --title-font-size: 29px;
+      --speaker-font-size: 17.5px;
+    }
+
     .session-title {
-      font-size: 27px;
+      font-size: var(--title-font-size, 27px);
       font-weight: 950;
       line-height: 1.35;
       letter-spacing: -0.03em;
       margin-bottom: 6px;
+      transition: font-size 0.18s ease;
     }
 
     .session-speaker {
-      font-size: 16px;
+      font-size: var(--speaker-font-size, 16px);
       font-weight: 800;
       color: rgba(255, 255, 255, 0.75);
       margin-bottom: 18px;
+      transition: font-size 0.18s ease;
     }
 
     .session-bullets {
@@ -882,10 +910,11 @@
 
     .session-bullets li {
       position: relative;
-      padding-left: 16px;
-      font-size: 14px;
-      line-height: 1.55;
-      color: rgba(255, 255, 255, 0.78);
+      padding-left: 18px;
+      font-size: var(--bullet-font-size, 15.5px);
+      line-height: var(--bullet-line-height, 1.62);
+      color: rgba(255, 255, 255, 0.84);
+      transition: font-size 0.18s ease;
     }
 
     .session-bullets li::before {
@@ -893,35 +922,95 @@
       position: absolute;
       left: 2px;
       color: rgba(255, 255, 255, 0.45);
-      font-size: 16px;
+      font-size: 18px;
     }
 
-    /* 하단 가로 도트 인디케이터 (좌우 스와이핑과 일치) */
+    /* 폰트 크기 다단계 조절 바 (A- A A+) */
+    .font-scaler-box {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 99px;
+      padding: 2px 4px;
+      flex-shrink: 0;
+    }
+
+    .btn-font-scaler {
+      background: transparent;
+      border: none;
+      color: rgba(255, 255, 255, 0.65);
+      font-size: 11px;
+      font-weight: 800;
+      padding: 3px 7px;
+      border-radius: 99px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      line-height: 1.1;
+    }
+
+    .btn-font-scaler:hover {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.12);
+    }
+
+    .btn-font-scaler.active {
+      background: #10b981;
+      color: #ffffff;
+      font-weight: 900;
+      box-shadow: 0 0 8px rgba(16, 185, 129, 0.5);
+    }
+
+    /* 하단 가로 도트 인디케이터 (좌우 스와이핑 및 스크러빙 슬라이드 지원) */
     .session-dots-bar {
       display: flex;
       justify-content: center;
       align-items: center;
-      gap: 8px;
-      padding: 10px 0 14px;
+      gap: 7px;
+      padding: 12px 0 14px;
+      touch-action: pan-y;
+      user-select: none;
+      -webkit-user-select: none;
     }
 
     .dot {
-      width: 8px;
-      height: 8px;
+      width: 10px;
+      height: 10px;
       border-radius: 99px;
-      background: rgba(255, 255, 255, 0.25);
+      background: rgba(255, 255, 255, 0.3);
       cursor: pointer;
-      transition: all 0.25s ease;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+    }
+
+    /* 터치 타겟(Hitbox) 대폭 확대: 손가락으로 누르기 쉽게 가로 22px, 세로 36px 확보 */
+    .dot::after {
+      content: '';
+      position: absolute;
+      top: -12px;
+      bottom: -12px;
+      left: -6px;
+      right: -6px;
     }
 
     .dot.active {
-      width: 24px;
-      height: 8px;
+      width: 28px;
+      height: 10px;
       background: #ffffff;
-      box-shadow: 0 0 12px rgba(255, 255, 255, 0.9);
+      box-shadow: 0 0 14px rgba(255, 255, 255, 0.95);
     }
 
-    /* 하단 액션 버튼 (세션 질문하기) */
+    /* 하단 액션 버튼 고정 슬롯 (버튼 없는 세션에서도 높이 56px 유지하여 도트 위치 완벽 고정) */
+    .dash-bottom-action-slot {
+      min-height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 4px;
+    }
+
+    /* 하단 액션 버튼 (세션 질문하기 등) */
     .btn-participate {
       width: 100%;
       height: 56px;
@@ -1649,8 +1738,16 @@
             <div class="session-time" id="sTime">08:00 ~ 08:50</div>
             <div class="location-badge" id="sLocation">📍 본부관 별관 1F 학술회의장</div>
           </div>
-          <div class="session-sublabel" id="sSublabel">
-            Registration & Welcome <span class="status-pill" id="sStatus">예정</span>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; gap: 8px; flex-wrap: wrap;">
+            <div class="session-sublabel" id="sSublabel" style="margin-bottom: 0;">
+              Registration & Welcome <span class="status-pill" id="sStatus">예정</span>
+            </div>
+            <!-- 글자 크기 다단계 조절기 (A- A A+) -->
+            <div class="font-scaler-box" title="과정 안내 글자 크기 조정">
+              <button type="button" class="btn-font-scaler" data-scale="sm" onclick="setSessionFontScale('sm')" title="글자 작게">A-</button>
+              <button type="button" class="btn-font-scaler active" data-scale="md" onclick="setSessionFontScale('md')" title="기본 크기">A</button>
+              <button type="button" class="btn-font-scaler" data-scale="lg" onclick="setSessionFontScale('lg')" title="글자 크게">A+</button>
+            </div>
           </div>
 
           <h2 class="session-title" id="sTitle">세미나 참석자 등록 및 입장 안내</h2>
@@ -1664,15 +1761,17 @@
         </div>
       </div>
 
-      <!-- 하단 영역: 가로 인디케이터 도트 (좌우 스와이핑과 일치) + 하단 Q&A 액션 버튼 -->
+      <!-- 하단 영역: 가로 인디케이터 도트 (스크러빙 슬라이드 지원) + 고정 높이 액션 버튼 슬롯 -->
       <div>
-        <div class="session-dots-bar" id="sideDots">
+        <div class="session-dots-bar" id="sideDots" title="좌우로 드래그(슬라이드)하여 원하는 세션으로 바로 이동할 수 있습니다">
           <!-- 동적으로 renderSideDots()에 의해 세션 개수만큼 생성됨 -->
         </div>
 
-        <button class="btn-participate" id="btnBottomAction" type="button">
-          💬 세션 질문하기 ∨
-        </button>
+        <div class="dash-bottom-action-slot" id="bottomActionSlot">
+          <button class="btn-participate" id="btnBottomAction" type="button">
+            💬 세션 질문하기 ∨
+          </button>
+        </div>
       </div>
     </section>
   </div>
@@ -3227,6 +3326,10 @@
       // 슬라이드 전환 애니메이션 (좌/우 스와이프 효과)
       if (cardEl) {
         cardEl.classList.remove('slide-next', 'slide-prev');
+        // 현재 선택된 폰트 스케일 유지
+        const currentScale = localStorage.getItem('hvac_session_font_scale') || 'md';
+        cardEl.classList.remove('font-sm', 'font-md', 'font-lg');
+        cardEl.classList.add('font-' + currentScale);
         if (direction === 'next') {
           void cardEl.offsetWidth; // reflow 강제
           cardEl.classList.add('slide-next');
@@ -3385,6 +3488,104 @@
           btnBottomAction.style.display = 'none';
         }
       }
+    }
+
+    // =========================================================
+    // 글자 크기 다단계 조절기 (A- A A+) 로직
+    // =========================================================
+    function setSessionFontScale(scale = 'md') {
+      const card = document.getElementById('currentSessionCard');
+      if (card) {
+        card.classList.remove('font-sm', 'font-md', 'font-lg');
+        card.classList.add('font-' + scale);
+      }
+      document.querySelectorAll('.btn-font-scaler').forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('data-scale') === scale);
+      });
+      try {
+        localStorage.setItem('hvac_session_font_scale', scale);
+      } catch (e) {}
+    }
+
+    function initSessionFontScale() {
+      try {
+        const saved = localStorage.getItem('hvac_session_font_scale') || 'md';
+        setSessionFontScale(saved);
+      } catch (e) {
+        setSessionFontScale('md');
+      }
+    }
+
+    // =========================================================
+    // 도트 바(sideDots) 좌우 터치 슬라이드(스크러빙) 제스처
+    // =========================================================
+    function initDotsScrubber() {
+      const bar = document.getElementById('sideDots');
+      if (!bar) return;
+
+      let isScrubbing = false;
+
+      function getDotIndexFromClientX(clientX) {
+        const dots = bar.querySelectorAll('.dot');
+        if (!dots.length) return -1;
+        let closestIdx = 0;
+        let minDist = Infinity;
+        dots.forEach((d, i) => {
+          const rect = d.getBoundingClientRect();
+          const dotCenterX = rect.left + rect.width / 2;
+          const dist = Math.abs(clientX - dotCenterX);
+          if (dist < minDist) {
+            minDist = dist;
+            closestIdx = i;
+          }
+        });
+        return closestIdx;
+      }
+
+      bar.addEventListener('touchstart', (e) => {
+        if (!e.touches.length) return;
+        isScrubbing = true;
+        const targetIdx = getDotIndexFromClientX(e.touches[0].clientX);
+        if (targetIdx !== -1 && targetIdx !== currentIdx) {
+          const dir = targetIdx > currentIdx ? 'next' : 'prev';
+          renderSession(targetIdx, dir);
+        }
+      }, { passive: true });
+
+      bar.addEventListener('touchmove', (e) => {
+        if (!isScrubbing || !e.touches.length) return;
+        const targetIdx = getDotIndexFromClientX(e.touches[0].clientX);
+        if (targetIdx !== -1 && targetIdx !== currentIdx) {
+          const dir = targetIdx > currentIdx ? 'next' : 'prev';
+          renderSession(targetIdx, dir);
+          try {
+            if (navigator.vibrate) navigator.vibrate(6); // 터치 슬라이드 햅틱
+          } catch (err) {}
+        }
+      }, { passive: true });
+
+      bar.addEventListener('touchend', () => { isScrubbing = false; }, { passive: true });
+      bar.addEventListener('touchcancel', () => { isScrubbing = false; }, { passive: true });
+
+      // PC 마우스 드래그 스크러빙 지원
+      let isMouseScrubbing = false;
+      bar.addEventListener('mousedown', (e) => {
+        isMouseScrubbing = true;
+        const targetIdx = getDotIndexFromClientX(e.clientX);
+        if (targetIdx !== -1 && targetIdx !== currentIdx) {
+          const dir = targetIdx > currentIdx ? 'next' : 'prev';
+          renderSession(targetIdx, dir);
+        }
+      });
+      window.addEventListener('mousemove', (e) => {
+        if (!isMouseScrubbing) return;
+        const targetIdx = getDotIndexFromClientX(e.clientX);
+        if (targetIdx !== -1 && targetIdx !== currentIdx) {
+          const dir = targetIdx > currentIdx ? 'next' : 'prev';
+          renderSession(targetIdx, dir);
+        }
+      });
+      window.addEventListener('mouseup', () => { isMouseScrubbing = false; });
     }
 
     // =========================================================
@@ -3824,6 +4025,8 @@
       // 1. 최신 세션 데이터 동기화 및 UI 구축
       loadSyncedSessions();
       renderSideDots();
+      initDotsScrubber();
+      initSessionFontScale();
       renderTimetableSheet();
       syncMissionBadges();
 
