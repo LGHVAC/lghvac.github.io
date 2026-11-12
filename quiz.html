@@ -1392,6 +1392,48 @@
       ));
     }
 
+    function determineQuizSessionNum(q, idx) {
+      if (!q) return (idx < 2 ? 0 : Math.min(5, Math.floor((idx - 2) / 2) + 1));
+
+      const tag = String(q.tag || '').toLowerCase();
+      const qText = String(q.question || '').toLowerCase();
+
+      // 1. 태그 및 질문 본문 기반 지능형 매칭 (최우선 판정)
+      if (tag.includes('오프닝') || tag.includes('opening') || tag.includes('about 전문가 세미나') || tag.includes('about') || tag.includes('아이스브레이킹') || qText.includes('제1회 hvac') || qText.includes('몇 회째')) {
+        return 0;
+      }
+      if (tag.includes('keynote 1') || tag.includes('keynote session 1') || tag.includes('주거난방') || tag.includes('여명석')) {
+        return 1;
+      }
+      if (tag.includes('keynote 2') || tag.includes('keynote session 2') || tag.includes('액체냉각') || tag.includes('이성혁')) {
+        return 2;
+      }
+      if (tag.includes('keynote 3') || tag.includes('keynote session 3') || tag.includes('전력시장') || tag.includes('전력망') || tag.includes('조홍종')) {
+        return 3;
+      }
+      if (tag.includes('insight 1') || tag.includes('insight session 1') || tag.includes('히트펌프') || tag.includes('유정현')) {
+        return 4;
+      }
+      if (tag.includes('insight 2') || tag.includes('insight session 2') || tag.includes('에너지') || tag.includes('오영훈') || tag.includes('컨설팅') || tag.includes('retrofit')) {
+        return 5;
+      }
+      if (tag.includes('special') || tag.includes('테라포밍') || tag.includes('이정모') || tag.includes('인문학')) {
+        return 6;
+      }
+
+      // 2. 명시적으로 지정된 sessionNum이 0~6 사이의 유효한 값인 경우 (단, 태그에 키워드가 없을 때)
+      if (q.sessionNum !== undefined && q.sessionNum !== null && q.sessionNum !== '') {
+        const sNum = parseInt(q.sessionNum, 10);
+        if (!isNaN(sNum) && sNum >= 0 && sNum <= 6) {
+          return sNum;
+        }
+      }
+
+      // 3. 인덱스 기반 기본 매칭 fallback (12문항 체계: 오프닝 2문항, 세션 1~5 각 2문항)
+      if (idx === 0 || idx === 1) return 0;
+      return Math.min(5, Math.floor((idx - 2) / 2) + 1);
+    }
+
     function getQuizConfig() {
       try {
         const raw = localStorage.getItem('hvac_quiz_config');
@@ -1401,7 +1443,7 @@
           return {
             quizzes: cfg.quizzes.map((q, idx) => ({
               ...q,
-              sessionNum: (q.sessionNum !== undefined && q.sessionNum !== null) ? q.sessionNum : (idx === 0 ? 0 : idx)
+              sessionNum: determineQuizSessionNum(q, idx)
             }))
           };
         }
@@ -1409,8 +1451,8 @@
           return {
             quizzes: cfg.map((q, idx) => ({
               id: q.id || String(idx),
-              sessionNum: (q.sessionNum !== undefined && q.sessionNum !== null) ? q.sessionNum : (idx === 0 ? 0 : idx),
-              tag: q.tag || (idx === 0 ? 'OPENING · 오프닝 퀴즈' : ('QUIZ ' + idx)),
+              sessionNum: determineQuizSessionNum(q, idx),
+              tag: q.tag || (determineQuizSessionNum(q, idx) === 0 ? 'OPENING · 오프닝 퀴즈' : ('세션 ' + determineQuizSessionNum(q, idx))),
               question: q.question || '',
               options: q.options || [],
               correct: typeof q.correct === 'number' ? String(q.correct + 1) : String(q.correct || '1'),
@@ -1425,19 +1467,36 @@
     // 관리자 퀴즈 설정이 있으면 카드 DOM 재생성
     function renderQuizCardsFromConfig() {
       const cfg = getQuizConfig();
-      if (!cfg) return false;
+      if (!cfg || !Array.isArray(cfg.quizzes)) return false;
       const list = document.getElementById('quizList');
+      if (!list) return false;
+
+      let openingCounter = 0;
+      const openingTotal = cfg.quizzes.filter((q, i) => determineQuizSessionNum(q, i) === 0).length;
+
       list.innerHTML = cfg.quizzes.map((q, idx) => {
         const options = (q.options || []).filter(o => String(o).trim());
         const correct = String(q.correct || 1);
-        const sNum = (q.sessionNum !== undefined && q.sessionNum !== null) ? q.sessionNum : (idx === 0 ? 0 : idx);
+        const sNum = determineQuizSessionNum(q, idx);
+
+        let qPrefix = '';
+        if (sNum === 0) {
+          openingCounter++;
+          qPrefix = openingTotal > 1 ? `Q0-${openingCounter}` : 'Q0';
+        } else {
+          qPrefix = `Q${idx}`;
+        }
+
+        // 질문 텍스트 앞의 기존 'Q0. ', 'Q1. ' 등 중복 접두어 안전 정리
+        const cleanQuestion = String(q.question || '').replace(/^Q\d+[-.]?\s*/i, '');
+
         return `
           <article class="quiz-card" data-quiz-id="${escapeHtml(q.id)}" data-correct="${escapeHtml(correct)}" data-session-num="${sNum}">
             <div class="quiz-header">
-              <span class="quiz-session-tag">${escapeHtml(q.tag || (sNum === 0 ? 'OPENING · 오프닝 퀴즈' : ('QUIZ ' + idx)))}</span>
+              <span class="quiz-session-tag">${escapeHtml(q.tag || (sNum === 0 ? 'OPENING · 오프닝 퀴즈' : ('세션 ' + sNum)))}</span>
               <span class="quiz-status-pill"></span>
             </div>
-            <h2 class="quiz-question">Q${sNum === 0 ? '0' : idx}. ${escapeHtml(q.question)}</h2>
+            <h2 class="quiz-question">${qPrefix}. ${escapeHtml(cleanQuestion)}</h2>
             <div class="quiz-options">
               ${options.map((o, oi) => `
                 <button class="quiz-option-btn" type="button" data-opt="${oi + 1}">${CIRCLED[oi] || (oi + 1) + '.'} ${escapeHtml(o)}</button>
@@ -1902,7 +1961,7 @@
       // 카드 노출 및 잠금 처리
       cards.forEach((card, idx) => {
         const rawSNum = card.getAttribute('data-session-num');
-        const sNum = rawSNum !== null && !isNaN(parseInt(rawSNum, 10)) ? parseInt(rawSNum, 10) : (idx + 1);
+        const sNum = rawSNum !== null && !isNaN(parseInt(rawSNum, 10)) ? parseInt(rawSNum, 10) : (idx < 2 ? 0 : Math.min(5, Math.floor((idx - 2) / 2) + 1));
         const isMatch = (sess === 'all' || sess === sNum);
         card.style.display = isMatch ? 'block' : 'none';
 
