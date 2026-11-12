@@ -1543,6 +1543,68 @@
       margin: 0;
     }
 
+    
+    @keyframes pulseWalkin {
+      0% { transform: scale(1); box-shadow: 0 0 18px rgba(249, 115, 22, 0.7); }
+      50% { transform: scale(1.04); box-shadow: 0 0 32px rgba(249, 115, 22, 0.95); }
+      100% { transform: scale(1); box-shadow: 0 0 18px rgba(249, 115, 22, 0.7); }
+    }
+
+    .gift-reg-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      font-size: 13px;
+      font-weight: 900;
+      padding: 5px 14px;
+      border-radius: 999px;
+      letter-spacing: -0.2px;
+      margin: 6px 0 2px;
+      transition: all 0.25s ease;
+    }
+
+    .gift-reg-badge.badge-pre {
+      background: rgba(16, 185, 129, 0.18);
+      border: 1.5px solid #10b981;
+      color: #34d399;
+    }
+
+    .gift-reg-badge.badge-walkin {
+      background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+      border: 2px solid #ffd700;
+      color: #ffffff;
+      font-size: 14px;
+      font-weight: 950;
+      padding: 6px 16px;
+      box-shadow: 0 0 25px rgba(249, 115, 22, 0.8), 0 4px 10px rgba(0,0,0,0.5);
+      animation: pulseWalkin 2s infinite;
+    }
+
+    .gift-reg-badge.badge-operator {
+      background: rgba(168, 85, 247, 0.25);
+      border: 1.5px solid #c084fc;
+      color: #e9d5ff;
+    }
+
+    .gift-reg-badge.badge-vip {
+      background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+      border: 1.5px solid #fde047;
+      color: #ffffff;
+      font-weight: 950;
+    }
+
+    .gift-seq-box.box-walkin {
+      border: 2.5px solid #f97316 !important;
+      background: linear-gradient(135deg, rgba(249, 115, 22, 0.22) 0%, rgba(234, 88, 12, 0.14) 100%) !important;
+      box-shadow: 0 0 40px rgba(249, 115, 22, 0.45) !important;
+    }
+
+    .gift-seq-box.box-walkin .gift-seq-num {
+      color: #ffa500 !important;
+      text-shadow: 0 0 22px rgba(255, 165, 0, 0.6) !important;
+    }
+
     .gift-seq-box {
       background: linear-gradient(135deg, rgba(243, 196, 72, 0.12) 0%, rgba(16, 185, 129, 0.08) 100%);
       border: 2px solid #f3c448;
@@ -2189,8 +2251,12 @@
 
       <div class="celebration-body" style="padding: 16px 20px 22px;">
         <!-- 체크인 번호 대형 표출 -->
-        <div class="gift-seq-box">
+        <div class="gift-seq-box" id="giftSeqBox">
           <div class="gift-seq-label">체크인 순번 (Check-in No.)</div>
+          <!-- 사전 등록자 여부 배지 (체크인 순번 밑) -->
+          <div style="margin: 6px 0 4px;">
+            <span id="giftAttendeeTypeBadge" class="gift-reg-badge badge-pre">🟢 사전 등록 인원</span>
+          </div>
           <div class="gift-seq-num" id="giftAttendeeSeq">No. -</div>
           <div class="gift-seq-code" id="giftAttendeeId">HVAC-000</div>
         </div>
@@ -3268,6 +3334,34 @@
     // =========================================================
     // 🎁 출석 선물 수령권 모달 핸들러 & 다중 기기 중복 방어
     // =========================================================
+    
+    // 참석자 등록 유형 판별기 (사전등록 vs 현장등록 vs 운영진 vs VIP)
+    function getAttendeeRegistrationType(data) {
+      if (!data) return 'walkin';
+      const cleanEmail = String(data.email || '').toLowerCase().replace('@lge.com', '').trim();
+
+      // 1) 운영진 여부
+      if (data.isOperator || (window.HVAC && window.HVAC.isOperatorEmail && window.HVAC.isOperatorEmail(cleanEmail))) {
+        return 'operator';
+      }
+
+      // 2) 명시적 type 필드
+      if (data.type === 'vip') return 'vip';
+      if (data.type === 'operator') return 'operator';
+      if (data.type === 'pre_registered') return 'pre_registered';
+      if (data.type === 'walkin') return 'walkin';
+
+      // 3) 사전 등록 명부 대조 (Fallback)
+      try {
+        const roster = (window.HVAC && window.HVAC.read && window.HVAC.read('hvac_roster_list'))
+          || JSON.parse(localStorage.getItem('hvac_roster_list') || '[]');
+        const isMatched = roster.some(r => String(r.email || '').toLowerCase().replace('@lge.com', '').trim() === cleanEmail);
+        if (isMatched) return 'pre_registered';
+      } catch (e) {}
+
+      return 'walkin';
+    }
+
     function getCheckedUser() {
       try {
         return JSON.parse(localStorage.getItem('hvac_user_checked') || 'null');
@@ -3292,6 +3386,32 @@
       document.getElementById('giftAttendeeId').textContent = checkinId;
       document.getElementById('giftAttendeeName').textContent = name;
       document.getElementById('giftAttendeeDept').textContent = dept;
+
+      // 사전 등록자 여부 배지 표출 (체크인 순번 밑)
+      const regType = getAttendeeRegistrationType(data);
+      const typeBadgeEl = document.getElementById('giftAttendeeTypeBadge');
+      const seqBoxEl = document.getElementById('giftSeqBox');
+
+      if (typeBadgeEl) {
+        if (regType === 'pre_registered') {
+          typeBadgeEl.className = 'gift-reg-badge badge-pre';
+          typeBadgeEl.innerHTML = '🟢 사전 등록 인원';
+          if (seqBoxEl) seqBoxEl.className = 'gift-seq-box';
+        } else if (regType === 'walkin') {
+          // 현장 등록자의 경우 운영진이 한눈에 구분할 수 있는 고대비 강조 배경색
+          typeBadgeEl.className = 'gift-reg-badge badge-walkin';
+          typeBadgeEl.innerHTML = '⚡ 🟡 현장 추가 등록 (Walk-in)';
+          if (seqBoxEl) seqBoxEl.className = 'gift-seq-box box-walkin';
+        } else if (regType === 'operator') {
+          typeBadgeEl.className = 'gift-reg-badge badge-operator';
+          typeBadgeEl.innerHTML = '🟣 세미나 운영진';
+          if (seqBoxEl) seqBoxEl.className = 'gift-seq-box';
+        } else if (regType === 'vip') {
+          typeBadgeEl.className = 'gift-reg-badge badge-vip';
+          typeBadgeEl.innerHTML = '👑 VIP 초청 인사';
+          if (seqBoxEl) seqBoxEl.className = 'gift-seq-box';
+        }
+      }
 
       // 초기 상태 로컬 반영
       updateGiftReceiptUI(data.giftStatus || 'unclaimed', data.giftReceivedAt || null);
