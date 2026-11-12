@@ -3068,6 +3068,43 @@
       return -1;
     }
 
+    function getEffectiveSessionStatus(s) {
+      if (!s) return '예정';
+      const rawStatus = (s.status || '').trim();
+
+      // 1. 관리자가 명시적으로 '진행 중' 또는 '진행중'으로 설정한 경우 최우선
+      if (rawStatus === '진행 중' || rawStatus === '진행중' || rawStatus === 'ongoing') {
+        return '진행중';
+      }
+
+      // 2. 행사 전 기간(isPreEventPeriod())인 경우
+      // 관리자가 명시적으로 '종료'로 설정하지 않은 이상 무조건 '예정' (시간이 늦었다고 종료 처리 금지)
+      if (isPreEventPeriod()) {
+        if (rawStatus === '종료' || rawStatus === 'ended') return '종료';
+        return '예정';
+      }
+
+      // 3. 행사 당일인 경우: 관리자가 수동으로 '종료'를 해두었으면 종료
+      if (rawStatus === '종료' || rawStatus === 'ended') {
+        return '종료';
+      }
+
+      // 4. 행사 당일 실시간 시각 기준 자동 판정 (start <= now < end: 진행중, now >= end: 종료, now < start: 예정)
+      const nowMinutes = getNowTimeMinutes();
+      const range = parseSessionTimeRange(s.time);
+      if (range) {
+        if (nowMinutes >= range.start && nowMinutes < range.end) {
+          return '진행중';
+        } else if (nowMinutes >= range.end) {
+          return '종료';
+        } else {
+          return '예정';
+        }
+      }
+
+      return rawStatus || '예정';
+    }
+
     function findCurrentOrUpcomingSessionIndex(sessList) {
       if (!Array.isArray(sessList) || sessList.length === 0) return 0;
 
@@ -3075,9 +3112,26 @@
       const queryIdx = findSessionIndexByQuery(sessList);
       if (queryIdx !== -1) return queryIdx;
 
+      // 2순위: 관리자가 명시적으로 '진행 중'으로 설정한 세션이 있다면 최우선 반환
+      for (let i = 0; i < sessList.length; i++) {
+        const st = (sessList[i].status || '').trim();
+        if (st === '진행 중' || st === '진행중' || st === 'ongoing') {
+          return i;
+        }
+      }
+
+      // 3순위: 행사 전 기간(isPreEventPeriod())이거나 모든 세션이 '예정'인 경우: 첫 번째 세션(인덱스 0) 포커스
+      const isAllUpcoming = sessList.every(s => {
+        const st = (s.status || '').trim();
+        return !st || st === '예정' || st === 'upcoming';
+      });
+      if (isPreEventPeriod() || isAllUpcoming) {
+        return 0;
+      }
+
       const nowMinutes = getNowTimeMinutes();
 
-      // 2순위: 현재 시각 기준 진행 중인 세션 (start <= now < end)
+      // 4순위: 현재 시각 기준 진행 중인 세션 (start <= now < end)
       for (let i = 0; i < sessList.length; i++) {
         const range = parseSessionTimeRange(sessList[i].time);
         if (range && nowMinutes >= range.start && nowMinutes < range.end) {
@@ -3085,7 +3139,7 @@
         }
       }
 
-      // 3순위: 바로 다음에 예정된 세션 (now < start 중 가장 첫 번째)
+      // 5순위: 바로 다음에 예정된 세션 (now < start 중 가장 첫 번째)
       for (let i = 0; i < sessList.length; i++) {
         const range = parseSessionTimeRange(sessList[i].time);
         if (range && nowMinutes < range.start) {
@@ -3093,7 +3147,7 @@
         }
       }
 
-      // 4순위: 전체 세미나 종료 후 시각인 경우 마지막 세션(클로징/럭키드로우)
+      // 6순위: 행사 당일 전체 세미나 종료 후 시각인 경우 마지막 세션(클로징/럭키드로우)
       return sessList.length - 1;
     }
 
@@ -3138,8 +3192,8 @@
         item.className = 'tt-item';
         item.style.cursor = 'pointer';
 
-        const range = parseSessionTimeRange(s.time);
-        const isOngoing = range && (nowMinutes >= range.start && nowMinutes < range.end);
+        const st = getEffectiveSessionStatus(s);
+        const isOngoing = (st === '진행중');
         if (isOngoing) {
           item.style.borderColor = 'rgba(16, 185, 129, 0.55)';
           item.style.background = 'rgba(16, 185, 129, 0.12)';
@@ -3147,7 +3201,7 @@
 
         const liveBadge = isOngoing 
           ? '<span style="background:#10b981; color:#fff; font-size:10px; font-weight:900; padding:2px 6px; border-radius:99px; margin-left:6px; vertical-align:middle;">진행중</span>' 
-          : '';
+          : (st === '종료' ? '<span style="background:rgba(255,255,255,0.18); color:rgba(255,255,255,0.6); font-size:10px; font-weight:700; padding:2px 6px; border-radius:99px; margin-left:6px; vertical-align:middle;">종료</span>' : '');
 
         item.innerHTML = `
           <div class="tt-time">${escapeHtml(s.time || '')}${liveBadge}</div>
@@ -3189,22 +3243,15 @@
       const sSpeaker = document.getElementById('sSpeaker');
       const ul = document.getElementById('sBullets');
 
-      // 실시간 시각 기준 세션 상태 동적 계산 (진행중 / 종료 / 예정)
-      const nowMinutes = getNowTimeMinutes();
-      const range = parseSessionTimeRange(s.time);
-      let dynamicStatus = s.status || '예정';
+      // 실시간 시각 및 관리자 설정 기준 세션 상태 동적 계산 (진행중 / 종료 / 예정)
+      const dynamicStatus = getEffectiveSessionStatus(s);
       let statusClass = 'status-pill';
-      if (range) {
-        if (nowMinutes >= range.start && nowMinutes < range.end) {
-          dynamicStatus = '진행중';
-          statusClass = 'status-pill ongoing';
-        } else if (nowMinutes >= range.end) {
-          dynamicStatus = '종료';
-          statusClass = 'status-pill ended';
-        } else {
-          dynamicStatus = '예정';
-          statusClass = 'status-pill upcoming';
-        }
+      if (dynamicStatus === '진행중') {
+        statusClass = 'status-pill ongoing';
+      } else if (dynamicStatus === '종료') {
+        statusClass = 'status-pill ended';
+      } else {
+        statusClass = 'status-pill upcoming';
       }
 
       if (sTime) sTime.textContent = s.time || '';
