@@ -417,15 +417,17 @@
 
     // ---------------------------------------------------------
     // 전체 세션 퀴즈 Top 3 산정 (이전 세션 당첨자 중복 제외 및 차순위 자동 배정)
+    // ※ 세션 0(오프닝)은 몸풀기 연습 퀴즈로 경품 미제공, 세션 1부터 정식 집계
     // ---------------------------------------------------------
     function computeAllSessionQuizTop3() {
       const subs = getQuizSubmissions();
       const quizList = getQuizConfig();
 
-      const sessionNums = [0, 1, 2, 3, 4, 5];
+      // 세션 0(오프닝)은 연습 퀴즈이므로 경품 집계 세션은 1~5만 해당
+      const sessionNums = [1, 2, 3, 4, 5];
       const result = {
-        bySession: {},
-        skippedBySession: {},
+        bySession: { 0: [] },
+        skippedBySession: { 0: [] },
         winnersEmailMap: {}
       };
 
@@ -558,11 +560,19 @@
       const allData = computeAllSessionQuizTop3();
 
       container.innerHTML = QUIZ_SESSION_INFO.map(sess => {
+        const isPractice = (sess.num === 0);
         const top3 = allData.bySession[sess.num] || [];
         const skipped = allData.skippedBySession[sess.num] || [];
         let itemsHtml = '';
 
-        if (top3.length === 0) {
+        if (isPractice) {
+          itemsHtml = `
+            <div style="padding: 20px 14px; background: rgba(56, 189, 248, 0.08); border: 1px dashed rgba(56, 189, 248, 0.35); border-radius: 10px; color: #7dd3fc; font-size: 13px; text-align: center; line-height: 1.65;">
+              🎯 <strong>오프닝 세션은 몸풀기 연습 퀴즈입니다.</strong><br>
+              <span style="color: rgba(255,255,255,0.7); font-size: 12px;">참가자 여러분의 시스템 적응을 위한 연습 세션으로 경품이 제공되지 않으며,<br><strong>세션 1(Keynote 1)부터</strong> 각 세션별 Top 3 스타벅스 쿠폰이 정식 집계·증정됩니다.</span>
+            </div>
+          `;
+        } else if (top3.length === 0) {
           itemsHtml = '<div class="empty-state">아직 세션 퀴즈 제출자가 없습니다.</div>';
         } else {
           itemsHtml = top3.map((w, idx) => {
@@ -603,15 +613,19 @@
           }
         }
 
+        const badgeHtml = isPractice
+          ? `<span class="top3-pill" style="background: rgba(56,189,248,0.15); color: #38bdf8; border-color: rgba(56,189,248,0.35);">🎯 연습 퀴즈 (경품 미제공)</span>`
+          : `<span class="top3-pill">☕ Top 3 쿠폰</span>`;
+
         return `
-          <article class="session-winner-card">
+          <article class="session-winner-card" style="${isPractice ? 'border-color: rgba(56,189,248,0.35);' : ''}">
             <div class="session-card-head">
               <div>
-                <span class="sess-id">SESSION ${sess.num}</span>
+                <span class="sess-id" style="${isPractice ? 'color: #38bdf8;' : ''}">SESSION ${sess.num}</span>
                 <h3 class="sess-title">${escapeHtml(sess.tag)}</h3>
                 <div class="sess-speaker">${escapeHtml(sess.speaker)}</div>
               </div>
-              <span class="top3-pill">☕ Top 3 쿠폰</span>
+              ${badgeHtml}
             </div>
             <div>
               ${itemsHtml}
@@ -628,6 +642,10 @@
     function exportQuizSessionWinnersCsv() {
       let csv = '\uFEFF세션번호,세션구분,세션주제및연사,순위,체크인순번,체크인ID,성명,소속(조직),구분,세션점수,제출시각,당첨경품,지급상태\n';
       QUIZ_SESSION_INFO.forEach(sess => {
+        if (sess.num === 0) {
+          csv += `"세션 0","${sess.tag}","${(sess.title || '').replace(/"/g, '""')} (연사: ${(sess.speaker || '').replace(/"/g, '""')})","-","-","-","(몸풀기 연습 퀴즈 - 경품 미제공)","-","-",0,"-","경품 미제공 (세션 1부터 증정)","연습세션"\n`;
+          return;
+        }
         const top3 = getSessionQuizTop3(sess.num);
         if (top3.length === 0) {
           csv += `"세션 ${sess.num}","${sess.tag}","${(sess.title || '').replace(/"/g, '""')} (연사: ${(sess.speaker || '').replace(/"/g, '""')})","-","-","-","(해당 세션 당첨자 없음)","-","-",0,"-","스타벅스 아메리카노 모바일 쿠폰","미지급"\n`;
