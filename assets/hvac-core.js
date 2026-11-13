@@ -635,11 +635,22 @@
   }
 
   var DEFAULT_MILESTONES = [
-    { seq: 1, prize: '스타벅스 커피 쿠폰 (1호 체크인)' },
-    { seq: 7, prize: '스타벅스 커피 쿠폰 (럭키 7)' },
-    { seq: 10, prize: '스타벅스 커피 쿠폰 (10번째 체크인)' },
+    // 🟢 사전 등록 대역 (1~199)
+    { seq: 1, prize: '스타벅스 커피 쿠폰 (사전 1호 체크인)' },
+    { seq: 7, prize: '스타벅스 커피 쿠폰 (사전 럭키 7)' },
+    { seq: 10, prize: '스타벅스 커피 쿠폰 (사전 10번째 체크인)' },
     { seq: 77, prize: '스타벅스 커피 쿠폰 (행운의 77번째)' },
-    { seq: 100, prize: '스타벅스 커피 쿠폰 (센추리 100번째)' }
+    { seq: 100, prize: '스타벅스 커피 쿠폰 (센추리 100번째)' },
+    // 🟡 현장 추가 등록 대역 (201~299)
+    { seq: 201, prize: '스타벅스 커피 쿠폰 (현장 1호 등록)' },
+    { seq: 207, prize: '스타벅스 커피 쿠폰 (현장 럭키 7)' },
+    { seq: 210, prize: '스타벅스 커피 쿠폰 (현장 10번째 등록)' },
+    // 👑 VIP 초대 대역 (701~799)
+    { seq: 701, prize: '스타벅스 커피 쿠폰 (VIP 1호 체크인)' },
+    { seq: 707, prize: '스타벅스 커피 쿠폰 (VIP 럭키 7)' },
+    // 🏢 하이엠 대역 (901~999)
+    { seq: 901, prize: '스타벅스 커피 쿠폰 (하이엠 1호 체크인)' },
+    { seq: 907, prize: '스타벅스 커피 쿠폰 (하이엠 럭키 7)' }
   ];
 
 
@@ -1083,8 +1094,10 @@
           var curDeviceId = getDeviceId();
           var prevDeviceId = existing.activeDeviceId;
 
-          // 🚨 다른 기기 중복 재체크인 차단: 이미 다른 기기에서 체크인되었거나 관리자에 의해 수동 등록된 경우 차단
-          if ((prevDeviceId && prevDeviceId !== curDeviceId) || existing.isManual || existing.regMethod === 'manual') {
+          // 🚨 다른 기기 중복 재체크인 차단: 이미 다른 모바일 기기에 바인딩된 경우에만 차단
+          // (관리자가 수동 등록해 준 인원은 모바일 최초 접속 시 해당 기기로 세션 바인딩 허용)
+          var isBoundToOtherDevice = prevDeviceId && prevDeviceId !== curDeviceId && prevDeviceId !== 'admin_console';
+          if (isBoundToOtherDevice) {
             return {
               error: 'DEVICE_DUPLICATE_BLOCKED',
               alreadyCheckedIn: true,
