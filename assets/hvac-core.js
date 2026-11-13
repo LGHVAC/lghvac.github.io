@@ -1905,7 +1905,7 @@
   function isConfigKeyNeededOnPage(key, pId) {
     if (pId === 'admin') return true;
     if (key === 'hvac_super_admin_hash') return false;
-    if (key === 'hvac_checkin_passcode') return pId === 'checkin';
+    if (key === 'hvac_checkin_passcode' || key === 'hvac_roster_list') return pId === 'checkin';
     if (key === 'hvac_quiz_unlocked_sessions' || key === 'hvac_quiz_config' || key === 'hvac_quiz_scoring_policy') {
       return pId === 'quiz' || pId === 'checkin' || pId === 'quiz-winners';
     }
@@ -2515,6 +2515,26 @@
       isStreamConnected: function () { return !!streamConnected; },
       saveConfig: function (cfg) { writeLocalSilent(CLOUD_CFG_KEY, cfg); startCloudLoop(); },
       cloudPath: cloudPath,
+      lookupRosterEntry: function (email) {
+        if (!email) return Promise.resolve(null);
+        var cleanEmail = String(email).toLowerCase().replace('@lge.com', '').trim();
+        var cleanKey = cleanEmail.replace(/[.#$\[\]\/]/g, '_');
+        var localRoster = read('hvac_roster_list');
+        if (Array.isArray(localRoster) && localRoster.length > 0 && !localRoster.some(function (r) { return r && r.email === 'user1'; })) {
+          var found = localRoster.find(function (r) {
+            return String(r.email || '').toLowerCase().replace('@lge.com', '').trim() === cleanEmail;
+          });
+          if (found) return Promise.resolve(found);
+        }
+        if (!window.fetch || !getCloudConfig()) return Promise.resolve(null);
+        return fetch(cloudPath('roster_map/' + cleanKey), { cache: 'no-store' })
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (entry) {
+            if (entry && entry.name) return entry;
+            return null;
+          })
+          .catch(function () { return null; });
+      },
       pushCheckinList: pushCheckinListToCloud,
       pushQnaList: pushQnaListToCloud,
       checkin: cloudCheckin,

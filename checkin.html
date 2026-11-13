@@ -3531,10 +3531,15 @@
         return;
       }
 
-      // 🚨 1) 사전 등록 명부(Roster)와의 성명 일치 확인
+      // 🚨 1) 사전 등록 명부(Roster)와의 성명 일치 확인 (단일 계정 핀포인트 조회 ~120B, 전체 명부 노출 없음)
       const roster = (window.HVAC && window.HVAC.read && window.HVAC.read('hvac_roster_list'))
         || JSON.parse(localStorage.getItem('hvac_roster_list') || '[]');
-      const matchedRoster = roster.find(r => String(r.email || '').toLowerCase().replace('@lge.com', '').trim() === cleanEmail);
+      let matchedRoster = roster.find(r => String(r.email || '').toLowerCase().replace('@lge.com', '').trim() === cleanEmail) || null;
+      if (!matchedRoster && window.HVAC && HVAC.cloud && typeof HVAC.cloud.lookupRosterEntry === 'function') {
+        try {
+          matchedRoster = await HVAC.cloud.lookupRosterEntry(cleanEmail);
+        } catch (e) {}
+      }
 
       if (matchedRoster && matchedRoster.name) {
         const rosterName = String(matchedRoster.name).trim();
