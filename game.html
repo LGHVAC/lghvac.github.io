@@ -1692,13 +1692,75 @@
         game10s: userRecords.game10s,
         game26c: userRecords.game26c
       }).then(() => {
-        loadMiniLeaderboard();
+        loadMiniLeaderboard(false);
       });
     }
 
-    function loadMiniLeaderboard() {
+    function renderMiniLeaderboardList(list) {
       const listEl = document.getElementById('miniLeaderboardList');
       if (!listEl) return;
+
+      if (!list || !list.length) {
+        listEl.innerHTML = '<li class="leaderboard-item" style="justify-content:center;color:var(--text-muted);">아직 등록된 기록이 없습니다. 첫 1위에 도전하세요!</li>';
+        return;
+      }
+
+      // 현재 탭에 맞는 리더보드 필터링 & 정렬
+      let filtered = [];
+      if (currentTab === '10s') {
+        filtered = list
+          .filter(item => item && item.game10s && item.game10s.bestDiff !== null && item.game10s.bestDiff !== undefined)
+          .sort((a, b) => a.game10s.bestDiff - b.game10s.bestDiff);
+      } else {
+        filtered = list
+          .filter(item => item && item.game26c && item.game26c.bestDiff !== null && item.game26c.bestDiff !== undefined)
+          .sort((a, b) => a.game26c.bestDiff - b.game26c.bestDiff);
+      }
+
+      if (!filtered.length) {
+        listEl.innerHTML = '<li class="leaderboard-item" style="justify-content:center;color:var(--text-muted);">해당 게임의 참여 기록이 없습니다.</li>';
+        return;
+      }
+
+      const top3 = filtered.slice(0, 3);
+      const medals = ['🥇 1위', '🥈 2위', '🥉 3위'];
+      listEl.innerHTML = top3.map((item, idx) => {
+        const scoreText = (currentTab === '10s')
+          ? `${item.game10s.bestTime.toFixed(2)}초 (오차 ${item.game10s.bestDiff.toFixed(2)}s)`
+          : `${item.game26c.bestTemp.toFixed(1)}℃ (오차 ${item.game26c.bestDiff.toFixed(1)}℃)`;
+        const isPerfect = (currentTab === '10s') ? item.game10s.isPerfect : item.game26c.isPerfect;
+
+        return `
+          <li class="leaderboard-item ${idx === 0 ? 'rank-1' : ''}">
+            <div>
+              <strong>${medals[idx] || (idx + 1) + '위'} ${escapeHtml(item.name)}</strong>
+              <span style="font-size: 11px; opacity: 0.65; margin-left: 4px;">${escapeHtml(item.dept || '')}</span>
+              ${isPerfect ? '<span style="color:#facc15;font-weight:900;margin-left:4px;">🎯 PERFECT!</span>' : ''}
+            </div>
+            <div style="font-family: var(--font-mono); font-weight: 850;">
+              ${scoreText}
+            </div>
+          </li>
+        `;
+      }).join('');
+    }
+
+    function loadMiniLeaderboard(forceNetwork = false) {
+      const listEl = document.getElementById('miniLeaderboardList');
+      if (!listEl) return;
+
+      if (!forceNetwork) {
+        try {
+          const cachedRaw = localStorage.getItem('hvac_game_submissions');
+          if (cachedRaw !== null) {
+            const cachedList = JSON.parse(cachedRaw);
+            if (Array.isArray(cachedList)) {
+              renderMiniLeaderboardList(cachedList);
+              return;
+            }
+          }
+        } catch (e) {}
+      }
 
       if (!window.HVAC || !window.HVAC.cloud) {
         listEl.innerHTML = '<li class="leaderboard-item" style="justify-content:center;color:var(--text-muted);">클라우드 연결 대기 중</li>';
@@ -1706,49 +1768,7 @@
       }
 
       window.HVAC.cloud.fetchGames().then(list => {
-        if (!list || !list.length) {
-          listEl.innerHTML = '<li class="leaderboard-item" style="justify-content:center;color:var(--text-muted);">아직 등록된 기록이 없습니다. 첫 1위에 도전하세요!</li>';
-          return;
-        }
-
-        // 현재 탭에 맞는 리더보드 필터링 & 정렬
-        let filtered = [];
-        if (currentTab === '10s') {
-          filtered = list
-            .filter(item => item.game10s && item.game10s.bestDiff !== null && item.game10s.bestDiff !== undefined)
-            .sort((a, b) => a.game10s.bestDiff - b.game10s.bestDiff);
-        } else {
-          filtered = list
-            .filter(item => item.game26c && item.game26c.bestDiff !== null && item.game26c.bestDiff !== undefined)
-            .sort((a, b) => a.game26c.bestDiff - b.game26c.bestDiff);
-        }
-
-        if (!filtered.length) {
-          listEl.innerHTML = '<li class="leaderboard-item" style="justify-content:center;color:var(--text-muted);">해당 게임의 참여 기록이 없습니다.</li>';
-          return;
-        }
-
-        const top3 = filtered.slice(0, 3);
-        const medals = ['🥇 1위', '🥈 2위', '🥉 3위'];
-        listEl.innerHTML = top3.map((item, idx) => {
-          const scoreText = (currentTab === '10s')
-            ? `${item.game10s.bestTime.toFixed(2)}초 (오차 ${item.game10s.bestDiff.toFixed(2)}s)`
-            : `${item.game26c.bestTemp.toFixed(1)}℃ (오차 ${item.game26c.bestDiff.toFixed(1)}℃)`;
-          const isPerfect = (currentTab === '10s') ? item.game10s.isPerfect : item.game26c.isPerfect;
-
-          return `
-            <li class="leaderboard-item ${idx === 0 ? 'rank-1' : ''}">
-              <div>
-                <strong>${medals[idx] || (idx + 1) + '위'} ${escapeHtml(item.name)}</strong>
-                <span style="font-size: 11px; opacity: 0.65; margin-left: 4px;">${escapeHtml(item.dept || '')}</span>
-                ${isPerfect ? '<span style="color:#facc15;font-weight:900;margin-left:4px;">🎯 PERFECT!</span>' : ''}
-              </div>
-              <div style="font-family: var(--font-mono); font-weight: 850;">
-                ${scoreText}
-              </div>
-            </li>
-          `;
-        }).join('');
+        renderMiniLeaderboardList(list || []);
       }).catch(() => {
         listEl.innerHTML = '<li class="leaderboard-item" style="justify-content:center;color:var(--text-muted);">기록을 불러오지 못했습니다.</li>';
       });
@@ -1827,24 +1847,25 @@
     document.addEventListener('DOMContentLoaded', () => {
       initUser();
       checkGameLockStatus();
-      setTimeout(loadMiniLeaderboard, 600);
-      setInterval(loadMiniLeaderboard, 10000); // 10초마다 갱신
+      setTimeout(() => loadMiniLeaderboard(false), 300);
       setInterval(() => {
         checkGameLockStatus();
         checkAdminResetStatus();
-      }, 3000); // 3초마다 관리자 오픈 여부 및 기록 리셋 실시간 확인
+      }, 3000); // 3초마다 로컬 캐시 기준 관리자 오픈 여부 및 기록 리셋 확인
       window.addEventListener('hvac:config-updated', () => {
         checkGameLockStatus();
         checkAdminResetStatus();
       });
       window.addEventListener('hvac:games-updated', () => {
         checkAdminResetStatus();
-        loadMiniLeaderboard();
+        loadMiniLeaderboard(false);
       });
       window.addEventListener('storage', (e) => {
         if (e.key === 'hvac_game_config') {
           checkGameLockStatus();
           checkAdminResetStatus();
+        } else if (e.key === 'hvac_game_submissions') {
+          loadMiniLeaderboard(false);
         }
       });
     });

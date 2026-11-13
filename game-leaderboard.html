@@ -639,8 +639,23 @@
       if (sub26c) sub26c.textContent = `${targetTemp.toFixed(1)}℃에 가장 근접한 참가자 순위 (1인 ${maxTries}회 중 Best)`;
     }
 
-    function refreshLeaderboard() {
+    function refreshLeaderboard(forceNetwork = false) {
       updateScreenGameStatus();
+
+      if (!forceNetwork) {
+        try {
+          const cachedRaw = localStorage.getItem('hvac_game_submissions');
+          if (cachedRaw !== null) {
+            const cachedList = JSON.parse(cachedRaw);
+            if (Array.isArray(cachedList)) {
+              renderBoard10s(cachedList);
+              renderBoard26c(cachedList);
+              return;
+            }
+          }
+        } catch (e) {}
+      }
+
       if (!window.HVAC || !window.HVAC.cloud) return;
 
       window.HVAC.cloud.fetchGames().then(list => {
@@ -848,13 +863,12 @@
 
     document.addEventListener('DOMContentLoaded', () => {
       initScreenUrl();
-      refreshLeaderboard();
-      // 4초마다 랭킹 자동 갱신
-      setInterval(refreshLeaderboard, 4000);
-      window.addEventListener('hvac:games-updated', refreshLeaderboard);
+      refreshLeaderboard(false);
+      window.addEventListener('hvac:games-updated', () => refreshLeaderboard(false));
       window.addEventListener('hvac:config-updated', updateScreenGameStatus);
       window.addEventListener('storage', (e) => {
         if (e.key === 'hvac_game_config') updateScreenGameStatus();
+        else if (e.key === 'hvac_game_submissions') refreshLeaderboard(false);
       });
     });
   </script>

@@ -539,8 +539,43 @@
     return c.dbUrl + '/' + c.roomKey + '/' + subpath.replace(/^\/+/, '') + '.json';
   }
 
-  var lastSeenMeta = { config: 0, checkins: 0, qna: 0, quiz: 0, surveys: 0, games: 0, session_reset_at: 0 };
+  var LAST_META_KEY = 'hvac_last_seen_meta';
+  var savedMeta = read(LAST_META_KEY);
+  var lastSeenMeta = (savedMeta && typeof savedMeta === 'object')
+    ? Object.assign({ config: 0, checkins: 0, qna: 0, quiz: 0, surveys: 0, games: 0, session_reset_at: 0 }, savedMeta)
+    : { config: 0, checkins: 0, qna: 0, quiz: 0, surveys: 0, games: 0, session_reset_at: 0 };
   var isSyncingCloud = false;
+
+  function saveLastSeenMeta() {
+    writeLocalSilent(LAST_META_KEY, lastSeenMeta);
+  }
+
+  function hasLocalSectionCache(sec) {
+    var pId = pageId();
+    if (sec === 'config') return read('hvac_schedule_settings') !== null;
+    if (sec === 'checkins') {
+      var fullCheckinPages = ['admin', 'attendance-dashboard', 'luckydraw-stage', 'quiz-winners'];
+      if (fullCheckinPages.indexOf(pId) >= 0) return read('hvac_checkin_list') !== null;
+      return true;
+    }
+    if (sec === 'qna') {
+      if (pId === 'qna' || pId === 'admin' || pId === 'checkin') return read('hvac_qna_list') !== null;
+      return true;
+    }
+    if (sec === 'quiz') {
+      if (pId === 'admin' || pId === 'quiz-winners') return read('hvac_quiz_submissions') !== null;
+      return true;
+    }
+    if (sec === 'games') {
+      if (pId === 'admin' || pId === 'lunch-screen' || pId === 'game-leaderboard' || pId === 'game') return read('hvac_game_submissions') !== null;
+      return true;
+    }
+    if (sec === 'surveys') {
+      if (pId === 'admin') return read('hvac_survey_responses') !== null;
+      return true;
+    }
+    return true;
+  }
 
   function touchCloudMeta(section) {
     var u = cloudPath('meta/' + section);
@@ -552,6 +587,7 @@
       body: JSON.stringify(ts)
     }).then(function () {
       lastSeenMeta[section] = ts;
+      saveLastSeenMeta();
       return true;
     }).catch(function () { return false; });
   }
@@ -1633,6 +1669,23 @@
     try {
       cloudEventSource = new EventSource(streamUrl);
 
+      function checkSessionResetSignal(resetEpochVal) {
+        var resetEpoch = Number(resetEpochVal) || 0;
+        if (resetEpoch <= 0) return;
+        var myUser = read('hvac_user_checked');
+        if (myUser && myUser.email) {
+          var userCheckedEpoch = Number(myUser.checkedAt) || Number(myUser.checkinTimeMs) || 0;
+          if (userCheckedEpoch < resetEpoch) {
+            writeLocalSilent('hvac_user_checked', null);
+            try { localStorage.removeItem('hvac_user_checked'); } catch (e) {}
+            try { localStorage.removeItem('hvac_checkin_user'); } catch (e) {}
+            window.dispatchEvent(new CustomEvent('hvac:session-terminated', {
+              detail: { deviceType: '관리자 전체 세션 강제 체크아웃', terminatedAt: resetEpoch }
+            }));
+          }
+        }
+      }
+
       function handleStreamPayload(payload) {
         if (!payload || typeof payload !== 'object') return;
         var p = payload.path || '';
@@ -1640,17 +1693,32 @@
 
         if (p === '/' || p === '') {
           if (d && typeof d === 'object') {
+            var metaChanged = false;
+            if (d.session_reset_at && d.session_reset_at !== lastSeenMeta.session_reset_at) {
+              lastSeenMeta.session_reset_at = d.session_reset_at;
+              metaChanged = true;
+              checkSessionResetSignal(d.session_reset_at);
+            }
             ['quiz', 'checkins', 'qna', 'games', 'surveys', 'config'].forEach(function (sec) {
-              if (d[sec] && d[sec] !== lastSeenMeta[sec]) {
-                lastSeenMeta[sec] = d[sec];
+              if ((d[sec] && d[sec] !== lastSeenMeta[sec]) || !hasLocalSectionCache(sec)) {
+                if (d[sec]) lastSeenMeta[sec] = d[sec];
+                metaChanged = true;
                 syncSpecificSection(sec);
               }
             });
+            if (metaChanged) saveLastSeenMeta();
           }
         } else {
           var cleanSec = p.replace(/^\//, '').split('/')[0];
-          if (cleanSec) {
+          if (cleanSec === 'session_reset_at') {
+            if (d && d !== lastSeenMeta.session_reset_at) {
+              lastSeenMeta.session_reset_at = d;
+              saveLastSeenMeta();
+              checkSessionResetSignal(d);
+            }
+          } else if (cleanSec && d !== lastSeenMeta[cleanSec]) {
             lastSeenMeta[cleanSec] = d || Date.now();
+            saveLastSeenMeta();
             syncSpecificSection(cleanSec);
           }
         }
@@ -1697,7 +1765,7 @@
         var pId = pageId();
 
         // 1) 설정(config) 변경 감지
-        if (forceAll || (meta.config && meta.config !== lastSeenMeta.config)) {
+        if (forceAll || !hasLocalSectionCache('config') || (meta.config && meta.config !== lastSeenMeta.config)) {
           lastSeenMeta.config = meta.config || Date.now();
           tasks.push(
             fetch(cloudPath('config'), { cache: 'no-store' })
@@ -1720,7 +1788,7 @@
         }
 
         // 2) Q&A 변경 감지 (qna, admin, checkin 페이지에서 동기화)
-        if ((pId === 'qna' || pId === 'admin') && (forceAll || (meta.qna && meta.qna !== lastSeenMeta.qna))) {
+        if ((pId === 'qna' || pId === 'admin') && (forceAll || !hasLocalSectionCache('qna') || (meta.qna && meta.qna !== lastSeenMeta.qna))) {
           lastSeenMeta.qna = meta.qna || Date.now();
           tasks.push(
             fetch(cloudPath('qna/list'), { cache: 'no-store' })
@@ -1749,7 +1817,7 @@
 
         // 3-A) 출석 명부 전체 동기화 (admin, attendance-dashboard, luckydraw-stage, quiz-winners)
         var fullCheckinPages = ['admin', 'attendance-dashboard', 'luckydraw-stage', 'quiz-winners'];
-        if (fullCheckinPages.indexOf(pId) >= 0 && (forceAll || (meta.checkins && meta.checkins !== lastSeenMeta.checkins))) {
+        if (fullCheckinPages.indexOf(pId) >= 0 && (forceAll || !hasLocalSectionCache('checkins') || (meta.checkins && meta.checkins !== lastSeenMeta.checkins))) {
           lastSeenMeta.checkins = meta.checkins || Date.now();
           tasks.push(
             fetch(cloudPath('checkins'), { cache: 'no-store' })
@@ -1789,7 +1857,9 @@
               window.dispatchEvent(new CustomEvent('hvac:session-terminated', {
                 detail: { deviceType: '관리자 전체 세션 강제 체크아웃', terminatedAt: resetEpoch }
               }));
-              return;
+              saveLastSeenMeta();
+              isSyncingCloud = false;
+              return false;
             }
 
             // 1) 차단(강퇴) 목록 조회 (~50B)
@@ -1850,7 +1920,7 @@
         }
 
         // 4) 퀴즈 제출 현황 변경 감지 (admin 및 quiz-winners 사회자 화면 실시간 동기화)
-        if ((pId === 'admin' || pId === 'quiz-winners') && (forceAll || (meta.quiz && meta.quiz !== lastSeenMeta.quiz))) {
+        if ((pId === 'admin' || pId === 'quiz-winners') && (forceAll || !hasLocalSectionCache('quiz') || (meta.quiz && meta.quiz !== lastSeenMeta.quiz))) {
           lastSeenMeta.quiz = meta.quiz || Date.now();
           tasks.push(
             fetch(cloudPath('quiz/submissions'), { cache: 'no-store' })
@@ -1868,7 +1938,7 @@
         }
 
         // 5) 만족도 설문(survey) 응답 변경 감지 (admin 전용)
-        if (pId === 'admin' && (forceAll || (meta.surveys && meta.surveys !== lastSeenMeta.surveys))) {
+        if (pId === 'admin' && (forceAll || !hasLocalSectionCache('surveys') || (meta.surveys && meta.surveys !== lastSeenMeta.surveys))) {
           lastSeenMeta.surveys = meta.surveys || Date.now();
           tasks.push(
             fetch(cloudPath('surveys'), { cache: 'no-store' })
@@ -1883,7 +1953,7 @@
         }
 
         // 6) 점심 미니게임 변경 감지 (admin, lunch-screen, game)
-        if ((pId === 'admin' || pId === 'lunch-screen' || pId === 'game-leaderboard' || pId === 'game') && (forceAll || (meta.games && meta.games !== lastSeenMeta.games))) {
+        if ((pId === 'admin' || pId === 'lunch-screen' || pId === 'game-leaderboard' || pId === 'game') && (forceAll || !hasLocalSectionCache('games') || (meta.games && meta.games !== lastSeenMeta.games))) {
           lastSeenMeta.games = meta.games || Date.now();
           tasks.push(
             fetch(cloudPath('games/submissions'), { cache: 'no-store' })
@@ -1898,6 +1968,8 @@
               .catch(function () {})
           );
         }
+
+        saveLastSeenMeta();
 
         return Promise.all(tasks).then(function () {
           isSyncingCloud = false;
@@ -1936,23 +2008,35 @@
     if (pollTimer) clearInterval(pollTimer);
     if (!getCloudConfig()) return;
 
-    // 1. 초기 1회 전체 동기화
-    pollCloudChanges(true);
-
-    // 2. 200명 전원 실시간 SSE 소켓 스트림 연결 (0초 지연 푸시)
+    // 1. 200명 전원 실시간 SSE 소켓 스트림 연결 (초기 put 이벤트로 변경된 섹션만 차등 동기화)
     initCloudStream();
 
-    // 3. 주기적 안전 백업 폴링 (소켓 단절 대비 세이프가드)
+    // 2. SSE 소켓이 2.5초 내 연결되지 않은 경우에만 초기 백업 폴링 1회 수행 (중복 다운로드 방지)
+    setTimeout(function () {
+      if (!streamConnected) {
+        pollCloudChanges(false);
+      }
+    }, 2500);
+
+    // 3. 주기적 안전 백업 폴링 (소켓 단절 시에만 동작, 정상 스트림 중에는 0회 호출)
     var fastPages = ['admin', 'qna', 'attendance-dashboard', 'quiz-winners', 'game-leaderboard', 'lunch-screen', 'luckydraw-stage'];
-    var intervalMs = fastPages.indexOf(pageId()) >= 0 ? 8000 : 12000;
+    var intervalMs = fastPages.indexOf(pageId()) >= 0 ? 15000 : 30000;
     pollTimer = setInterval(function () {
+      if (streamConnected && cloudEventSource && cloudEventSource.readyState === 1) return;
       pollCloudChanges(false);
     }, intervalMs);
   }
 
-  // 모바일 화면 꺼짐 복귀 / 백그라운드 탭 전환 시 스트림 및 데이터 즉각 재연결 (0.1초 반응)
+  // 모바일 화면 꺼짐 복귀 / 백그라운드 탭 전환 시 스트림 및 데이터 재연결 (3초 디바운스 + 정상 연결 시 폴링 생략)
+  var lastResumeCheckAt = 0;
   function checkAndResumeStream() {
+    var now = Date.now();
+    if (now - lastResumeCheckAt < 3000) return;
+    lastResumeCheckAt = now;
     if (!getCloudConfig()) return;
+    if (streamConnected && cloudEventSource && cloudEventSource.readyState === 1) {
+      return;
+    }
     pollCloudChanges(false);
     if (!cloudEventSource || cloudEventSource.readyState === 2 /* EventSource.CLOSED */) {
       initCloudStream();
