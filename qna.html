@@ -891,6 +891,7 @@
         <div class="sort-btns">
           <button type="button" class="btn-sort active" id="btnSortLikes" data-sort="likes">👍 공감순</button>
           <button type="button" class="btn-sort" id="btnSortNewest" data-sort="newest">🕒 최신순</button>
+          <button type="button" class="btn-sort" id="btnSortOldest" data-sort="oldest">⏳ 등록순</button>
         </div>
       </div>
     </div>
@@ -1082,6 +1083,51 @@
       setTimeout(() => toast.classList.remove('show'), 2200);
     }
 
+    // Q&A 등록 날짜+시간 정밀 포맷터
+    function formatQnaDateTime(q) {
+      if (!q) return '';
+      if (q.timestamp && !isNaN(q.timestamp)) {
+        const d = new Date(Number(q.timestamp));
+        if (!isNaN(d.getTime())) {
+          const yy = d.getFullYear();
+          const mm = String(d.getMonth() + 1).padStart(2, '0');
+          const dd = String(d.getDate()).padStart(2, '0');
+          const timeStr = d.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+          return `${yy}.${mm}.${dd} ${timeStr}`;
+        }
+      }
+      if (q.createdAt) {
+        const d = new Date(q.createdAt);
+        if (!isNaN(d.getTime())) {
+          const yy = d.getFullYear();
+          const mm = String(d.getMonth() + 1).padStart(2, '0');
+          const dd = String(d.getDate()).padStart(2, '0');
+          const timeStr = d.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+          return `${yy}.${mm}.${dd} ${timeStr}`;
+        }
+      }
+      if (q.date && q.time) {
+        if (String(q.time).includes(q.date)) return String(q.time);
+        return `${q.date} ${q.time}`;
+      }
+      if (q.time) {
+        const tStr = String(q.time).trim();
+        if (/\d{4}[.-/]\d{1,2}[.-/]\d{1,2}/.test(tStr) || /\d{1,2}\/\d{1,2}/.test(tStr)) {
+          return tStr;
+        }
+        return `2026.11.16 ${tStr}`;
+      }
+      if (q.id && Number(q.id) > 1700000000000) {
+        const d = new Date(Number(q.id));
+        const yy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        const timeStr = d.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+        return `${yy}.${mm}.${dd} ${timeStr}`;
+      }
+      return '실시간';
+    }
+
     // 피드 렌더링
     function renderFeed() {
       const feed = document.getElementById('qnaFeed');
@@ -1110,14 +1156,22 @@
       }
 
       if (currentSort === 'likes') {
-        filtered.sort((a, b) => (b.likes || 0) - (a.likes || 0) || (b.id || 0) - (a.id || 0));
+        filtered.sort((a, b) => {
+          const diff = (Number(b.likes) || 0) - (Number(a.likes) || 0);
+          if (diff !== 0) return diff;
+          return (Number(b.timestamp || b.id) || 0) - (Number(a.timestamp || a.id) || 0);
+        });
+      } else if (currentSort === 'oldest') {
+        filtered.sort((a, b) => (Number(a.timestamp || a.id) || 0) - (Number(b.timestamp || b.id) || 0));
       } else {
-        filtered.sort((a, b) => (b.id || 0) - (a.id || 0));
+        // newest (최신순)
+        filtered.sort((a, b) => (Number(b.timestamp || b.id) || 0) - (Number(a.timestamp || a.id) || 0));
       }
 
       filtered.forEach(q => {
         const card = document.createElement('div');
         card.className = 'qna-card' + (q.isStarred ? ' starred-card' : '');
+        const fullDateTimeStr = formatQnaDateTime(q);
 
         let statusBadgesHtml = '';
         if (q.isStarred) {
@@ -1135,7 +1189,7 @@
             </div>
             <div class="qna-meta">
               <span>👤 ${escapeHtml(q.author || '참석자')}</span>
-              <span>🕒 ${escapeHtml(q.time || '')}</span>
+              <span>📅 ${escapeHtml(fullDateTimeStr)}</span>
             </div>
           </div>
           <div class="qna-body">${escapeHtml(q.content || '')}</div>
@@ -1308,7 +1362,9 @@
       }
 
       const now = new Date();
-      const timeStr = now.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+      const dateStr = now.toISOString().slice(0, 10);
+      const timeOnlyStr = now.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+      const fullTimeStr = `${dateStr} ${timeOnlyStr}`;
 
       let checkedUser = null;
       try {
@@ -1317,7 +1373,7 @@
       } catch (e) {}
 
       const newQ = {
-        id: Date.now(),
+        id: now.getTime(),
         session: sessionKey,
         sessionName: sessionNames[sessionKey] || '강연 질의',
         author: author,
@@ -1327,8 +1383,10 @@
         authorEmail: (checkedUser && checkedUser.email) ? checkedUser.email : '',
         userDept: (checkedUser && (checkedUser.dept || checkedUser.org)) ? (checkedUser.dept || checkedUser.org) : '',
         content: content,
-        time: timeStr,
-        timestamp: Date.now(),
+        date: dateStr,
+        time: fullTimeStr,
+        timestamp: now.getTime(),
+        createdAt: now.toISOString(),
         likes: 1,
         isLiked: true,
         isStarred: false,

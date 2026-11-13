@@ -1506,14 +1506,14 @@
             fetch(cloudPath('checkins'), { cache: 'no-store' })
               .then(function (r) { return r.ok ? r.json() : null; })
               .then(function (chkData) {
-                if (!chkData || typeof chkData !== 'object') return;
-                if (chkData.items && typeof chkData.items === 'object') {
-                  var arr = Object.values(chkData.items).filter(Boolean);
+                var arr = [];
+                if (chkData && typeof chkData === 'object' && chkData.items && typeof chkData.items === 'object') {
+                  arr = Object.values(chkData.items).filter(Boolean);
                   arr.sort(function (a, b) { return (b.seq || 0) - (a.seq || 0); });
-                  writeLocalSilent('hvac_checkin_list', arr);
-                  window.dispatchEvent(new StorageEvent('storage', { key: 'hvac_checkin_list' }));
                 }
-                if (Array.isArray(chkData.blocked)) {
+                writeLocalSilent('hvac_checkin_list', arr);
+                window.dispatchEvent(new StorageEvent('storage', { key: 'hvac_checkin_list' }));
+                if (chkData && Array.isArray(chkData.blocked)) {
                   writeLocalSilent('hvac_blocked_users', chkData.blocked);
                 }
               })
@@ -1579,8 +1579,10 @@
             fetch(cloudPath('quiz/submissions'), { cache: 'no-store' })
               .then(function (r) { return r.ok ? r.json() : null; })
               .then(function (subMap) {
-                if (!subMap || typeof subMap !== 'object') return;
-                var list = Object.values(subMap).filter(Boolean);
+                var list = [];
+                if (subMap && typeof subMap === 'object') {
+                  list = Object.values(subMap).filter(Boolean);
+                }
                 writeLocalSilent('hvac_quiz_submissions', list);
                 window.dispatchEvent(new StorageEvent('storage', { key: 'hvac_quiz_submissions' }));
               })

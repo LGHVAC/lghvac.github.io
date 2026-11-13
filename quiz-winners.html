@@ -302,19 +302,11 @@
       </h1>
       <p class="hero-desc">각 세션별 퀴즈 최고 득점자 및 최단시간 제출자 1~3위(Top 3)를 자동 집계합니다.</p>
 
-      <!-- 당첨 기준 및 예외 규정 배너 -->
-      <div class="rules-banner">
-        <div class="rule-item ok">
-          <span>✔ 증정 대상:</span>
-          <span>사전등록 · 현장 추가 등록 · 초대(VIP) · 하이엠 인원</span>
-        </div>
-        <div class="rule-item no">
-          <span>✕ 자동 제외:</span>
-          <span>사외 인원(강사/교수/학생) 및 운영진</span>
-        </div>
+      <!-- 당첨 산정 기준 배너 -->
+      <div class="rules-banner" style="justify-content: flex-start;">
         <div class="rule-item star">
           <span>⭐ 산정 기준:</span>
-          <span>① 가장 높은 점수 &gt; ② 가장 빠른 제출 시각</span>
+          <span>① 가장 높은 점수 &gt; ② 가장 빠른 제출 시각 (세션별 1~3위 모바일 커피 쿠폰 증정)</span>
         </div>
       </div>
 
@@ -324,8 +316,11 @@
           <button class="btn-action" onclick="exportQuizSessionWinnersCsv()">
             📥 세션별 Top 3 당첨자 CSV 다운로드
           </button>
-          <button class="btn-action sec" onclick="loadQuizWinners(true)">
-            🔄 순위 새로고침
+          <button class="btn-action sec" onclick="syncAndRefreshQuizWinners(true)">
+            🔄 순위 새로고침 (클라우드 동기화)
+          </button>
+          <button class="btn-action sec danger" onclick="purgeQuizSubmissionsFromScreen()" style="border-color: rgba(239, 68, 68, 0.45); color: #fca5a5;">
+            🗑️ 퀴즈 풀이 이력 비우기
           </button>
         </div>
 
@@ -459,11 +454,9 @@
               }
             });
           } else {
-            const sessQuestions = quizList.filter(q => Number(q.sessionNum) === sNum);
-            if (sessQuestions.length > 0 && Number(sub.score) > 0) {
-              score = Math.round((Number(sub.score) / (quizList.length || 11)) * sessQuestions.length * 10) / 10;
-              answered = sessQuestions.length;
-            }
+            // 세션별 답안 데이터가 없는 경우 임의 점수를 배정하지 않음 (0점 처리)
+            score = 0;
+            answered = 0;
           }
 
           if (score <= 0 && answered === 0) return;
@@ -605,9 +598,10 @@
           }).join('');
 
           if (skipped.length > 0) {
+            const uniqueSkippedNames = [...new Set(skipped.map(s => s.name))];
             itemsHtml += `
               <div style="margin-top: 8px; padding: 6px 10px; background: rgba(245,158,11,0.1); border: 1px dashed rgba(245,158,11,0.35); border-radius: 6px; font-size: 11px; color: #fbbf24;">
-                ℹ️ <strong>중복 방지 차순위 승계:</strong> 이전 세션 당첨자 ${skipped.map(s => escapeHtml(s.name)).join(', ')} 님 제외 후 차순위자 자동 배정
+                ℹ️ <strong>중복 방지 차순위 승계:</strong> 이전 세션 당첨자 ${uniqueSkippedNames.map(escapeHtml).join(', ')} 님 제외 후 차순위자 자동 배정
               </div>
             `;
           }
@@ -689,8 +683,82 @@
 
     document.addEventListener('fullscreenchange', updateFullscreenBtnState);
 
+    // 클라우드 실시간 동기화 후 화면 새로고침
+    async function syncAndRefreshQuizWinners(showFeedback = false) {
+      if (window.HVAC && window.HVAC.cloud && typeof window.HVAC.cloud.getConfig === 'function') {
+        const cfg = window.HVAC.cloud.getConfig();
+        if (cfg && cfg.dbUrl && cfg.roomKey) {
+          try {
+            const base = cfg.dbUrl.replace(/\/+$/, '') + '/' + cfg.roomKey;
+            const res = await fetch(base + '/quiz/submissions.json', { cache: 'no-store' });
+            if (res.ok) {
+              const subMap = await res.json();
+              let list = [];
+              if (subMap && typeof subMap === 'object') {
+                list = Object.values(subMap).filter(Boolean);
+              }
+              localStorage.setItem('hvac_quiz_submissions', JSON.stringify(list));
+            }
+          } catch (e) {
+            console.warn('Sync quiz error:', e);
+          }
+        }
+      }
+      loadQuizWinners(false);
+      if (showFeedback) {
+        const subs = getQuizSubmissions();
+        alert(`🔄 클라우드와 실시간 동기화되었습니다. (현재 퀴즈 제출자: ${subs.length}건)`);
+      }
+    }
+
+    // 전광판 화면에서 퀴즈 풀이 이력 완전 초기화 (원클릭 비우기)
+    async function purgeQuizSubmissionsFromScreen() {
+      const subs = getQuizSubmissions();
+      const count = subs.length;
+      if (!confirm(`🗑️ [퀴즈 풀이 이력 완전 초기화]\n\n현재 전광판 및 클라우드 DB에 남아 있는 참가자 퀴즈 풀이 이력(총 ${count}건)을 완전히 삭제하시겠습니까?\n\n삭제 즉시 모든 세션의 순위가 0건으로 리셋되며, 되돌릴 수 없습니다.`)) {
+        return;
+      }
+
+      // 1. 로컬 스토리지 삭제
+      localStorage.setItem('hvac_quiz_submissions', '[]');
+      localStorage.removeItem('hvac_quiz_answers');
+      localStorage.setItem('hvac_quiz_score', '0');
+
+      // 2. Firebase 클라우드 DB 원격 비우기
+      if (window.HVAC && window.HVAC.cloud && typeof window.HVAC.cloud.getConfig === 'function') {
+        const cfg = window.HVAC.cloud.getConfig();
+        if (cfg && cfg.dbUrl && cfg.roomKey) {
+          const base = cfg.dbUrl.replace(/\/+$/, '') + '/' + cfg.roomKey;
+          try {
+            await fetch(base + '/quiz/submissions.json', {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({})
+            });
+            await fetch(base + '/meta.json', {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ quiz: Date.now() })
+            });
+          } catch (cloudErr) {
+            console.warn('Purge cloud quiz error:', cloudErr);
+          }
+        }
+      }
+
+      // 3. 브라우저 크로스 탭 알림 발송
+      try {
+        window.dispatchEvent(new StorageEvent('storage', { key: 'hvac_quiz_submissions' }));
+      } catch (e) {}
+
+      // 4. 화면 리렌더링
+      loadQuizWinners(false);
+      alert('✅ 퀴즈 풀이 이력 및 전광판 순위가 성공적으로 깨끗하게 초기화되었습니다. (현재 0건)');
+    }
+
     window.addEventListener('DOMContentLoaded', () => {
       loadQuizWinners();
+      syncAndRefreshQuizWinners(false);
       setInterval(loadQuizWinners, 4000);
     });
 
