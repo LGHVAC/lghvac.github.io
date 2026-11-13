@@ -1105,22 +1105,43 @@
           var curDeviceId = getDeviceId();
           var prevDeviceId = existing.activeDeviceId;
 
-          // 🚨 다른 기기 중복 재체크인 차단: 이미 다른 모바일 기기에 바인딩된 경우에만 차단
-          // (관리자가 수동 등록해 준 인원은 모바일 최초 접속 시 해당 기기로 세션 바인딩 허용)
+          // 🚨 다른 기기 접속 시 동일인 확인 및 기기 세션 전환 (1인 1기기 정책 완화)
           var isBoundToOtherDevice = prevDeviceId && prevDeviceId !== curDeviceId && prevDeviceId !== 'admin_console';
           if (isBoundToOtherDevice) {
-            return {
-              error: 'DEVICE_DUPLICATE_BLOCKED',
-              alreadyCheckedIn: true,
-              seq: existing.seq,
-              checkinId: existing.checkinId || ('HVAC-' + String(existing.seq).padStart(3, '0')),
-              name: existing.name,
-              email: existing.email,
-              checkinTime: existing.checkinTime,
-              regMethod: existing.regMethod,
-              isManual: !!(existing.isManual || existing.regMethod === 'manual'),
-              message: '동일한 이름과 이메일로는 다른 기기에서 중복 체크인할 수 없습니다.'
-            };
+            var existingName = String(existing.name || '').trim();
+            var incomingName = String(attendee.name || '').trim();
+            var isSamePerson = existingName && incomingName && (existingName === incomingName);
+
+            // 동일인이 아닌 경우 -> 절대 불가!
+            if (!isSamePerson) {
+              return {
+                error: 'IDENTITY_MISMATCH',
+                alreadyCheckedIn: true,
+                isSamePerson: false,
+                seq: existing.seq,
+                checkinId: existing.checkinId || ('HVAC-' + String(existing.seq).padStart(3, '0')),
+                name: existing.name,
+                email: existing.email,
+                message: '입력하신 성명이 기존 등록 성명과 일치하지 않습니다.'
+              };
+            }
+
+            // 동일인인데 아직 사용자 명시적 기기 전환 확인(allowDeviceTakeover)이 전달되지 않은 경우
+            if (!attendee.allowDeviceTakeover) {
+              return {
+                error: 'DEVICE_DUPLICATE_PROMPT',
+                alreadyCheckedIn: true,
+                isSamePerson: true,
+                seq: existing.seq,
+                checkinId: existing.checkinId || ('HVAC-' + String(existing.seq).padStart(3, '0')),
+                name: existing.name,
+                email: existing.email,
+                checkinTime: existing.checkinTime,
+                regMethod: existing.regMethod,
+                isManual: !!(existing.isManual || existing.regMethod === 'manual'),
+                message: '이미 다른 기기에서 출석된 사용자입니다. 동일인 확인 후 현재 기기로 세션을 전환할 수 있습니다.'
+              };
+            }
           }
 
           var updated = Object.assign({}, existing, attendee, {

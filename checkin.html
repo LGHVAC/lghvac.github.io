@@ -3518,15 +3518,62 @@
         return;
       }
 
-      // 🚨 사전 중복 체크: 동일한 이메일로 이미 다른 모바일 기기에서 체크인된 경우 안내
+      // 🚨 1) 사전 등록 명부(Roster)와의 성명 일치 확인
+      const roster = (window.HVAC && window.HVAC.read && window.HVAC.read('hvac_roster_list'))
+        || JSON.parse(localStorage.getItem('hvac_roster_list') || '[]');
+      const matchedRoster = roster.find(r => String(r.email || '').toLowerCase().replace('@lge.com', '').trim() === cleanEmail);
+
+      if (matchedRoster && matchedRoster.name) {
+        const rosterName = String(matchedRoster.name).trim();
+        if (rosterName && rosterName !== rawName) {
+          alert(`🚫 [사전 등록 명부 확인 실패]\n\n'${cleanEmail}' 계정에 사전 등록된 성명('${rosterName}')과 입력하신 성명('${rawName}')이 일치하지 않습니다.\n\n동일인 확인을 위해 사전 등록 시 입력하신 본인 성명을 정확히 입력해 주세요.`);
+          if (inputName) inputName.focus();
+          return;
+        }
+      }
+
+      // 🚨 2) 기출석 데이터 기반 동일인 확인 및 기기 세션 전환 (1인 1기기 정책 완화)
       try {
         const localCheckins = (window.HVAC && window.HVAC.read && window.HVAC.read('hvac_checkin_list')) || JSON.parse(localStorage.getItem('hvac_checkin_list') || '[]');
         const existInLocal = localCheckins.find(it => (it.email || '').toLowerCase().replace('@lge.com', '').trim() === cleanEmail);
         const myDev = (window.HVAC && window.HVAC.getDeviceId) ? window.HVAC.getDeviceId() : 'dev_local';
         const isBoundOther = existInLocal && existInLocal.activeDeviceId && existInLocal.activeDeviceId !== myDev && existInLocal.activeDeviceId !== 'admin_console';
+
         if (isBoundOther) {
-          alert(`🚫 [출석 체크 불가 - 중복 체크인 방지]\n\n'${existInLocal.name} (${cleanEmail})' 님은 다른 기기에서 이미 출석 체크가 완료되었습니다.\n\n• 발급 순번: No. ${existInLocal.seq}\n• 등록 일시: ${existInLocal.checkinTime || '확인됨'}\n\n1인 1기기 보안 정책에 따라 동일한 이름과 이메일로는 다른 기기에서 재체크인할 수 없습니다.\n안내 데스크로 문의해 주시기 바랍니다.`);
-          return;
+          const regName = (existInLocal.name || '').trim();
+          const inputNameVal = rawName.trim();
+          const isSamePerson = regName && (regName === inputNameVal);
+
+          if (!isSamePerson) {
+            alert(
+              `🚫 [본인 확인 실패 - 출석 불가]\n\n` +
+              `입력하신 성명('${inputNameVal}')이 기존 출석 정보('${regName}')와 일치하지 않습니다.\n\n` +
+              `본인의 이메일 아이디와 성명을 정확하게 입력해 주세요.`
+            );
+            return;
+          }
+
+          // 동일인(이름과 이메일 일치)인 경우 -> 본인 확인 및 기기 전환 확인
+          const confirmed = confirm(
+            `📱 [기기 전환 / 본인 확인]\n\n` +
+            `'${regName} (${cleanEmail})' 님은 이미 다른 기기에서 출석 체크된 이력이 있습니다.\n` +
+            `• 기존 발급 순번: No. ${existInLocal.seq} (${existInLocal.checkinId || ''})\n` +
+            `• 등록 일시: ${existInLocal.checkinTime || '확인됨'}\n\n` +
+            `동일인(본인)이 맞으신가요?\n\n` +
+            `• [확인]: 기존 기기의 접속을 해제하고 현재 기기로 출석 세션을 전환하여 세미나에 참여합니다.\n` +
+            `• [취소]: 체크인을 취소하고 현재 화면에 머무릅니다.`
+          );
+
+          if (!confirmed) {
+            // 사용자가 [취소]를 누르면 중단
+            return;
+          }
+
+          // 본인 확인 완료 -> 기기 승계 플래그 활성화
+          currentCheckinMeta.allowDeviceTakeover = true;
+          currentCheckinMeta.existingSeq = existInLocal.seq;
+          currentCheckinMeta.existingCheckinId = existInLocal.checkinId;
+          currentCheckinMeta.category = existInLocal.category || currentCheckinMeta.category;
         }
       } catch (e) {}
 
@@ -4216,6 +4263,7 @@
             dept: currentCheckinMeta.dept,
             empNo: currentCheckinMeta.empNo,
             isOperator: currentCheckinMeta.isOperator,
+            allowDeviceTakeover: !!currentCheckinMeta.allowDeviceTakeover,
             checkinTime: timeStr,
             date: now.toISOString().slice(0, 10)
           });
@@ -4224,11 +4272,47 @@
         }
       }
 
-      // 🚨 중복 체크인 차단 응답 처리
-      if (checkinData && (checkinData.alreadyCheckedIn || checkinData.error === 'DEVICE_DUPLICATE_BLOCKED')) {
-        const adminNote = checkinData.isManual ? '관리자 출석부에 의해 이미 수동 등록된 계정입니다.' : '이미 다른 기기에서 출석 체크가 완료되었습니다.';
-        alert(`🚫 [출석 체크 불가 - 중복 체크인 방지]\n\n이미 출석 등록이 완료된 참석자입니다.\n(${adminNote})\n\n• 발급 순번: No. ${checkinData.seq} (${checkinData.checkinId || ''})\n• 등록 성명: ${checkinData.name}\n• 등록 일시: ${checkinData.checkinTime || '등록 완료'}\n\n1인 1기기 세션 보안 및 중복 체크인 방지 정책에 따라, 동일한 이름과 이메일로는 다른 기기에서 재체크인이 불가합니다.\n\n안내 데스크로 문의해 주시기 바랍니다.`);
-        return;
+      // 🚨 클라우드 응답 검증 (본인 확인 및 기기 세션 전환)
+      if (checkinData && checkinData.error) {
+        if (checkinData.error === 'IDENTITY_MISMATCH' || !checkinData.isSamePerson) {
+          alert(`🚫 [본인 확인 실패 - 출석 불가]\n\n입력하신 성명('${name}')이 기존 등록 정보('${checkinData.name || ''}')와 일치하지 않습니다.\n본인의 이메일 아이디와 성명을 정확하게 입력해 주세요.`);
+          return;
+        }
+
+        if (checkinData.error === 'DEVICE_DUPLICATE_PROMPT') {
+          const proceed = confirm(
+            `📱 [기기 전환 / 본인 확인]\n\n` +
+            `'${checkinData.name} (${cleanEmail})' 님은 이미 다른 기기에서 출석 체크된 이력이 있습니다.\n` +
+            `(기존 발급 순번: No. ${checkinData.seq})\n\n` +
+            `동일인(본인)이 맞으신가요?\n\n` +
+            `• [확인]: 기존 기기의 접속을 해제하고 현재 기기로 출석 세션을 전환하여 계속 진행합니다.\n` +
+            `• [취소]: 체크인을 취소하고 현재 화면으로 돌아갑니다.`
+          );
+
+          if (!proceed) {
+            return;
+          }
+
+          // 재시도: allowDeviceTakeover: true로 전송하여 세션 승계
+          try {
+            checkinData = await HVAC.cloud.checkin({
+              email: cleanEmail,
+              name: name,
+              category: currentCheckinMeta.category || 'walkin',
+              regMethod: currentCheckinMeta.regMethod || (currentCheckinMeta.type === 'walkin' ? 'walkin' : 'pre'),
+              type: currentCheckinMeta.type,
+              position: currentCheckinMeta.position,
+              dept: currentCheckinMeta.dept,
+              empNo: currentCheckinMeta.empNo,
+              isOperator: currentCheckinMeta.isOperator,
+              allowDeviceTakeover: true,
+              checkinTime: timeStr,
+              date: now.toISOString().slice(0, 10)
+            });
+          } catch (retryErr) {
+            checkinData = null;
+          }
+        }
       }
 
       // 2) 오프라인 또는 로컬 테스트 모드 fallback
@@ -4238,8 +4322,18 @@
           const myDev = (window.HVAC && window.HVAC.getDeviceId) ? window.HVAC.getDeviceId() : 'dev_local';
           const isBoundOther = exist.activeDeviceId && exist.activeDeviceId !== myDev && exist.activeDeviceId !== 'admin_console';
           if (isBoundOther) {
-            alert(`🚫 [출석 체크 불가 - 중복 체크인 방지]\n\n이미 다른 기기에서 출석 체크가 완료되었습니다.\n\n• 발급 순번: No. ${exist.seq}\n• 등록 성명: ${exist.name}\n• 등록 일시: ${exist.checkinTime || '-'}\n\n1인 1기기 세션 보안 정책에 따라 동일한 이름과 이메일로는 다른 기기에서 재체크인이 불가합니다.\n안내 데스크로 문의해 주시기 바랍니다.`);
-            return;
+            const isSame = (exist.name || '').trim() === name.trim();
+            if (!isSame) {
+              alert(`🚫 [본인 확인 실패 - 출석 불가]\n\n입력하신 성명('${name}')이 기존 출석 성명('${exist.name}')과 일치하지 않습니다.\n본인의 정보를 정확히 입력해 주세요.`);
+              return;
+            }
+            if (!currentCheckinMeta.allowDeviceTakeover) {
+              const proceed = confirm(
+                `📱 [기기 전환 / 본인 확인]\n\n'${exist.name} (${cleanEmail})' 님은 이미 다른 기기에서 출석 체크된 이력이 있습니다.\n(기존 순번: No. ${exist.seq})\n\n동일인(본인)이 맞으신가요?\n\n• [확인]: 기존 기기 연결을 해제하고 현재 기기로 진행\n• [취소]: 체크인 취소`
+              );
+              if (!proceed) return;
+            }
+            exist.activeDeviceId = myDev;
           }
         }
 
