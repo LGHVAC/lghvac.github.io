@@ -55,20 +55,63 @@
   <script>
     // =========================================================
     // 0. 스마트 QR 및 단축 앵커 리다이렉트 안전장치
-    //    #checkin, #quiz, #qna 해시 접속 시 전용 페이지로 즉시 자동 이동
+    //    행사 당일(11/16) 이전에는 checkin.html 자동 이동을 전면 차단하고 팝업 안내로 유도
     // =========================================================
     (function () {
+      function isPreEventPeriodNow() {
+        try {
+          var urlParams = new URLSearchParams(window.location.search);
+          if (urlParams.get('pre_event') === '1') return true;
+          if (urlParams.get('pre_event') === '0' || urlParams.get('admin_preview') === '1') return false;
+          var testDateParam = urlParams.get('test_date');
+          var now = testDateParam ? new Date(testDateParam) : new Date();
+          var eventDayKst = new Date('2026-11-16T00:00:00+09:00');
+          return now.getTime() < eventDayKst.getTime();
+        } catch (e) {
+          return false;
+        }
+      }
+
+      function hasPreviousCheckin() {
+        try {
+          var u1 = localStorage.getItem('hvac_user_checked');
+          if (u1) {
+            var p1 = JSON.parse(u1);
+            if (p1 && p1.email && p1.name) return true;
+          }
+          var u2 = localStorage.getItem('hvac_last_checked_user');
+          if (u2) {
+            var p2 = JSON.parse(u2);
+            if (p2 && p2.email && p2.name) return true;
+          }
+        } catch (e) {}
+        return false;
+      }
+
       if (window.location.hash) {
         var h = window.location.hash.toLowerCase();
         if (h === '#checkin' || h === '#attendance' || h === '#check-in' || h === '#reception') {
+          if (isPreEventPeriodNow() && !hasPreviousCheckin()) {
+            try { history.replaceState(null, '', window.location.pathname + window.location.search); } catch (e) {}
+            window.__openPreCheckinModalOnLoad = true;
+            return;
+          }
           window.location.replace('./checkin.html');
           return;
         }
         if (h === '#quiz') {
+          if (isPreEventPeriodNow() && !hasPreviousCheckin()) {
+            try { history.replaceState(null, '', window.location.pathname + window.location.search); } catch (e) {}
+            return;
+          }
           window.location.replace('./quiz.html');
           return;
         }
         if (h === '#qna') {
+          if (isPreEventPeriodNow() && !hasPreviousCheckin()) {
+            try { history.replaceState(null, '', window.location.pathname + window.location.search); } catch (e) {}
+            return;
+          }
           window.location.replace('./qna.html');
           return;
         }
@@ -2448,6 +2491,11 @@
       <button type="button" id="btnIndexPreCheckinClose" style="width: 100%; height: 44px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 10px; color: #fff; padding: 10px; font-size: 13.5px; font-weight: 800; cursor: pointer;">
         닫기
       </button>
+      <div style="margin-top: 10px; text-align: center;">
+        <a href="./checkin.html?relogin=1" style="font-size: 12px; color: rgba(255,255,255,0.55); text-decoration: underline;">
+          이미 체크인하셨나요? 기존 정보로 다시 로그인 ➔
+        </a>
+      </div>
     </div>
   </div>
 
@@ -2504,13 +2552,35 @@
         });
       }
 
+      function hasCheckedInBefore() {
+        try {
+          const u1 = localStorage.getItem('hvac_user_checked');
+          if (u1) {
+            const p1 = JSON.parse(u1);
+            if (p1 && p1.email && p1.name) return true;
+          }
+          const u2 = localStorage.getItem('hvac_last_checked_user');
+          if (u2) {
+            const p2 = JSON.parse(u2);
+            if (p2 && p2.email && p2.name) return true;
+          }
+        } catch (e) {}
+        return false;
+      }
+
       if (isPreEventPeriod()) {
         document.querySelectorAll('a[href="./checkin.html"], a[href="checkin.html"]').forEach(function (link) {
           link.addEventListener('click', function (e) {
+            if (hasCheckedInBefore()) {
+              return; // 이미 체크인 이력이 있는 사용자는 checkin.html 재접속 허용
+            }
             e.preventDefault();
             openPreModal();
           });
         });
+        if (window.__openPreCheckinModalOnLoad && !hasCheckedInBefore()) {
+          openPreModal();
+        }
       }
     })();
 

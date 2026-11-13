@@ -1208,6 +1208,7 @@
             }
           }
 
+          var nowEpoch = Date.now();
           var updated = Object.assign({}, existing, attendee, {
             seq: existing.seq,
             checkinId: existing.checkinId || ('HVAC-' + String(existing.seq).padStart(3, '0')),
@@ -1217,7 +1218,8 @@
             sessionToken: newSessionToken,
             activeDeviceId: curDeviceId,
             activeDeviceType: getDeviceType(),
-            lastActiveAt: Date.now(),
+            checkedAt: nowEpoch,
+            lastActiveAt: nowEpoch,
             isMilestoneWinner: !!existing.isMilestoneWinner,
             milestonePrize: existing.milestonePrize || ''
           });
@@ -1758,7 +1760,7 @@
         if (resetEpoch <= 0) return;
         var myUser = read('hvac_user_checked');
         if (myUser && myUser.email) {
-          var userCheckedEpoch = Number(myUser.checkedAt) || Number(myUser.checkinTimeMs) || 0;
+          var userCheckedEpoch = Math.max(Number(myUser.checkedAt) || 0, Number(myUser.lastActiveAt) || 0, Number(myUser.checkinTimeMs) || 0);
           if (userCheckedEpoch < resetEpoch) {
             writeLocalSilent('hvac_user_checked', null);
             try { localStorage.removeItem('hvac_user_checked'); } catch (e) {}
@@ -1922,7 +1924,7 @@
 
             // 0) 전체 세션 강제 체크아웃 시그널 감지
             var resetEpoch = Number(meta.session_reset_at) || 0;
-            var userCheckedEpoch = Number(myUser.checkedAt) || Number(myUser.checkinTimeMs) || 0;
+            var userCheckedEpoch = Math.max(Number(myUser.checkedAt) || 0, Number(myUser.lastActiveAt) || 0, Number(myUser.checkinTimeMs) || 0);
             if (resetEpoch > 0 && userCheckedEpoch < resetEpoch) {
               writeLocalSilent('hvac_user_checked', null);
               try { localStorage.removeItem('hvac_user_checked'); } catch (e) {}
@@ -2298,10 +2300,10 @@
       try { localStorage.removeItem('hvac_user_checked'); } catch (e) {}
       try { localStorage.removeItem('hvac_checkin_user'); } catch (e) {}
       var pid = pageId();
-      if (pid !== 'checkin' && pid !== 'admin' && pid !== 'attendance-dashboard' && pid !== 'luckydraw-stage' && pid !== 'quiz-winners') {
-        alert('⚠️ 안내: 관리자 권한에 의해 출석 세션이 초기화되었습니다.\n출석 체크 화면으로 이동합니다.');
+      if (pid !== 'index' && pid !== 'checkin' && pid !== 'admin' && pid !== 'attendance-dashboard' && pid !== 'luckydraw-stage' && pid !== 'quiz-winners') {
+        alert('⚠️ 안내: 관리자 권한에 의해 출석 세션이 초기화되었습니다.\n세미나 안내 화면으로 이동합니다.');
         setTimeout(function () {
-          window.location.href = './checkin.html';
+          window.location.href = './index.html';
         }, 1200);
       }
     });
