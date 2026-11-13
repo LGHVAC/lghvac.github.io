@@ -44,6 +44,8 @@
     'hvac_quiz_scoring_policy',
     'hvac_notice_banner',
     'hvac_milestone_events',
+    'hvac_luckydraw_config',
+    'hvac_luckydraw_state',
     'hvac_survey_config',
     'hvac_checkin_passcode',
     'hvac_game_config',
@@ -87,17 +89,17 @@
       return explicit;
     }
     var p = location.pathname.toLowerCase();
-    if (/\/qr\//.test(p)) return 'qr';
-    if (/admin\.html$/.test(p)) return 'admin';
-    if (/checkin\.html$/.test(p)) return 'checkin';
-    if (/qna\.html$/.test(p)) return 'qna';
-    if (/quiz\.html$/.test(p)) return 'quiz';
-    if (/game\.html$/.test(p)) return 'game';
-    if (/game-leaderboard\.html$/.test(p) || /lunch-screen\.html$/.test(p)) return 'game-leaderboard';
-    if (/attendance-dashboard\.html$/.test(p)) return 'attendance-dashboard';
-    if (/mc-qna\.html$/.test(p)) return 'qna';
-    if (/quiz-winners\.html$/.test(p)) return 'quiz-winners';
-    if (/luckydraw-stage\.html$/.test(p)) return 'luckydraw-stage';
+    if (/\/qr(\/|$)/.test(p)) return 'qr';
+    if (/admin(\.html)?$/.test(p)) return 'admin';
+    if (/checkin(\.html)?$/.test(p)) return 'checkin';
+    if (/qna(\.html)?$/.test(p) && !/mc-qna/.test(p)) return 'qna';
+    if (/quiz(\.html)?$/.test(p) && !/quiz-winners/.test(p)) return 'quiz';
+    if (/game(\.html)?$/.test(p) && !/game-leaderboard/.test(p)) return 'game';
+    if (/game-leaderboard(\.html)?$/.test(p) || /lunch-screen(\.html)?$/.test(p)) return 'game-leaderboard';
+    if (/attendance-dashboard(\.html)?$/.test(p)) return 'attendance-dashboard';
+    if (/mc-qna(\.html)?$/.test(p)) return 'qna';
+    if (/quiz-winners(\.html)?$/.test(p)) return 'quiz-winners';
+    if (/luckydraw-stage(\.html)?$/.test(p)) return 'luckydraw-stage';
     return 'index';
   }
 
@@ -556,7 +558,11 @@
 
   function hasLocalSectionCache(sec) {
     var pId = pageId();
-    if (sec === 'config') return read('hvac_schedule_settings') !== null;
+    if (sec === 'config') {
+      if (pId === 'admin') return read('hvac_schedule_settings') !== null && read('hvac_luckydraw_config') !== null && lastSeenMeta.config > 0;
+      if (pId === 'luckydraw-stage') return read('hvac_luckydraw_config') !== null && lastSeenMeta.config > 0;
+      return read('hvac_schedule_settings') !== null;
+    }
     if (sec === 'checkins') {
       var fullCheckinPages = ['admin', 'attendance-dashboard', 'luckydraw-stage', 'quiz-winners'];
       if (fullCheckinPages.indexOf(pId) >= 0) return read('hvac_checkin_list') !== null;
@@ -586,13 +592,13 @@
   function touchCloudMeta(section, subKey) {
     if (!window.fetch) return Promise.resolve();
     var ts = Date.now();
-    if (section === 'config' && subKey) {
+    if (section === 'config') {
       var metaUrl = cloudPath('meta');
       if (!metaUrl) return Promise.resolve();
       return fetch(metaUrl, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ config: ts, config_key: subKey })
+        body: JSON.stringify({ config: ts, config_key: subKey || 'all' })
       }).then(function () {
         lastSeenMeta.config = ts;
         saveLastSeenMeta();
@@ -1676,7 +1682,10 @@
       return pId === 'survey' || pId === 'checkin';
     }
     if (key === 'hvac_milestone_events') {
-      return pId === 'checkin' || pId === 'attendance-dashboard';
+      return pId === 'checkin' || pId === 'attendance-dashboard' || pId === 'luckydraw-stage';
+    }
+    if (key === 'hvac_luckydraw_config' || key === 'hvac_luckydraw_state') {
+      return pId === 'admin' || pId === 'luckydraw-stage';
     }
     return true;
   }
@@ -1689,7 +1698,7 @@
     return fetch(cloudPath('config/' + key), { cache: 'no-store' })
       .then(function (r) { return r.ok ? r.json() : undefined; })
       .then(function (val) {
-        if (val === undefined) return false;
+        if (val === undefined || val === null) return false;
         writeLocalSilent(key, val);
         refreshCommon();
         notifyUpdated([key]);
@@ -1706,10 +1715,10 @@
       return syncSingleConfigKey(configKeyHint);
     }
 
-    // 2) 이미 정적 스케줄/퀴즈/설문 설정(site-config.json)이 로컬에 캐시된 일반 참가자 화면에서는
+    // 2) 이미 정적 스케줄/퀴즈/설문 설정(site-config.json)이 로컬에 캐시된 일반 참가자 및 독립 전광판 화면에서는
     // 무거운 정적 데이터(11.5KB)를 다시 받지 않고 페이지에 필요한 경량 동적 제어 키만 핀포인트 조회
     if (!forceAll && hasLocalSectionCache('config') && pId !== 'admin' && configKeyHint !== 'all') {
-      var dynamicKeys = ['hvac_quiz_unlocked_sessions', 'hvac_notice_banner', 'hvac_game_config', 'hvac_checkin_passcode'];
+      var dynamicKeys = ['hvac_quiz_unlocked_sessions', 'hvac_notice_banner', 'hvac_game_config', 'hvac_checkin_passcode', 'hvac_luckydraw_config', 'hvac_luckydraw_state', 'hvac_milestone_events'];
       var needed = dynamicKeys.filter(function (k) { return isConfigKeyNeededOnPage(k, pId); });
       return Promise.all(needed.map(syncSingleConfigKey)).then(function () { return true; });
     }
@@ -1721,7 +1730,7 @@
         if (!cfgData || typeof cfgData !== 'object') return false;
         var changedKeys = [];
         CONFIG_KEYS.forEach(function (k) {
-          if (cfgData[k] !== undefined) {
+          if (cfgData[k] !== undefined && cfgData[k] !== null) {
             writeLocalSilent(k, cfgData[k]);
             changedKeys.push(k);
           }
@@ -1729,6 +1738,9 @@
         if (changedKeys.length) {
           refreshCommon();
           notifyUpdated(changedKeys);
+          changedKeys.forEach(function (k) {
+            try { window.dispatchEvent(new StorageEvent('storage', { key: k })); } catch (e) {}
+          });
         }
         return true;
       }).catch(function () { return false; });
@@ -2065,7 +2077,8 @@
     var c = getCloudConfig();
     if (!c) return;
     try {
-      if (CONFIG_KEYS.indexOf(key) >= 0 && pageId() === 'admin') {
+      var curPid = pageId();
+      if (CONFIG_KEYS.indexOf(key) >= 0 && (curPid === 'admin' || (curPid === 'luckydraw-stage' && (key === 'hvac_luckydraw_state' || key === 'hvac_luckydraw_config')))) {
         pushConfigToCloud(key, JSON.parse(value));
       } else if (key === 'hvac_qna_list') {
         pushQnaListToCloud(JSON.parse(value));
@@ -2359,6 +2372,7 @@
       pushGameRecord: pushGameRecordToCloud,
       fetchGames: fetchGameSubmissionsFromCloud,
       resetGames: resetGameSubmissionsOnCloud,
+      saveLuckyDraw: function (state) { return pushConfigToCloud('hvac_luckydraw_state', state); },
       restart: startCloudLoop
     },
     onConfigUpdated: function (fn) {
