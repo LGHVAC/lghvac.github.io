@@ -1,12 +1,671 @@
 {
-  "version": 1,
-  "publishedAt": "2026-11-09T16:08:29.663479+00:00",
-  "note": "2026 HVAC Engineering Expert Seminar - Google Firebase Realtime Database 실시간 클라우드 연동 활성화 (200명 동기화)",
+  "version": 2,
+  "publishedAt": "2026-11-13T06:31:16.742Z",
+  "metaConfigTs": 1794549913058,
+  "note": "2026 HVAC Engineering Expert Seminar - 정적 스케줄/퀴즈/설문 설정 사전 번들링 (Firebase RTDB 초기 다운로드 트래픽 0B 최적화)",
   "data": {
     "hvac_cloud_config": {
       "enabled": true,
       "dbUrl": "https://lg-hvac-default-rtdb.asia-southeast1.firebasedatabase.app",
       "roomKey": "hvac2026"
+    },
+    "hvac_schedule_settings": {
+      "hero": {
+        "copy": "국내 주거난방의 변천, 고밀도 AI 서버 액체냉각, AIDC 전력공급, 공동주택 공기열원 히트펌프, 에너지컨설팅과 과학·인문학을 한자리에서 다루는 오프라인 현장 전문가 세미나입니다.",
+        "entryTime": "08:50까지",
+        "eyebrow": "ENGINEERING INSIGHT DAY · 2026. 11. 16(월)",
+        "location": "국민대학교 본부관(별관)",
+        "title": "HVAC Engineering",
+        "titleSpan": "Expert Seminar",
+        "totalSchedule": "09:00 ~ 18:00",
+        "venue": "학술회의장",
+        "year": "2026"
+      },
+      "sessions": [
+        {
+          "bullets": [
+            "운영 데스크 근처에 준비된 음료와 다과를 드시면서 잠시 기다려주세요.",
+            "카카오톡 공식 채널 입장 및 회의장에 8시 55분까지 입실 부탁드립니다.",
+            "오프닝 세션은 오전 9시에 정시 시작합니다!"
+          ],
+          "id": "s1",
+          "location": "📍 본부관 별관 1F 학술회의장",
+          "materialEnabled": false,
+          "materialMode": "readonly",
+          "materialUrl": "",
+          "minute": "50",
+          "note": "본부관 별관 1F 학술회의장",
+          "speaker": "",
+          "status": "예정",
+          "sublabel": "Registration & Welcome",
+          "time": "08:00 ~ 08:50",
+          "title": "세미나 참석자 등록 및 입장 안내",
+          "type": "general"
+        },
+        {
+          "bullets": [
+            "세미나 취지 및 아젠다 안내",
+            "우수 엔지니어링 시상식 진행",
+            "현장 참여 퀴즈 및 럭키드로우 경품 안내"
+          ],
+          "id": "s2",
+          "location": "📍 본부관 학술회의장",
+          "materialEnabled": false,
+          "materialMode": "readonly",
+          "materialUrl": "",
+          "minute": "20",
+          "note": "",
+          "speaker": "ES사업본부장",
+          "status": "예정",
+          "sublabel": "Opening Session",
+          "time": "09:00 ~ 09:20",
+          "title": "오프닝 영상 및 개회사",
+          "type": "general"
+        },
+        {
+          "bio": [
+            "’27년 대한설비공학회장",
+            "현) 서울대학교 공과대학 건축학과 교수",
+            "현) 서울대학교 탄소중립 캠퍼스 추진단 단장",
+            "전) 중앙환경분쟁조정위원회 위원",
+            "전) 서울대학교 건축학과장"
+          ],
+          "bullets": [
+            "우리나라 전통 온돌에서 현대 바닥 복사난방으로의 발전사",
+            "공동주택 바닥난방의 열적 쾌적성 및 에너지 절감 효과",
+            "탄소중립 시대의 주거 난방 미래 전망"
+          ],
+          "id": "s3",
+          "location": "📍 본부관 학술회의장",
+          "materialEnabled": false,
+          "materialMode": "readonly",
+          "materialUrl": "",
+          "minute": "50",
+          "note": "",
+          "speaker": "여명석 교수 (서울대학교)",
+          "status": "예정",
+          "sublabel": "Keynote Session 1",
+          "time": "09:20 ~ 10:10",
+          "title": "국내주거난방의 변천과 현황",
+          "type": "session"
+        },
+        {
+          "bullets": [
+            "로비에 비치된 음료와 다과를 자유롭게 이용하세요.",
+            "동료 엔지니어들과의 자유로운 기술 네트워킹 시간입니다."
+          ],
+          "id": "s4",
+          "location": "📍 로비",
+          "minute": "20",
+          "note": "",
+          "speaker": "",
+          "status": "예정",
+          "sublabel": "Coffee Break",
+          "time": "10:10 ~ 10:30",
+          "title": "☕ 휴식 시간 (Coffee Break)",
+          "type": "break"
+        },
+        {
+          "bio": [
+            "현) 중앙대학교 기계공학부 교수",
+            "전) 대한기계학회 열공학부문 회장",
+            "전) 중앙대학교 차세대에너지안전연구소 소장",
+            "전) 중앙대학교 기계공학부 학과장"
+          ],
+          "bullets": [
+            "고밀도 AI 칩(GPU) 발열 한계와 공랭의 한계점 극복",
+            "Direct-to-Chip(D2C) 액체냉각 및 액침냉각(Immersion) 최신 기술",
+            "데이터센터 PUE 절감을 위한 차세대 냉각 인프라 설계"
+          ],
+          "id": "s5",
+          "location": "📍 본부관 학술회의장",
+          "materialEnabled": false,
+          "materialMode": "readonly",
+          "materialUrl": "",
+          "minute": "50",
+          "note": "",
+          "speaker": "이성혁 교수 (중앙대학교)",
+          "status": "예정",
+          "sublabel": "Keynote Session 2",
+          "time": "10:30 ~ 11:20",
+          "title": "고밀도 AI 서버의 액체냉각 및 데이터센터 열관리 기술",
+          "type": "session"
+        },
+        {
+          "bullets": [
+            "다음 세션 시작 5분 전까지 착석해 주시기 바랍니다."
+          ],
+          "id": "s6",
+          "location": "📍 로비",
+          "minute": "20",
+          "note": "",
+          "speaker": "",
+          "status": "예정",
+          "sublabel": "Coffee Break",
+          "time": "11:20 ~ 11:40",
+          "title": "☕ 휴식 시간 (Coffee Break)",
+          "type": "break"
+        },
+        {
+          "bio": [
+            "현) 한국자원경제학회 회장",
+            "현) 국가기후위기대응위원회 위원",
+            "현) 산업통상부 정책자문위원회 위원",
+            "현) 제 12차 전력수급기본계획 위원",
+            "현) 전력비용평가위원회 위원"
+          ],
+          "bullets": [
+            "AI 데이터센터 급증에 따른 국가 전력망(Grid) 부하 분석",
+            "지역 분산에너지 활성화 및 송배전 유연성 확보 전략",
+            "민간 기업의 전력 조달 및 에너지 정책 대응 방안"
+          ],
+          "id": "s7",
+          "location": "📍 본부관 학술회의장",
+          "materialEnabled": false,
+          "materialMode": "readonly",
+          "materialUrl": "",
+          "minute": "50",
+          "note": "",
+          "speaker": "조홍종 교수 (단국대학교)",
+          "status": "예정",
+          "sublabel": "Keynote Session 3",
+          "time": "11:40 ~ 12:30",
+          "title": "국내 전력시장 현황 및 AIDC 전력공급 방안",
+          "type": "session"
+        },
+        {
+          "bullets": [
+            "국제관 계단 앞에서 단체 기념촬영이 진행됩니다.",
+            "중식은 식당에서 아이디카드 또는 체크인 완료된 화면을 제시하시면 식사가 가능합니다.",
+            "오후 세션은 14:00 정시에 시작합니다.",
+            "13:50분까지 착석하셔서 오후 세션 전에 진행되는 미니게임도 놓치지 마세요!"
+          ],
+          "id": "s8",
+          "location": "📍법학관 5층 청���",
+          "materialEnabled": false,
+          "materialMode": "readonly",
+          "materialUrl": "",
+          "minute": "90",
+          "note": "",
+          "speaker": "",
+          "status": "예정",
+          "sublabel": "Lunch Break",
+          "time": "12:30 ~ 14:00",
+          "title": "🍱 기념촬영 및 점심 식사",
+          "type": "meal"
+        },
+        {
+          "bio": [
+            "현) LH 토지주택연구원 수석연구원",
+            "현) 국가 건설기준위원회 위원(기계부문)",
+            "현) 대한설비공학회 ZEB 전문위원",
+            "제로에너지건축물과 공동주택 에너지시스템 연구",
+            "공기열원 히트펌프 및 분산에너지 연구"
+          ],
+          "bullets": [
+            "제로에너지건축물(ZEB) 구현을 위한 히트펌프 적용 사례",
+            "공기열원 히트펌프(AWHP)의 겨울철 난방 효율 개선 연구",
+            "공동주택 보일러 대체 가능성과 제도적 개선 과제"
+          ],
+          "id": "s9",
+          "location": "📍 본부관 학술회의장",
+          "materialEnabled": false,
+          "materialMode": "readonly",
+          "materialUrl": "",
+          "minute": "50",
+          "note": "",
+          "speaker": "유정현 수석 (LHRI)",
+          "status": "예정",
+          "sublabel": "Insight Session 1",
+          "time": "14:00 ~ 14:50",
+          "title": "헬로우 히트펌프, 굿바이 보일러",
+          "type": "session"
+        },
+        {
+          "bullets": [
+            "오후 세션 중간 휴식 및 질의응답 준비 시간입니다."
+          ],
+          "id": "s10",
+          "location": "📍 로비",
+          "minute": "20",
+          "note": "",
+          "speaker": "",
+          "status": "예정",
+          "sublabel": "Coffee Break",
+          "time": "14:50 ~ 15:10",
+          "title": "☕ 휴식 시간 (Coffee Break)",
+          "type": "break"
+        },
+        {
+          "bio": [
+            "현) ES사업본부 ES에너지컨설팅팀 팀장",
+            "대형 상업용 빌딩 · 산업 플랜트 · 데이터센터 고효율 공조 진단 총괄",
+            "고객 맞춤형 HVAC 엔지니어링 최적화 및 OPEX 절감 컨설팅 수행",
+            "탄소중립 ESCO 및 고효율 열원 개보수 실증 프로젝트 리드"
+          ],
+          "bullets": [
+            "산업 플랜트 및 대형 빌딩 실시간 에너지 진단(Audit)",
+            "실제 현장 맞춤형 고효율 공조 솔루션 적용 성과 분석",
+            "운영 비용(OPEX) 절감 및 탄소 배출 감축 효과"
+          ],
+          "id": "s11",
+          "location": "📍 본부관 학술회의장",
+          "materialEnabled": false,
+          "materialMode": "readonly",
+          "materialUrl": "",
+          "minute": "30",
+          "note": "",
+          "speaker": "오영훈 팀장 (ES에너지컨설팅팀)",
+          "status": "예정",
+          "sublabel": "Insight Session 2",
+          "time": "15:10 ~ 15:40",
+          "title": "Retrofit 및 미진입시장 공략을 위한 차별화 솔루션",
+          "type": "session"
+        },
+        {
+          "bullets": [
+            "세션 퀴즈 마감 전 최종 제출을 확인해 주세요."
+          ],
+          "id": "s12",
+          "location": "📍 로비",
+          "minute": "20",
+          "note": "",
+          "speaker": "",
+          "status": "예정",
+          "sublabel": "Coffee Break",
+          "time": "15:40 ~ 16:00",
+          "title": "☕ 휴식 시간 (Coffee Break)",
+          "type": "break"
+        },
+        {
+          "bio": [
+            "현) 과학 커뮤니케이터 및 과학관 전문가",
+            "전) 국립과천과학관 관장",
+            "전) 서울시립과학관 관장",
+            "전) 서대문자연사박물관 관장",
+            "저서 《찬란한 멸종》, 《공생 멸종 진화》 등 다수 집필 및 강연"
+          ],
+          "bullets": [
+            "기술과 과학이 급변하는 AI 시대의 소통과 공감",
+            "질문하고 의심하며 함께 탐구하는 열린 자세의 힘",
+            "과학자의 시선으로 바라본 인간과 엔지니어의 미래"
+          ],
+          "id": "s13",
+          "location": "📍 본부관 학술회의장",
+          "materialEnabled": false,
+          "materialMode": "readonly",
+          "materialUrl": "",
+          "minute": "100",
+          "note": "",
+          "speaker": "이정모 관장 (과학커뮤니케이터)",
+          "status": "예정",
+          "sublabel": "Special Lecture",
+          "time": "16:00 ~ 17:40",
+          "title": "테라포밍 또는 찬란한 멸종-그래도 우리는 지구에 살아야 한다",
+          "type": "session"
+        },
+        {
+          "bullets": [
+            "모바일 만족도 설문 안내: 현장에서 바로 작성해 주셔도 좋고, 귀가하시면서 편안하게 입력해 주셔도 좋습니다.",
+            "대망의 클로징 럭키드로우(1~5등) 현장 추첨 진행",
+            "폐회 및 귀가 안내"
+          ],
+          "id": "s14",
+          "location": "📍 본부관 학술회의장",
+          "minute": "20",
+          "note": "",
+          "speaker": "ES엔지니어링담당",
+          "status": "예정",
+          "sublabel": "Closing & Lucky Draw",
+          "time": "17:40 ~ 18:00",
+          "title": "Wrap up 및 클로징 럭키드로우",
+          "type": "general"
+        }
+      ]
+    },
+    "hvac_quiz_config": [
+      {
+        "correct": 3,
+        "explanation": "제1회 전문가 세미나는 2015년 서울대에서 개최 되었습니다.",
+        "id": "q11_mwae06c7",
+        "options": [
+          "고려대학교",
+          "성균관대학교",
+          "세종대학교",
+          "서울대학교"
+        ],
+        "question": "제1회 HVAC 엔지니어링 전문가 세미나가 열린 장소는 어디일까요?",
+        "tag": "About 전문가 세미나"
+      },
+      {
+        "correct": 2,
+        "explanation": "최대 참석 세미나는 8회 KTL에서 열린 전문가 세미나입니다. 총 참석 인원은 194명 이었습니다.",
+        "id": "q12_mwae8ivf",
+        "options": [
+          "184명",
+          "197명",
+          "194명",
+          "203명"
+        ],
+        "question": "1~9회 HVAC 엔지니어링 전문가 세미나 중 참석자가 가장 많았던 차수는 8회차 입니다. 8회에 참석한 인원은 총 몇명 일까요?",
+        "tag": "About 전문가 세미나"
+      },
+      {
+        "correct": 3,
+        "explanation": "국내 주거 난방은 전통 온돌에서 개량 연탄온돌을 거쳐, 1970년대 이후 현대적인 온수식 바닥난방으로 발전해 왔습니다.",
+        "id": "q1",
+        "options": [
+          "천장 복사난방",
+          "벽면 복사난방",
+          "온풍 난방",
+          "온수식 바닥난방"
+        ],
+        "question": "현재 국내 공동주택에서 널리 사용되는 대표적인 난방 방식은 무엇일까요?",
+        "sessionNum": 3,
+        "tag": "국내 주거난방의 변천과 현황_여명석 교수 (서울대학교)"
+      },
+      {
+        "correct": 2,
+        "explanation": "국내 주거 난방의 변천 과정은 전통온돌 → 연탄온돌 → 온수식 바닥난방으로 변화하였습니다.",
+        "id": "q2",
+        "options": [
+          "온수식 바닥난방 → 연탄온돌 → 전통온돌",
+          "전통온돌 → 온수식 바닥난방 → 연탄온돌",
+          "전통온돌 → 연탄온돌 → 온수식 바닥난방",
+          "연탄온돌 → 전통온돌 → 온수식 바닥난방"
+        ],
+        "question": "국내 주거 난방의 변천 과정으로 가장 적절한 것은?",
+        "sessionNum": 4,
+        "tag": "국내 주거난방의 변천과 현황_여명석 교수 (서울대학교)"
+      },
+      {
+        "correct": 1,
+        "explanation": "액체냉각 칩의 소비전력(TDP)이 계속 커지면서 공랭은 한계에 다다랐습니다. 그래서 CPU/GPU는 액체로, 나머지 부품은 공기로 식히는 하이브리드 액체냉각으로 바뀌고 있습니다.",
+        "id": "q3",
+        "options": [
+          "자연 대류 공랭",
+          "액체냉각",
+          "전기히터 냉각",
+          "팬 속도만 높이는 공랭"
+        ],
+        "question": "AI 서버의 GPU 발열이 크게 늘어나면서 CPU/GPU 냉각 방식은 어떤 방향으로 바뀌고 있을까요?",
+        "tag": "고밀도 AI 서버의 액체냉각 및 데이터센터 열관리 기술_이성혁 교수 (중앙대학교)"
+      },
+      {
+        "correct": 3,
+        "explanation": "PUE가 1에 가깝다는 것은 냉각 같은 부대설비에 쓰는 에너지가 적다는 뜻입니다. 발표에서는 PUE를 낮추는 방법으로 고온 냉각수 운전, 외기를 활용한 자연냉각, AI 기반 운영 최적화를 제시했습니다.",
+        "id": "q4",
+        "options": [
+          "값이 클수록",
+          "값과 효율은 상관없다",
+          "0에 가까울수록",
+          "1에 가까울수록"
+        ],
+        "question": "데이터센터 효율 지표 PUE는 데이터센터 전체 에너지 사용량을 IT 장비 에너지 사용량으로 나눈 값입니다. PUE가 어떨수록 에너지 효율이 좋은 데이터센터일까요?",
+        "tag": "고밀도 AI 서버의 액체냉각 및 데이터센터 열관리 기술_이성혁 교수 (중앙대학교)"
+      },
+      {
+        "correct": 2,
+        "explanation": "전기는 실시간으로 소비와 공급이 같아야 60Hz가 유지됩니다. 소비가 공급보다 많으면 주파수가 60Hz 아래로 떨어지고, 반대로 공급이 더 많으면 60Hz 위로 올라갑니다.",
+        "id": "q5",
+        "options": [
+          "주파수가 60Hz 위로 올라간다",
+          "주파수는 변하지 않고 전압만 올라간다",
+          "주파수가 60Hz 아래로 떨어지고, 심하면 정전이 날 수 있다",
+          "아무 영향이 없다"
+        ],
+        "question": "우리나라 전력계통은 60Hz를 유지해야 합니다. 전기 소비가 전기 공급보다 많아지면 어떤 일이 생길까요?",
+        "tag": "국내 전력시장 현황 및 AIDC 전력공급 방안_조홍종 교수 (단국대학교)"
+      },
+      {
+        "correct": 0,
+        "explanation": "재생에너지는 날씨에 따라 발전량이 크게 바뀝니다. 그래서 앞으로는 ESS, 수요반응, 가상발전소(VPP), 전기차처럼 전력 수급을 유연하게 맞춰주는 자원을 거래하는 시장이 중요해집니다.",
+        "id": "q6",
+        "options": [
+          "전기를 생산하는 산업에서 유연성을 거래하는 산업으로",
+          "전기를 많이 생산하는 것만 중요한 산업",
+          "화석연료 발전만으로 운영하는 산업",
+          "송전망 건설을 줄이는 산업"
+        ],
+        "question": "미래 전력시장 비전 발표에서 제시한 미래 전력시장의 방향으로 가장 알맞은 것은 무엇일까요?",
+        "tag": "국내 전력시장 현황 및 AIDC 전력공급 방안_조홍종 교수 (단국대학교)"
+      },
+      {
+        "correct": 1,
+        "explanation": "재생에너지법 시행령 개정으로 공기열을 포함한 9개 재생에너지 체계로 정리되었습니다. 이로써 태양광 중심이던 재생에너지 시장에서 공기열원 히트펌프가 탈탄소 정책의 새로운 플레이어로 주목받게 되었습니다.",
+        "id": "q7_mwacvxye",
+        "options": [
+          "도시가스",
+          "공기열",
+          "수소",
+          "석탄가스화"
+        ],
+        "question": "2026년 3월 재생에너지법 시행령이 개정되면서 재생에너지에 새로 포함된 것은 무엇일까요?",
+        "tag": "헬로우 히트펌프, 굿바이 보일러_유정현 수석 (LHRI)"
+      },
+      {
+        "correct": 0,
+        "explanation": "히트펌프는 보일러처럼 순간적으로 물을 빠르게 데우는 능력이 약합니다. 그래서 사용량이 적은 시간에 미리 온수를 만들어 축열조에 저장해 두었다가, 사용이 몰리는 시간에 공급해야 합니다. 발표에서는 세대별로 두는 개별식이든 단지 전체가 함께 쓰는 중앙식이든 축열조 설치가 필수라고 설명했습니다.",
+        "id": "q8_mwadnpwe",
+        "options": [
+          "축열조",
+          "가스레인지",
+          "냉방 전용 에어컨",
+          "환기 팬"
+        ],
+        "question": "공동주택에서는 아침(6~8시)과 저녁(18~22시)에 급탕 사용량의 약 70% 이상이 몰립니다. 히트펌프로 급탕을 공급하려면 반드시 함께 설치해야 하는 설비는 무엇일까요?",
+        "tag": "헬로우 히트펌프, 굿바이 보일러_유정현 수석 (LHRI)"
+      },
+      {
+        "correct": 3,
+        "explanation": "전기 1kW를 쓰면 냉방 3kW와 난방 4kW를 함께 얻습니다. 냉수와 온수를 모두 쓰기 때문에 통합 COP가 7.0이 되고, 에너지 측면에서 가장 효율적인 방식입니다.",
+        "id": "q9_mwadqs2b",
+        "options": [
+          "3.5",
+          "4.0",
+          "5.5",
+          "7.0"
+        ],
+        "question": "냉방 COP 3.0, 난방 COP 4.0인 히트펌프로 냉방과 난방을 동시에 할 때, 냉난방을 합친 효율(통합 COP)은 얼마일까요?",
+        "tag": "Retrofit 및 미진입시장 공략을 위한 차별화 솔루션_오영훈 팀장 (ES에너지컨설팅팀)"
+      },
+      {
+        "correct": 1,
+        "explanation": "방식에 따른 단가(EUR/Mcal) 비교. 가스보일러 0.084, 가스버너 0.075, 전기히터 0.183, 히트펌프 0.047 ※측정기관마다 차이가 있을 수 있습니다.",
+        "id": "q10_mwadw1hj",
+        "options": [
+          "가스보일러",
+          "히트펌프",
+          "전기히터",
+          "가스버너"
+        ],
+        "question": "난방의 Electrification 중유럽 사례에서 온수 1Mcal을 만드는 에너지 단가를 비교했을 때, 가장 저렴한 방식은 무엇일까요?",
+        "tag": "Retrofit 및 미진입시장 공략을 위한 차별화 솔루션_오영훈 팀장 (ES에너지컨설팅팀)"
+      }
+    ],
+    "hvac_quiz_scoring_policy": {
+      "try1": 1,
+      "try2": 0.7,
+      "try3": 0.4,
+      "try4": 0
+    },
+    "hvac_quiz_unlocked_sessions": [
+      0,
+      1
+    ],
+    "hvac_survey_config": {
+      "pages": [
+        {
+          "pageId": "partA1",
+          "pageSub": "전반적인 세미나와 운영 인프라에 대한 만족도를 평가해 주세요.",
+          "pageTitle": "A. 교육과정에 대한 만족도",
+          "questions": [
+            {
+              "category": "general",
+              "id": "q0",
+              "label": "0. 전반적인 세미나 구성과 진행에 만족하십니까?",
+              "max": 5,
+              "required": true,
+              "type": "rating"
+            },
+            {
+              "category": "infra",
+              "id": "q1",
+              "label": "1. 세미나 운영 및 시설 등 인프라에 만족하십니까?",
+              "max": 5,
+              "required": true,
+              "type": "rating"
+            }
+          ]
+        },
+        {
+          "pageId": "partA2",
+          "pageSub": "오늘 진행된 각 세션 발표 내용의 유익성과 완성도를 평가해 주세요.",
+          "pageTitle": "[ 과정별 만족도 ]",
+          "questions": [
+            {
+              "category": "session",
+              "id": "q2",
+              "label": "2. 국내주거난방의 변천과 현황 - 여명석 교수",
+              "max": 5,
+              "required": true,
+              "type": "rating"
+            },
+            {
+              "category": "session",
+              "id": "q3",
+              "label": "3. 고밀도 AI 서버의 액체냉각 및 데이터센터 열관리 기술 - 이성혁 교수",
+              "max": 5,
+              "required": true,
+              "type": "rating"
+            },
+            {
+              "category": "session",
+              "id": "q4",
+              "label": "4. 국내 전력시장 현황 및 AIDC 전력공급 방안 - 조홍종 교수",
+              "max": 5,
+              "required": true,
+              "type": "rating"
+            },
+            {
+              "category": "session",
+              "id": "q5",
+              "label": "5. 헬로우 히트펌프, 굿바이 보일러 - 유정현 수석 연구원",
+              "max": 5,
+              "required": true,
+              "type": "rating"
+            },
+            {
+              "category": "session",
+              "id": "q6",
+              "label": "6. Retrofit 및 미진입시장 공략을 위한 차별화 솔루션 - 오영훈 팀장",
+              "max": 5,
+              "required": true,
+              "type": "rating"
+            },
+            {
+              "category": "session",
+              "id": "q7",
+              "label": "7. 테라포밍 또는 찬란한 멸종 - 그래도 우리는 지구에 살아야 한다 - 이정모 관장",
+              "max": 5,
+              "required": true,
+              "type": "rating"
+            }
+          ]
+        },
+        {
+          "pageId": "partB",
+          "pageSub": "향후 세미나 발전을 위한 소중한 의견을 자유롭게 남겨주세요.",
+          "pageTitle": "B. 교육과정에 대한 자유의견/건의사항",
+          "questions": [
+            {
+              "category": "feedback",
+              "id": "q8",
+              "label": "8. 교육과정에서 좋았던 점",
+              "placeholder": "답변을 입력하세요.",
+              "required": false,
+              "type": "text"
+            },
+            {
+              "category": "feedback",
+              "id": "q9",
+              "label": "9. 교육과정에서 개선할 점",
+              "placeholder": "답변을 입력하세요.",
+              "required": false,
+              "type": "text"
+            },
+            {
+              "category": "feedback",
+              "id": "q10",
+              "label": "10. 향후 듣고 싶은 주제 (기술 특강)",
+              "placeholder": "답변을 입력하세요.",
+              "required": false,
+              "type": "text"
+            },
+            {
+              "category": "feedback",
+              "id": "q11",
+              "label": "11. 향후 듣고 싶은 주제 (인문/ 경제 특강)",
+              "placeholder": "답변을 입력하세요.",
+              "required": false,
+              "type": "text"
+            }
+          ]
+        }
+      ],
+      "subtitle": "참석해 주신 여러분의 소중한 피드백은 차기 세미나 기획 및 기술 프로그램 개선에 큰 힘이 됩니다.",
+      "title": "2026 HVAC Engineering Expert Seminar 만족도 설문"
+    },
+    "hvac_milestone_events": [
+      {
+        "prize": "스타벅스 커피 쿠폰 (1호 체크인)",
+        "seq": 1
+      },
+      {
+        "prize": "스타벅스 커피 쿠폰 (럭키 7)",
+        "seq": 7
+      },
+      {
+        "prize": "스타벅스 커피 쿠폰 (10번째 체크인)",
+        "seq": 10
+      },
+      {
+        "prize": "스타벅스 커피 쿠폰 (행운의 77번째)",
+        "seq": 77
+      },
+      {
+        "prize": "스타벅스 커피 쿠폰 (센추리 100번째)",
+        "seq": 100
+      }
+    ],
+    "hvac_notice_banner": {
+      "duration": 15000,
+      "enabled": true,
+      "expireAfterMs": 60000,
+      "isQuizAlert": true,
+      "level": "warning",
+      "linkLabel": "👉 지금 퀴즈 풀기",
+      "linkUrl": "./quiz.html?session=1",
+      "pages": [
+        "index",
+        "checkin",
+        "qna",
+        "quiz",
+        "survey"
+      ],
+      "sessionId": 1,
+      "text": "💡 [세션 1 퀴즈 오픈] 여명석 교수님의 '국내주거난방의 변천과 현황' 강연이 종료되었습니다! 지금 핵심 퀴즈를 풀고 럭키드로우에 응모하세요!",
+      "updatedAt": 1794541389730
+    },
+    "hvac_game_config": {
+      "enabled": false,
+      "lockMessage": "점심시간 미니게임은 12:30 오찬 시간에 맞춰 공식 오픈됩니다. 잠시 후 참여해 주세요!",
+      "maxTries": 3,
+      "openedAt": "2026-11-13T03:49:17.356Z",
+      "resetAt": 1794490526756,
+      "stopwatchBlindSec": 3,
+      "tempSeason": "winter",
+      "tempTarget": 20
     }
   }
 }

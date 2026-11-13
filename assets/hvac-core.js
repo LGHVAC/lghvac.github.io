@@ -471,20 +471,24 @@
 
   function applyPublishedConfig(cfg) {
     if (!cfg || !cfg.publishedAt || !cfg.data || typeof cfg.data !== 'object') return false;
+    if (cfg.metaConfigTs && (!lastSeenMeta.config || lastSeenMeta.config < cfg.metaConfigTs)) {
+      lastSeenMeta.config = cfg.metaConfigTs;
+      saveLastSeenMeta();
+    }
     var applied = '';
     try { applied = localStorage.getItem(APPLIED_MARKER) || ''; } catch (e) {}
-    if (String(cfg.publishedAt) <= applied) return false;
+    if (String(cfg.publishedAt) <= applied && read('hvac_schedule_settings') !== null) return false;
 
     var changed = [];
     Object.keys(cfg.data).forEach(function (k) {
       if (CONFIG_KEYS.indexOf(k) < 0 && k !== CLOUD_CFG_KEY) return;
       try {
         if (cfg.data[k] === null) localStorage.removeItem(k);
-        else localStorage.setItem(k, JSON.stringify(cfg.data[k]));
+        else writeLocalSilent(k, cfg.data[k]);
         changed.push(k);
       } catch (e) {}
     });
-    try { localStorage.setItem(APPLIED_MARKER, String(cfg.publishedAt)); } catch (e) {}
+    try { writeLocalSilent(APPLIED_MARKER, String(cfg.publishedAt)); } catch (e) {}
     refreshCommon();
     notifyUpdated(changed);
     return true;
@@ -492,7 +496,7 @@
 
   function syncPublished() {
     if (location.protocol === 'file:' || !window.fetch) return Promise.resolve(false);
-    return fetch(BASE + 'site-config.json?ts=' + Date.now(), { cache: 'no-store' })
+    return fetch(BASE + 'site-config.json')
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(applyPublishedConfig)
       .catch(function () { return false; });
@@ -577,10 +581,26 @@
     return true;
   }
 
-  function touchCloudMeta(section) {
-    var u = cloudPath('meta/' + section);
-    if (!u || !window.fetch) return Promise.resolve();
+  var lastPushedConfigMap = {};
+
+  function touchCloudMeta(section, subKey) {
+    if (!window.fetch) return Promise.resolve();
     var ts = Date.now();
+    if (section === 'config' && subKey) {
+      var metaUrl = cloudPath('meta');
+      if (!metaUrl) return Promise.resolve();
+      return fetch(metaUrl, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ config: ts, config_key: subKey })
+      }).then(function () {
+        lastSeenMeta.config = ts;
+        saveLastSeenMeta();
+        return true;
+      }).catch(function () { return false; });
+    }
+    var u = cloudPath('meta/' + section);
+    if (!u) return Promise.resolve();
     return fetch(u, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -592,16 +612,24 @@
     }).catch(function () { return false; });
   }
 
-  // 관리자 -> 클라우드: 설정 데이터 업로드
+  // 관리자 -> 클라우드: 설정 데이터 업로드 (동일 키 1.5초 내 중복 PUT 방지 + 핀포인트 config_key 브로드캐스트)
   function pushConfigToCloud(key, val) {
     var u = cloudPath('config/' + key);
     if (!u || !window.fetch) return Promise.resolve(false);
+    var bodyStr = JSON.stringify(val);
+    var now = Date.now();
+    var prev = lastPushedConfigMap[key];
+    if (prev && prev.body === bodyStr && (now - prev.ts < 1500)) {
+      return Promise.resolve(true);
+    }
+    lastPushedConfigMap[key] = { body: bodyStr, ts: now };
+
     return fetch(u, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(val)
+      body: bodyStr
     }).then(function (r) {
-      if (r.ok) return touchCloudMeta('config').then(function () { return true; });
+      if (r.ok) return touchCloudMeta('config', key).then(function () { return true; });
       return false;
     }).catch(function () { return false; });
   }
@@ -619,7 +647,7 @@
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     }).then(function (r) {
-      if (r.ok) return touchCloudMeta('config').then(function () { return true; });
+      if (r.ok) return touchCloudMeta('config', 'all').then(function () { return true; });
       return false;
     }).catch(function () { return false; });
   }
@@ -1627,25 +1655,81 @@
           }).catch(function () { return false; });
       }
     } else if (secName === 'config') {
-      return fetch(cloudPath('config'), { cache: 'no-store' })
-        .then(function (r) { return r.ok ? r.json() : null; })
-        .then(function (cfgData) {
-          if (!cfgData || typeof cfgData !== 'object') return false;
-          var changedKeys = [];
-          CONFIG_KEYS.forEach(function (k) {
-            if (cfgData[k] !== undefined) {
-              writeLocalSilent(k, cfgData[k]);
-              changedKeys.push(k);
-            }
-          });
-          if (changedKeys.length) {
-            refreshCommon();
-            notifyUpdated(changedKeys);
-          }
-          return true;
-        }).catch(function () { return false; });
+      return syncConfigSmart(null, false);
     }
     return Promise.resolve(false);
+  }
+
+  function isConfigKeyNeededOnPage(key, pId) {
+    if (pId === 'admin') return true;
+    if (key === 'hvac_super_admin_hash') return false;
+    if (key === 'hvac_checkin_passcode') return pId === 'checkin';
+    if (key === 'hvac_quiz_unlocked_sessions' || key === 'hvac_quiz_config' || key === 'hvac_quiz_scoring_policy') {
+      return pId === 'quiz' || pId === 'checkin' || pId === 'quiz-winners';
+    }
+    if (key === 'hvac_game_config') {
+      return pId === 'game' || pId === 'game-leaderboard' || pId === 'lunch-screen' || pId === 'checkin';
+    }
+    if (key === 'hvac_survey_config') {
+      return pId === 'survey' || pId === 'checkin';
+    }
+    if (key === 'hvac_milestone_events') {
+      return pId === 'checkin' || pId === 'attendance-dashboard';
+    }
+    return true;
+  }
+
+  function syncSingleConfigKey(key) {
+    if (!key || CONFIG_KEYS.indexOf(key) < 0) return Promise.resolve(false);
+    var pId = pageId();
+    if (!isConfigKeyNeededOnPage(key, pId)) return Promise.resolve(true);
+
+    return fetch(cloudPath('config/' + key), { cache: 'no-store' })
+      .then(function (r) { return r.ok ? r.json() : undefined; })
+      .then(function (val) {
+        if (val === undefined) return false;
+        writeLocalSilent(key, val);
+        refreshCommon();
+        notifyUpdated([key]);
+        try { window.dispatchEvent(new StorageEvent('storage', { key: key })); } catch (e) {}
+        return true;
+      }).catch(function () { return false; });
+  }
+
+  function syncConfigSmart(configKeyHint, forceAll) {
+    var pId = pageId();
+    // 1) 특정 단일 설정 키만 변경된 경우 (예: 세션별 퀴즈 오픈 hvac_quiz_unlocked_sessions ~5B)
+    // 전체 config(12.2KB) 대신 해당 단일 키만 핀포인트 다운로드 (99.9% 트래픽 절감)
+    if (!forceAll && hasLocalSectionCache('config') && configKeyHint && configKeyHint !== 'all' && CONFIG_KEYS.indexOf(configKeyHint) >= 0) {
+      return syncSingleConfigKey(configKeyHint);
+    }
+
+    // 2) 이미 정적 스케줄/퀴즈/설문 설정(site-config.json)이 로컬에 캐시된 일반 참가자 화면에서는
+    // 무거운 정적 데이터(11.5KB)를 다시 받지 않고 페이지에 필요한 경량 동적 제어 키만 핀포인트 조회
+    if (!forceAll && hasLocalSectionCache('config') && pId !== 'admin' && configKeyHint !== 'all') {
+      var dynamicKeys = ['hvac_quiz_unlocked_sessions', 'hvac_notice_banner', 'hvac_game_config', 'hvac_checkin_passcode'];
+      var needed = dynamicKeys.filter(function (k) { return isConfigKeyNeededOnPage(k, pId); });
+      return Promise.all(needed.map(syncSingleConfigKey)).then(function () { return true; });
+    }
+
+    // 3) 관리자 전체 강제 동기화 또는 로컬 캐시가 전혀 없는 경우 전체 config 조회
+    return fetch(cloudPath('config'), { cache: 'no-store' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (cfgData) {
+        if (!cfgData || typeof cfgData !== 'object') return false;
+        var changedKeys = [];
+        CONFIG_KEYS.forEach(function (k) {
+          if (cfgData[k] !== undefined) {
+            writeLocalSilent(k, cfgData[k]);
+            changedKeys.push(k);
+          }
+        });
+        if (changedKeys.length) {
+          refreshCommon();
+          notifyUpdated(changedKeys);
+        }
+        return true;
+      }).catch(function () { return false; });
   }
 
   // =========================================================
@@ -1703,14 +1787,20 @@
               if ((d[sec] && d[sec] !== lastSeenMeta[sec]) || !hasLocalSectionCache(sec)) {
                 if (d[sec]) lastSeenMeta[sec] = d[sec];
                 metaChanged = true;
-                syncSpecificSection(sec);
+                if (sec === 'config') {
+                  syncConfigSmart(d.config_key || null, false);
+                } else {
+                  syncSpecificSection(sec);
+                }
               }
             });
             if (metaChanged) saveLastSeenMeta();
           }
         } else {
           var cleanSec = p.replace(/^\//, '').split('/')[0];
-          if (cleanSec === 'session_reset_at') {
+          if (cleanSec === 'config_key') {
+            return;
+          } else if (cleanSec === 'session_reset_at') {
             if (d && d !== lastSeenMeta.session_reset_at) {
               lastSeenMeta.session_reset_at = d;
               saveLastSeenMeta();
@@ -1764,27 +1854,10 @@
         var tasks = [];
         var pId = pageId();
 
-        // 1) 설정(config) 변경 감지
+        // 1) 설정(config) 변경 감지 (단일 키 변경 시 핀포인트 동기화로 트래픽 99.9% 절감)
         if (forceAll || !hasLocalSectionCache('config') || (meta.config && meta.config !== lastSeenMeta.config)) {
           lastSeenMeta.config = meta.config || Date.now();
-          tasks.push(
-            fetch(cloudPath('config'), { cache: 'no-store' })
-              .then(function (r) { return r.ok ? r.json() : null; })
-              .then(function (cfgData) {
-                if (!cfgData || typeof cfgData !== 'object') return;
-                var changedKeys = [];
-                CONFIG_KEYS.forEach(function (k) {
-                  if (cfgData[k] !== undefined) {
-                    writeLocalSilent(k, cfgData[k]);
-                    changedKeys.push(k);
-                  }
-                });
-                if (changedKeys.length) {
-                  refreshCommon();
-                  notifyUpdated(changedKeys);
-                }
-              })
-          );
+          tasks.push(syncConfigSmart(meta.config_key || null, !!forceAll));
         }
 
         // 2) Q&A 변경 감지 (qna, admin, checkin 페이지에서 동기화)
@@ -2007,6 +2080,13 @@
   function startCloudLoop() {
     if (pollTimer) clearInterval(pollTimer);
     if (!getCloudConfig()) return;
+    var pId = pageId();
+    // index.html 랜딩 페이지는 정적 스케줄/안내 페이지(site-config.json 연동)이므로 실시간 Firebase 소켓/폴링 제외 (트래픽 0B)
+    if (pId === 'index') return;
+
+    if (pId === 'checkin' && read('hvac_checkin_passcode') === null) {
+      syncSingleConfigKey('hvac_checkin_passcode');
+    }
 
     // 1. 200명 전원 실시간 SSE 소켓 스트림 연결 (초기 put 이벤트로 변경된 섹션만 차등 동기화)
     initCloudStream();
@@ -2020,7 +2100,7 @@
 
     // 3. 주기적 안전 백업 폴링 (소켓 단절 시에만 동작, 정상 스트림 중에는 0회 호출)
     var fastPages = ['admin', 'qna', 'attendance-dashboard', 'quiz-winners', 'game-leaderboard', 'lunch-screen', 'luckydraw-stage'];
-    var intervalMs = fastPages.indexOf(pageId()) >= 0 ? 15000 : 30000;
+    var intervalMs = fastPages.indexOf(pId) >= 0 ? 15000 : 30000;
     pollTimer = setInterval(function () {
       if (streamConnected && cloudEventSource && cloudEventSource.readyState === 1) return;
       pollCloudChanges(false);
@@ -2030,6 +2110,7 @@
   // 모바일 화면 꺼짐 복귀 / 백그라운드 탭 전환 시 스트림 및 데이터 재연결 (3초 디바운스 + 정상 연결 시 폴링 생략)
   var lastResumeCheckAt = 0;
   function checkAndResumeStream() {
+    if (pageId() === 'index') return;
     var now = Date.now();
     if (now - lastResumeCheckAt < 3000) return;
     lastResumeCheckAt = now;

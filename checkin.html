@@ -2370,49 +2370,31 @@
        MODAL 0: 사전 체크인 비밀번호 안내 팝업 (11/15일까지 표출, 11/16 당일 자동 미표출)
   ========================================================= -->
   <div class="modal-backdrop" id="modalPreEventNotice" role="dialog" aria-modal="true" aria-labelledby="preEventNoticeTitle">
-    <div class="confirm-card" style="max-width: 380px; text-align: left; padding: 24px 20px;">
+    <div class="confirm-card" style="max-width: 360px; text-align: left; padding: 22px 20px;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
         <div style="display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 800; padding: 3px 10px; border-radius: 99px; background: rgba(243,196,72,0.18); color: #f3c448; border: 1px solid rgba(243,196,72,0.35);">
-          <span>🔔</span> 현장 체크인 사전 안내
+          <span>🔔</span> 현장 체크인 안내
         </div>
         <button type="button" id="btnPreEventX" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: rgba(255,255,255,0.7); width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; cursor: pointer; line-height: 1;" aria-label="닫기">✕</button>
       </div>
 
-      <h3 id="preEventNoticeTitle" style="font-size: 19px; font-weight: 900; color: #fff; margin: 0 0 10px; line-height: 1.35; letter-spacing: -0.02em;">
+      <h3 id="preEventNoticeTitle" style="font-size: 18.5px; font-weight: 900; color: #fff; margin: 0 0 12px; line-height: 1.35; letter-spacing: -0.02em;">
         행사 당일 현장 비밀번호 안내
       </h3>
-      <p style="font-size: 12.5px; color: rgba(255, 255, 255, 0.72); line-height: 1.5; margin: 0 0 14px;">
-        2026 HVAC Engineering Expert Seminar에 관심을 가져주셔서 감사드립니다. 모바일 출석 체크인에 대해 사전 안내드립니다.
-      </p>
 
-      <div style="background: rgba(243, 196, 72, 0.09); border: 1px solid rgba(243, 196, 72, 0.28); border-radius: 12px; padding: 13px 14px; margin-bottom: 14px;">
+      <div style="background: rgba(243, 196, 72, 0.09); border: 1px solid rgba(243, 196, 72, 0.28); border-radius: 12px; padding: 14px; margin-bottom: 18px;">
         <div style="font-size: 13px; font-weight: 800; color: #f3c448; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
-          <span>🔐</span> 4자리 비밀번호 확인 방법
+          <span>🔐</span> 행사 당일 현장 체크인 안내
         </div>
-        <div style="font-size: 12px; color: #fef3c7; line-height: 1.6;">
-          본 모바일 출석체크는 <strong>11월 16일(월) 세미나 당일 현장</strong>에서 최종 완료하실 수 있습니다.<br><br>
-          체크인에 필요한 <strong>4자리 현장 인증 비밀번호</strong>는 세미나 당일 <strong>행사장 1층 로비 운영데스크</strong> 또는 <strong>학술회의장 메인 스크린 화면</strong>에 표출된 정보를 참고하여 입력해 주시기 바랍니다.
+        <div style="font-size: 12.5px; color: #fef3c7; line-height: 1.6;">
+          모바일 출석체크는 <strong>11월 16일(월) 세미나 당일 현장</strong>에서만 가능합니다.<br><br>
+          당일 <strong>1층 로비 운영데스크</strong> 또는 <strong>학술회의장 메인 스크린</strong>에 안내된 <strong>4자리 비밀번호</strong> 확인 후 체크인해 주시기 바랍니다.
         </div>
       </div>
 
-      <p style="font-size: 11.5px; color: rgba(255, 255, 255, 0.55); line-height: 1.45; margin: 0 0 16px;">
-        ※ 체크인 과정을 사전에 미리 둘러보거나 테스트하시려면 아래 [확인 및 계속 진행] 버튼을 눌러주세요.
-      </p>
-
-      <div style="display: flex; flex-direction: column; gap: 8px;">
-        <button class="btn-modal-confirm" id="btnPreEventProceed" type="button" style="width: 100%; height: 48px; background: #10b981; border: 1px solid #10b981; color: #fff; font-weight: 800; font-size: 14px; border-radius: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
-          <span>확인 및 계속 진행</span>
-          <span style="font-size: 16px;">➔</span>
-        </button>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-          <button type="button" id="btnPreEventTimetable" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.18); border-radius: 10px; color: #fff; padding: 10px 8px; font-size: 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px;">
-            <span>📅</span> 행사 시간표
-          </button>
-          <button type="button" id="btnPreEventClose" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.18); border-radius: 10px; color: rgba(255,255,255,0.75); padding: 10px 8px; font-size: 12px; font-weight: 700; cursor: pointer;">
-            닫기
-          </button>
-        </div>
-      </div>
+      <button type="button" id="btnPreEventClose" style="width: 100%; height: 44px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 10px; color: #fff; padding: 10px; font-size: 13.5px; font-weight: 800; cursor: pointer;">
+        닫기
+      </button>
     </div>
   </div>
 
