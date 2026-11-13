@@ -48,6 +48,7 @@ desktop.ini
 scratch/
 tmp/
 temp/
+.agents/
 
 # 6. 관리자 비암호화 원본 소스 (보안 암호화 번들 assets/admin-core.enc 로만 배포)
 src/

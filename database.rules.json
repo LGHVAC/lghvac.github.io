@@ -1,0 +1,70 @@
+{
+  "rules": {
+    "hvac2026": {
+      ".read": true,
+      "meta": {
+        "$section": {
+          ".write": "newData.isNumber()",
+          ".validate": "newData.val() > 0"
+        }
+      },
+      "config": {
+        ".write": true
+      },
+      "operators": {
+        ".write": true
+      },
+      "checkins": {
+        "seq": {
+          ".write": "newData.isNumber()",
+          ".validate": "newData.val() >= 0"
+        },
+        "items": {
+          ".indexOn": ["email", "seq", "category"],
+          "$emailKey": {
+            ".write": "!data.exists() || !data.child('activeDeviceId').exists() || data.child('activeDeviceId').val() === 'admin_console' || data.child('activeDeviceId').val() === newData.child('activeDeviceId').val() || newData.child('activeDeviceId').val() === 'admin_console'",
+            ".validate": "newData.hasChildren(['seq', 'name', 'email'])"
+          }
+        },
+        "blocked": {
+          ".write": true
+        },
+        "deferredMilestones": {
+          ".write": true
+        },
+        "giftRegistry": {
+          "$emailKey": {
+            ".write": true
+          }
+        }
+      },
+      "qna": {
+        "list": {
+          ".write": true
+        }
+      },
+      "quiz": {
+        "submissions": {
+          ".indexOn": ["seq", "score"],
+          "$emailKey": {
+            ".write": true,
+            ".validate": "newData.hasChildren(['name'])"
+          }
+        }
+      },
+      "surveys": {
+        "$responseId": {
+          ".write": "!data.exists()",
+          ".validate": "newData.hasChildren(['submittedAt'])"
+        }
+      },
+      "games": {
+        "submissions": {
+          "$emailKey": {
+            ".write": true
+          }
+        }
+      }
+    }
+  }
+}
