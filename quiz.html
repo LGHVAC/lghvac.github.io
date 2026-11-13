@@ -1118,7 +1118,7 @@
         </div>
         <div style="font-size: 12px; color: #94a3b8; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 8px;">
           • <strong>경품 안내:</strong> 오프닝은 연습 문제로 <span style="color: #f87171; font-weight: 700;">별도 경품(커피 쿠폰)이 증정되지 않습니다.</span><br>
-          • <strong>정식 시상:</strong> <span style="color: #f3c448; font-weight: 800;">세션 1(Keynote 1)부터</span> 각 세션별 최고 득점자 1~3위(Top 3)에게 <strong>스타벅스 모바일 쿠폰</strong>이 증정됩니다!
+          • <strong>정식 시상:</strong> <span style="color: #f3c448; font-weight: 800;">세션 1(Keynote 1)부터</span> 각 세션별 최고 득점자 1~2위에게 <strong>스타벅스 모바일 쿠폰</strong>이 증정됩니다!
         </div>
       </div>
       <button type="button" onclick="closeOpeningPracticeModal()" style="width: 100%; padding: 13px; background: linear-gradient(135deg, #0284c7, #0369a1); border: 1px solid rgba(56,189,248,0.5); border-radius: 12px; color: #fff; font-weight: 800; font-size: 14px; cursor: pointer; box-shadow: 0 4px 15px rgba(2,132,199,0.35); transition: transform 0.15s;">
@@ -1200,7 +1200,7 @@
           <span style="font-size: 26px;">🎯</span>
           <div style="font-size: 13px; line-height: 1.55;">
             <strong style="color: #fff; font-size: 14px;">오프닝 세션은 몸풀기 연습 퀴즈입니다</strong><br>
-            <span style="color: #cbd5e1; font-size: 12px;">시스템 적응을 위한 연습 문제로 경품(커피 쿠폰)은 미제공되며, <strong style="color: #f3c448;">세션 1부터</strong> 각 세션별 Top 3 스타벅스 쿠폰이 정식 증정됩니다.</span>
+            <span style="color: #cbd5e1; font-size: 12px;">시스템 적응을 위한 연습 문제로 경품(커피 쿠폰)은 미제공되며, <strong style="color: #f3c448;">세션 1부터</strong> 각 세션별 1~2위 스타벅스 쿠폰이 정식 증정됩니다.</span>
           </div>
         </div>
         <button type="button" onclick="showOpeningPracticeModal()" style="padding: 6px 14px; background: rgba(56,189,248,0.2); border: 1px solid rgba(56,189,248,0.5); color: #38bdf8; border-radius: 8px; font-size: 12px; font-weight: 800; cursor: pointer;">자세히 보기 ↗</button>
@@ -1901,7 +1901,10 @@
             answeredCount: answeredCount,
             firstTryCount: firstTryCount,
             retryCount: retryCount,
-            total: totalQuizzes
+            total: totalQuizzes,
+            sessionScores: sessionScores,
+            sessionAnswered: sessionAnswered,
+            answers: userAnswers
           }).then(function (res) {
             if (res && res.locked && res.duplicate) {
               showToast('⚠️ 다른 기기에서 이미 제출 완료되었습니다.');

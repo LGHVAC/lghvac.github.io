@@ -1360,6 +1360,9 @@
           firstTryCount: scoreObj.firstTryCount || 0,
           retryCount: scoreObj.retryCount || 0,
           total: scoreObj.total || 6,
+          sessionScores: scoreObj.sessionScores || {},
+          sessionAnswered: scoreObj.sessionAnswered || {},
+          answers: scoreObj.answers || {},
           deviceId: myDeviceId,
           isLocked: (scoreObj.answeredCount >= (scoreObj.total || 6)),
           updatedAt: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
