@@ -46,7 +46,8 @@
     'hvac_milestone_events',
     'hvac_survey_config',
     'hvac_checkin_passcode',
-    'hvac_game_config'
+    'hvac_game_config',
+    'hvac_super_admin_hash'
   ];
   var APPLIED_MARKER = 'hvac_config_applied_at';
   var CLOUD_CFG_KEY = 'hvac_cloud_config';
@@ -55,7 +56,15 @@
   var BASE = scriptEl && scriptEl.src ? scriptEl.src.replace(/assets\/hvac-core\.js.*$/, '') : './';
 
   function read(key) {
-    try { return JSON.parse(localStorage.getItem(key) || 'null'); } catch (e) { return null; }
+    try {
+      var raw = localStorage.getItem(key);
+      if (raw === null || raw === undefined) return null;
+      try {
+        return JSON.parse(raw);
+      } catch (parseErr) {
+        return raw;
+      }
+    } catch (e) { return null; }
   }
 
   function writeLocalSilent(key, val) {
