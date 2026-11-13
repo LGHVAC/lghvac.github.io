@@ -494,6 +494,18 @@
       lastSeenMeta.config = cfg.metaConfigTs;
       saveLastSeenMeta();
     }
+    // site-config.json에 포함된 설정 키는 metaConfigTs 시점까지 최신으로 간주 (불필요한 재다운로드 방지)
+    if (cfg.metaConfigTs) {
+      var seenChanged = false;
+      Object.keys(cfg.data).forEach(function (k) {
+        if (CONFIG_KEYS.indexOf(k) < 0) return;
+        if ((Number(lastSeenCfgKeys[k]) || 0) < cfg.metaConfigTs) {
+          lastSeenCfgKeys[k] = cfg.metaConfigTs;
+          seenChanged = true;
+        }
+      });
+      if (seenChanged) saveSeenCfgKeys();
+    }
     var applied = '';
     try { applied = localStorage.getItem(APPLIED_MARKER) || ''; } catch (e) {}
     if (String(cfg.publishedAt) <= applied && read('hvac_schedule_settings') !== null) return false;
@@ -570,6 +582,17 @@
   var latestRemoteMeta = Object.assign({}, lastSeenMeta);
   var isSyncingCloud = false;
 
+  // 설정 키별 최종 수정 시각 (meta/config_keys/{key}) 추적
+  // - 기존에는 meta.config_key(마지막 변경 키 1개)만 보고 동기화하여,
+  //   접속이 끊겨 있던 사이 일정표 → 럭키드로우 순으로 변경되면 일정표 변경을 영영 놓치는 문제가 있었음
+  var CFG_KEYS_SEEN = 'hvac_last_seen_cfgkeys';
+  var savedCfgSeen = read(CFG_KEYS_SEEN);
+  var lastSeenCfgKeys = (savedCfgSeen && typeof savedCfgSeen === 'object') ? savedCfgSeen : {};
+
+  function saveSeenCfgKeys() {
+    writeLocalSilent(CFG_KEYS_SEEN, lastSeenCfgKeys);
+  }
+
   function saveLastSeenMeta() {
     writeLocalSilent(LAST_META_KEY, lastSeenMeta);
   }
@@ -629,12 +652,17 @@
     if (section === 'config') {
       var metaUrl = cloudPath('meta');
       if (!metaUrl) return Promise.resolve();
+      var cfgKeyName = subKey || 'all';
       lastSeenMeta.config = ts;
       saveLastSeenMeta();
+      lastSeenCfgKeys[cfgKeyName] = ts;
+      saveSeenCfgKeys();
+      var metaBody = { config: ts, config_key: cfgKeyName };
+      metaBody['config_keys/' + cfgKeyName] = ts;
       return fetch(metaUrl, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ config: ts, config_key: subKey || 'all' })
+        body: JSON.stringify(metaBody)
       }).then(function () {
         return true;
       }).catch(function () { return false; });
@@ -1984,6 +2012,61 @@
       }).catch(function () { return false; });
   }
 
+  // meta 스냅샷/패치에서 설정 키별 타임스탬프 맵 추출 (중첩 객체 / 'config_keys/xxx' 평탄화 키 모두 지원)
+  function extractCfgKeysMap(d) {
+    var map = {};
+    if (!d || typeof d !== 'object') return map;
+    if (d.config_keys && typeof d.config_keys === 'object') {
+      Object.keys(d.config_keys).forEach(function (k) { map[k] = d.config_keys[k]; });
+    }
+    Object.keys(d).forEach(function (k) {
+      if (k.indexOf('config_keys/') === 0) map[k.slice(12)] = d[k];
+    });
+    return map;
+  }
+
+  // 설정 키별 타임스탬프 비교 후 실제로 변경된(그리고 현재 페이지에 필요한) 키만 다운로드
+  function syncConfigFromMeta(d, forceAll) {
+    var pId = pageId();
+    var cfgMap = extractCfgKeysMap(d);
+    var mapKeys = Object.keys(cfgMap);
+
+    if (forceAll || !hasLocalSectionCache('config')) {
+      mapKeys.forEach(function (k) {
+        var ts = Number(cfgMap[k]) || 0;
+        if (ts > (Number(lastSeenCfgKeys[k]) || 0)) lastSeenCfgKeys[k] = ts;
+      });
+      saveSeenCfgKeys();
+      return syncConfigSmart(null, !!forceAll);
+    }
+
+    if (mapKeys.length > 0) {
+      var allTs = Number(cfgMap.all) || 0;
+      if (allTs > (Number(lastSeenCfgKeys.all) || 0)) {
+        mapKeys.forEach(function (k) {
+          var ts = Number(cfgMap[k]) || 0;
+          if (ts > (Number(lastSeenCfgKeys[k]) || 0)) lastSeenCfgKeys[k] = ts;
+        });
+        saveSeenCfgKeys();
+        return syncConfigSmart(null, true);
+      }
+      var targets = [];
+      mapKeys.forEach(function (k) {
+        if (k === 'all' || CONFIG_KEYS.indexOf(k) < 0) return;
+        var ts = Number(cfgMap[k]) || 0;
+        if (ts <= (Number(lastSeenCfgKeys[k]) || 0)) return;
+        if (!isConfigKeyNeededOnPage(k, pId)) return; // 다른 페이지용 키는 '미확인'으로 남겨둠
+        lastSeenCfgKeys[k] = ts;
+        targets.push(k);
+      });
+      if (targets.length) saveSeenCfgKeys();
+      return Promise.all(targets.map(syncSingleConfigKey)).then(function () { return true; });
+    }
+
+    // 구버전 meta (config_keys 없음): 마지막 변경 키 힌트로 동기화
+    return syncConfigSmart(d && d.config_key ? d.config_key : null, false);
+  }
+
   // =========================================================
   // 실시간 스트림 소켓 (Firebase RTDB Server-Sent Events / EventSource)
   // 200명 전원(참석자/운영자) 0초 지연 실시간 Push 소켓 영구 연결 유지
@@ -2037,31 +2120,47 @@
               metaChanged = true;
               checkSessionResetSignal(d.session_reset_at);
             }
+            var hasCfgKeys = Object.keys(extractCfgKeysMap(d)).length > 0;
             ['quiz', 'checkins', 'qna', 'games', 'surveys', 'config'].forEach(function (sec) {
               if (d[sec]) latestRemoteMeta[sec] = d[sec];
               if (pageId() === 'admin' && !isAdminSectionNeeded(sec)) return;
+              if (sec === 'config') {
+                // 설정은 키별 타임스탬프(config_keys)를 항상 비교하여 놓친 변경분까지 복구
+                if (hasCfgKeys || (d.config && d.config !== lastSeenMeta.config) || !hasLocalSectionCache('config')) {
+                  if (d.config) lastSeenMeta.config = d.config;
+                  metaChanged = true;
+                  syncConfigFromMeta(d, false);
+                }
+                return;
+              }
               if ((d[sec] && d[sec] !== lastSeenMeta[sec]) || !hasLocalSectionCache(sec)) {
                 if (d[sec]) lastSeenMeta[sec] = d[sec];
                 metaChanged = true;
-                if (sec === 'config') {
-                  syncConfigSmart(d.config_key || null, false);
-                } else {
-                  syncSpecificSection(sec, false);
-                }
+                syncSpecificSection(sec, false);
               }
             });
             if (metaChanged) saveLastSeenMeta();
           }
         } else {
-          var cleanSec = p.replace(/^\//, '').split('/')[0];
+          var segs = p.replace(/^\//, '').split('/');
+          var cleanSec = segs[0];
           if (cleanSec === 'config_key') {
             return;
+          } else if (cleanSec === 'config_keys') {
+            // /config_keys/{key} 단건 변경 또는 /config_keys 전체 갱신
+            var cfgPatch = {};
+            if (segs[1]) cfgPatch[segs[1]] = d;
+            else if (d && typeof d === 'object') cfgPatch = d;
+            syncConfigFromMeta({ config_keys: cfgPatch }, false);
           } else if (cleanSec === 'session_reset_at') {
             if (d && d !== lastSeenMeta.session_reset_at) {
               lastSeenMeta.session_reset_at = d;
               saveLastSeenMeta();
               checkSessionResetSignal(d);
             }
+          } else if (cleanSec === 'config') {
+            // config 타임스탬프 단독 변경은 config_keys 이벤트에서 처리 (중복 다운로드 방지)
+            if (d) { lastSeenMeta.config = d; latestRemoteMeta.config = d; saveLastSeenMeta(); }
           } else if (cleanSec && d !== lastSeenMeta[cleanSec]) {
             latestRemoteMeta[cleanSec] = d || Date.now();
             if (pageId() === 'admin' && !isAdminSectionNeeded(cleanSec)) return;
@@ -2116,10 +2215,11 @@
           if (meta[sec]) latestRemoteMeta[sec] = meta[sec];
         });
 
-        // 1) 설정(config) 변경 감지 (단일 키 변경 시 핀포인트 동기화로 트래픽 99.9% 절감)
-        if (forceAll || !hasLocalSectionCache('config') || (meta.config && meta.config !== lastSeenMeta.config)) {
+        // 1) 설정(config) 변경 감지 (설정 키별 타임스탬프 비교 → 변경된 키만 핀포인트 동기화)
+        var pollHasCfgKeys = Object.keys(extractCfgKeysMap(meta)).length > 0;
+        if (forceAll || !hasLocalSectionCache('config') || pollHasCfgKeys || (meta.config && meta.config !== lastSeenMeta.config)) {
           lastSeenMeta.config = meta.config || Date.now();
-          tasks.push(syncConfigSmart(meta.config_key || null, !!forceAll));
+          tasks.push(syncConfigFromMeta(meta, !!forceAll));
         }
 
         // 2) Q&A 변경 감지 (qna, admin 활성 탭에서만 동기화)

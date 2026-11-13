@@ -3109,7 +3109,6 @@
                 if (s.note !== '본부관 별관 1F 학술회의장') { s.note = '본부관 별관 1F 학술회의장'; migrated = true; }
                 if (s.location !== '📍 본부관 별관 1F 학술회의장') { s.location = '📍 본부관 별관 1F 학술회의장'; migrated = true; }
                 if (s.time === '~ 08:50' || s.time === '~08:50' || !s.minute || s.minute === '-') { s.time = '08:00 ~ 08:50'; s.minute = '50'; if (s.speaker === '-') s.speaker = ''; migrated = true; }
-                if (s.status === '진행 중') { s.status = '예정'; migrated = true; }
                 if (Array.isArray(s.bullets)) {
                   s.bullets = s.bullets.map(b => {
                     if (b.includes('등록 데스크') || b.includes('등록데스크')) {
@@ -4668,6 +4667,13 @@
       return -1;
     }
 
+    function isManualScheduleMode() {
+      return Array.isArray(sessions) && sessions.some(x => {
+        const st = (x && x.status || '').trim();
+        return st === '진행 중' || st === '진행중' || st === 'ongoing' || st === '종료' || st === 'ended';
+      });
+    }
+
     function getEffectiveSessionStatus(s) {
       if (!s) return '예정';
       const rawStatus = (s.status || '').trim();
@@ -4687,6 +4693,12 @@
       // 3. 행사 당일인 경우: 관리자가 수동으로 '종료'를 해두었으면 종료
       if (rawStatus === '종료' || rawStatus === 'ended') {
         return '종료';
+      }
+
+      // 3-1. 관리자가 수동으로 세션 상태를 운영 중인 경우(어느 세션이든 '진행 중'/'종료' 지정)
+      //      시계 기준 자동 판정을 끄고 관리자 지정 상태를 그대로 따름 (점심이 시간상 계속 '진행중'으로 보이는 문제 방지)
+      if (isManualScheduleMode()) {
+        return '예정';
       }
 
       // 4. 행사 당일 실시간 시각 기준 자동 판정 (start <= now < end: 진행중, now >= end: 종료, now < start: 예정)
@@ -4718,6 +4730,15 @@
         if (st === '진행 중' || st === '진행중' || st === 'ongoing') {
           return i;
         }
+      }
+
+      // 2-1순위: 관리자 수동 운영 중(종료 처리된 세션 존재)이면 '종료'가 아닌 첫 세션을 다음 세션으로 포커스
+      if (isManualScheduleMode()) {
+        const nextIdx = sessList.findIndex(x => {
+          const st = (x && x.status || '').trim();
+          return st !== '종료' && st !== 'ended';
+        });
+        return nextIdx !== -1 ? nextIdx : sessList.length - 1;
       }
 
       // 3순위: 행사 전 기간(isPreEventPeriod())이거나 모든 세션이 '예정'인 경우: 첫 번째 세션(인덱스 0) 포커스
@@ -5749,10 +5770,18 @@
     if (window.HVAC) {
       HVAC.onConfigUpdated((keys) => {
         if (keys.includes('hvac_schedule_settings')) {
+          const prevLiveIdx = findCurrentOrUpcomingSessionIndex(sessions);
+          const wasViewingLive = (currentIdx === prevLiveIdx);
           loadSyncedSessions();
+          const nextLiveIdx = findCurrentOrUpcomingSessionIndex(sessions);
           renderSideDots();
           renderTimetableSheet();
-          renderSession(Math.min(currentIdx, Math.max(0, sessions.length - 1)));
+          // 관리자가 진행 세션을 바꾸면 LIVE 세션을 보고 있던 참석자는 새 진행 세션으로 자동 이동
+          if (nextLiveIdx !== prevLiveIdx && (wasViewingLive || prevLiveIdx === -1)) {
+            renderSession(nextLiveIdx, nextLiveIdx > currentIdx ? 'next' : 'prev');
+          } else {
+            renderSession(Math.min(currentIdx, Math.max(0, sessions.length - 1)));
+          }
         }
         if (keys.includes('hvac_quiz_config')) syncMissionBadges();
         if (keys.includes('hvac_site_content')) applyCheckinSiteContent();
