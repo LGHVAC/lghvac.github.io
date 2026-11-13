@@ -4463,7 +4463,6 @@
         try {
           const mSaved = localStorage.getItem('hvac_milestone_events');
           if (mSaved) milestones = JSON.parse(mSaved);
-          else localStorage.setItem('hvac_milestone_events', JSON.stringify(defaultMilestones));
         } catch (e) {}
 
         const matchedMilestone = milestones.find(m => parseInt(m.seq, 10) === seq);
@@ -5476,29 +5475,52 @@
       const cEmail = (uInfo && uInfo.email) ? uInfo.email : ((window.currentUser && window.currentUser.email) ? window.currentUser.email : '');
       const cDept = (uInfo && (uInfo.dept || uInfo.org)) ? (uInfo.dept || uInfo.org) : '';
 
+      const newQItem = {
+        id: Date.now(),
+        session: qSessionKey,
+        sessionName: (s.sublabel || 'Session') + ' · ' + (s.title || '').slice(0, 16),
+        author: author,
+        userName: realName,
+        checkinSeq: cSeq,
+        checkinId: cId,
+        authorEmail: cEmail,
+        userDept: cDept,
+        content: content,
+        time: timeStr,
+        timestamp: Date.now(),
+        likes: 1,
+        isLiked: true,
+        isStarred: false,
+        isAnswered: false
+      };
+
       try {
-        let qList = [];
-        const saved = localStorage.getItem('hvac_qna_list');
-        if (saved) qList = JSON.parse(saved);
-        qList.unshift({
-          id: Date.now(),
-          session: qSessionKey,
-          sessionName: (s.sublabel || 'Session') + ' · ' + (s.title || '').slice(0, 16),
-          author: author,
-          userName: realName,
-          checkinSeq: cSeq,
-          checkinId: cId,
-          authorEmail: cEmail,
-          userDept: cDept,
-          content: content,
-          time: timeStr,
-          timestamp: Date.now(),
-          likes: 1,
-          isLiked: true,
-          isStarred: false,
-          isAnswered: false
-        });
-        localStorage.setItem('hvac_qna_list', JSON.stringify(qList));
+        if (window.HVAC && HVAC.cloud && HVAC.cloud.cloudPath) {
+          fetch(HVAC.cloud.cloudPath('qna/list'), { cache: 'no-store' })
+            .then(r => r.ok ? r.json() : null)
+            .then(remoteQna => {
+              let qList = Array.isArray(remoteQna) ? remoteQna : [];
+              if (!qList.length) {
+                const saved = localStorage.getItem('hvac_qna_list');
+                if (saved) qList = JSON.parse(saved) || [];
+              }
+              qList.unshift(newQItem);
+              localStorage.setItem('hvac_qna_list', JSON.stringify(qList));
+            })
+            .catch(() => {
+              let qList = [];
+              const saved = localStorage.getItem('hvac_qna_list');
+              if (saved) qList = JSON.parse(saved) || [];
+              qList.unshift(newQItem);
+              localStorage.setItem('hvac_qna_list', JSON.stringify(qList));
+            });
+        } else {
+          let qList = [];
+          const saved = localStorage.getItem('hvac_qna_list');
+          if (saved) qList = JSON.parse(saved) || [];
+          qList.unshift(newQItem);
+          localStorage.setItem('hvac_qna_list', JSON.stringify(qList));
+        }
       } catch (e) {}
 
       modalSessionQna.classList.remove('show');

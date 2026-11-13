@@ -57,6 +57,18 @@
   var scriptEl = document.currentScript;
   var BASE = scriptEl && scriptEl.src ? scriptEl.src.replace(/assets\/hvac-core\.js.*$/, '') : './';
 
+  var origSetItem = typeof Storage !== 'undefined' ? Storage.prototype.setItem : null;
+  var cloudSyncLockCount = 0;
+
+  function withCloudSyncLock(fn) {
+    cloudSyncLockCount++;
+    try {
+      return fn();
+    } finally {
+      cloudSyncLockCount = Math.max(0, cloudSyncLockCount - 1);
+    }
+  }
+
   function read(key) {
     try {
       var raw = localStorage.getItem(key);
@@ -71,8 +83,13 @@
 
   function writeLocalSilent(key, val) {
     try {
-      if (val === null || val === undefined) localStorage.removeItem(key);
-      else localStorage.setItem(key, typeof val === 'string' ? val : JSON.stringify(val));
+      if (val === null || val === undefined) {
+        localStorage.removeItem(key);
+      } else {
+        var serialized = typeof val === 'string' ? val : JSON.stringify(val);
+        if (origSetItem) origSetItem.call(window.localStorage, key, serialized);
+        else localStorage.setItem(key, serialized);
+      }
     } catch (e) {}
   }
 
@@ -556,6 +573,15 @@
     writeLocalSilent(LAST_META_KEY, lastSeenMeta);
   }
 
+  function isAdminSectionNeeded(sec) {
+    var tab = (typeof window !== 'undefined' && window._hvacAdminActiveTab) || 'tabQna';
+    if (sec === 'config' || sec === 'qna' || sec === 'checkins') return true;
+    if (sec === 'quiz') return tab === 'tabQuiz';
+    if (sec === 'surveys') return tab === 'tabSurvey';
+    if (sec === 'games') return tab === 'tabGames';
+    return true;
+  }
+
   function hasLocalSectionCache(sec) {
     var pId = pageId();
     if (sec === 'config') {
@@ -569,25 +595,28 @@
       return true;
     }
     if (sec === 'qna') {
-      if (pId === 'qna' || pId === 'admin' || pId === 'checkin') return read('hvac_qna_list') !== null;
+      if (pId === 'qna' || pId === 'admin') return read('hvac_qna_list') !== null;
       return true;
     }
     if (sec === 'quiz') {
-      if (pId === 'admin' || pId === 'quiz-winners') return read('hvac_quiz_submissions') !== null;
+      if (pId === 'quiz-winners') return read('hvac_quiz_submissions') !== null;
+      if (pId === 'admin' && isAdminSectionNeeded('quiz')) return read('hvac_quiz_submissions') !== null;
       return true;
     }
     if (sec === 'games') {
-      if (pId === 'admin' || pId === 'lunch-screen' || pId === 'game-leaderboard' || pId === 'game') return read('hvac_game_submissions') !== null;
+      if (pId === 'lunch-screen' || pId === 'game-leaderboard') return read('hvac_game_top3') !== null;
+      if (pId === 'admin' && isAdminSectionNeeded('games')) return read('hvac_game_submissions') !== null;
       return true;
     }
     if (sec === 'surveys') {
-      if (pId === 'admin') return read('hvac_survey_responses') !== null;
+      if (pId === 'admin' && isAdminSectionNeeded('surveys')) return read('hvac_survey_responses') !== null;
       return true;
     }
     return true;
   }
 
   var lastPushedConfigMap = {};
+  var lastPushedSectionMap = {};
 
   function touchCloudMeta(section, subKey) {
     if (!window.fetch) return Promise.resolve();
@@ -595,25 +624,25 @@
     if (section === 'config') {
       var metaUrl = cloudPath('meta');
       if (!metaUrl) return Promise.resolve();
+      lastSeenMeta.config = ts;
+      saveLastSeenMeta();
       return fetch(metaUrl, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ config: ts, config_key: subKey || 'all' })
       }).then(function () {
-        lastSeenMeta.config = ts;
-        saveLastSeenMeta();
         return true;
       }).catch(function () { return false; });
     }
     var u = cloudPath('meta/' + section);
     if (!u) return Promise.resolve();
+    lastSeenMeta[section] = ts;
+    saveLastSeenMeta();
     return fetch(u, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(ts)
     }).then(function () {
-      lastSeenMeta[section] = ts;
-      saveLastSeenMeta();
       return true;
     }).catch(function () { return false; });
   }
@@ -1371,7 +1400,7 @@
       .catch(function () { return null; });
   }
 
-  // 출석 목록 전체 클라우드 동기화 (관리자 수정/초기화 시)
+  // 출석 목록 전체 클라우드 동기화 (관리자 수정/초기화 시, 1.5초 중복 PUT 방지)
   function pushCheckinListToCloud(list, blocked) {
     var c = getCloudConfig();
     if (!c || !window.fetch) return Promise.resolve(false);
@@ -1403,24 +1432,40 @@
       seqCounter_him: maxHim
     };
     if (Array.isArray(blocked)) body.blocked = blocked;
+    var bodyStr = JSON.stringify(body);
+    var now = Date.now();
+    var prev = lastPushedSectionMap['checkins'];
+    if (prev && prev.body === bodyStr && (now - prev.ts < 2000)) {
+      return Promise.resolve(true);
+    }
+    lastPushedSectionMap['checkins'] = { body: bodyStr, ts: now };
+
     return fetch(cloudPath('checkins'), {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
+      body: bodyStr
     }).then(function (r) {
       if (r.ok) return touchCloudMeta('checkins').then(function () { return true; });
       return false;
     }).catch(function () { return false; });
   }
 
-  // Q&A 질문 목록 클라우드 동기화
+  // Q&A 질문 목록 클라우드 동기화 (1.5초 중복 PUT 방지)
   function pushQnaListToCloud(qList) {
     var c = getCloudConfig();
     if (!c || !window.fetch) return Promise.resolve(false);
+    var bodyStr = JSON.stringify(qList || []);
+    var now = Date.now();
+    var prev = lastPushedSectionMap['qna'];
+    if (prev && prev.body === bodyStr && (now - prev.ts < 2000)) {
+      return Promise.resolve(true);
+    }
+    lastPushedSectionMap['qna'] = { body: bodyStr, ts: now };
+
     return fetch(cloudPath('qna/list'), {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(qList || [])
+      body: bodyStr
     }).then(function (r) {
       if (r.ok) return touchCloudMeta('qna').then(function () { return true; });
       return false;
@@ -1476,7 +1521,58 @@
       .catch(function () { return { success: false }; });
   }
 
-  // 점심 미니게임 (10초 / 26℃) 결과 클라우드 전송
+  // 미니게임 초경량 Top 3 요약 데이터(~450B) 생성 헬퍼
+  function buildGameTop3SummaryFromList(list) {
+    var arr = Array.isArray(list) ? list : [];
+    var valid10s = arr.filter(function (it) { return it && it.game10s && it.game10s.bestDiff !== null && it.game10s.bestDiff !== undefined; });
+    valid10s.sort(function (a, b) {
+      if (a.game10s.bestDiff !== b.game10s.bestDiff) return a.game10s.bestDiff - b.game10s.bestDiff;
+      return (a.game10s.bestTime || 0) - (b.game10s.bestTime || 0);
+    });
+    var valid26c = arr.filter(function (it) { return it && it.game26c && it.game26c.bestDiff !== null && it.game26c.bestDiff !== undefined; });
+    valid26c.sort(function (a, b) {
+      if (a.game26c.bestDiff !== b.game26c.bestDiff) return a.game26c.bestDiff - b.game26c.bestDiff;
+      return (a.game26c.bestTemp || 0) - (b.game26c.bestTemp || 0);
+    });
+    return {
+      top10s: valid10s.slice(0, 3).map(function (it) {
+        return {
+          key: it.key,
+          name: it.name || '참가자',
+          dept: it.dept || '',
+          game10s: { bestTime: it.game10s.bestTime, bestDiff: it.game10s.bestDiff, isPerfect: !!it.game10s.isPerfect }
+        };
+      }),
+      top26c: valid26c.slice(0, 3).map(function (it) {
+        return {
+          key: it.key,
+          name: it.name || '참가자',
+          dept: it.dept || '',
+          game26c: { bestTemp: it.game26c.bestTemp, bestDiff: it.game26c.bestDiff, isPerfect: !!it.game26c.isPerfect }
+        };
+      }),
+      count10s: valid10s.length,
+      count26c: valid26c.length,
+      updatedAt: Date.now()
+    };
+  }
+
+  function mergeSummaryToCompactList(summary) {
+    if (!summary || typeof summary !== 'object') return [];
+    var map = {};
+    (summary.top10s || []).forEach(function (it) {
+      if (!it || !it.key) return;
+      map[it.key] = { key: it.key, name: it.name, dept: it.dept, game10s: it.game10s };
+    });
+    (summary.top26c || []).forEach(function (it) {
+      if (!it || !it.key) return;
+      if (map[it.key]) map[it.key].game26c = it.game26c;
+      else map[it.key] = { key: it.key, name: it.name, dept: it.dept, game26c: it.game26c };
+    });
+    return Object.values(map);
+  }
+
+  // 점심 미니게임 (10초 / 20℃) 결과 클라우드 전송 + 초경량 Top 3(games/top3) 갱신
   function pushGameRecordToCloud(gameData) {
     var c = getCloudConfig();
     if (!c || !window.fetch || !gameData) return Promise.resolve({ success: false });
@@ -1488,6 +1584,8 @@
     return fetch(subUrl, { cache: 'no-store' })
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (existing) {
+        var isNew10s = (!existing || !existing.game10s || existing.game10s.bestDiff === null || existing.game10s.bestDiff === undefined) && (gameData.game10s && gameData.game10s.bestDiff !== null && gameData.game10s.bestDiff !== undefined);
+        var isNew26c = (!existing || !existing.game26c || existing.game26c.bestDiff === null || existing.game26c.bestDiff === undefined) && (gameData.game26c && gameData.game26c.bestDiff !== null && gameData.game26c.bestDiff !== undefined);
         existing = existing || {};
         var merged = {
           key: key,
@@ -1506,22 +1604,123 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(merged)
         }).then(function (r) {
-          if (r.ok) return touchCloudMeta('games').then(function () { return { success: true, record: merged }; });
-          return { success: false };
+          if (!r.ok) return { success: false };
+          // 초경량 Top 3 노드(~450B)만 읽어서 Top 3 변동 또는 참여자수 증감 시 갱신
+          return fetch(cloudPath('games/top3'), { cache: 'no-store' })
+            .then(function (tr) { return tr.ok ? tr.json() : null; })
+            .then(function (top3Obj) {
+              if (!top3Obj || typeof top3Obj !== 'object') {
+                top3Obj = { top10s: [], top26c: [], count10s: 0, count26c: 0, updatedAt: Date.now() };
+              }
+              var top10s = Array.isArray(top3Obj.top10s) ? top3Obj.top10s.filter(function (x) { return x && x.key !== key; }) : [];
+              var top26c = Array.isArray(top3Obj.top26c) ? top3Obj.top26c.filter(function (x) { return x && x.key !== key; }) : [];
+              if (merged.game10s && merged.game10s.bestDiff !== null && merged.game10s.bestDiff !== undefined) {
+                top10s.push({
+                  key: key,
+                  name: merged.name,
+                  dept: merged.dept,
+                  game10s: { bestTime: merged.game10s.bestTime, bestDiff: merged.game10s.bestDiff, isPerfect: !!merged.game10s.isPerfect }
+                });
+                top10s.sort(function (a, b) {
+                  if (a.game10s.bestDiff !== b.game10s.bestDiff) return a.game10s.bestDiff - b.game10s.bestDiff;
+                  return (a.game10s.bestTime || 0) - (b.game10s.bestTime || 0);
+                });
+                top10s = top10s.slice(0, 3);
+              }
+              if (merged.game26c && merged.game26c.bestDiff !== null && merged.game26c.bestDiff !== undefined) {
+                top26c.push({
+                  key: key,
+                  name: merged.name,
+                  dept: merged.dept,
+                  game26c: { bestTemp: merged.game26c.bestTemp, bestDiff: merged.game26c.bestDiff, isPerfect: !!merged.game26c.isPerfect }
+                });
+                top26c.sort(function (a, b) {
+                  if (a.game26c.bestDiff !== b.game26c.bestDiff) return a.game26c.bestDiff - b.game26c.bestDiff;
+                  return (a.game26c.bestTemp || 0) - (b.game26c.bestTemp || 0);
+                });
+                top26c = top26c.slice(0, 3);
+              }
+              var prevJson = JSON.stringify({ t10: top3Obj.top10s || [], t26: top3Obj.top26c || [], c10: top3Obj.count10s || 0, c26: top3Obj.count26c || 0 });
+              var nextSummary = {
+                top10s: top10s,
+                top26c: top26c,
+                count10s: Math.max(top10s.length, (Number(top3Obj.count10s) || 0) + (isNew10s ? 1 : 0)),
+                count26c: Math.max(top26c.length, (Number(top3Obj.count26c) || 0) + (isNew26c ? 1 : 0)),
+                updatedAt: Date.now()
+              };
+              var nextJson = JSON.stringify({ t10: nextSummary.top10s, t26: nextSummary.top26c, c10: nextSummary.count10s, c26: nextSummary.count26c });
+              writeLocalSilent('hvac_game_top3', nextSummary);
+              if (prevJson === nextJson) {
+                return { success: true, record: merged, summary: nextSummary };
+              }
+              return fetch(cloudPath('games/top3'), {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(nextSummary)
+              }).then(function () {
+                return touchCloudMeta('games').then(function () { return { success: true, record: merged, summary: nextSummary }; });
+              });
+            });
         });
       })
       .catch(function () { return { success: false }; });
   }
 
+  // 전광판(game-leaderboard.html) 및 모바일 게임(game.html) 전용 초경량 Top 3 조회 (~450B)
+  function fetchGameTop3FromCloud() {
+    var c = getCloudConfig();
+    if (!c || !window.fetch) return Promise.resolve({ top10s: [], top26c: [], count10s: 0, count26c: 0 });
+    return fetch(cloudPath('games/top3'), { cache: 'no-store' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (top3Obj) {
+        if (top3Obj && typeof top3Obj === 'object' && (Array.isArray(top3Obj.top10s) || Array.isArray(top3Obj.top26c))) {
+          writeLocalSilent('hvac_game_top3', top3Obj);
+          var compactList = mergeSummaryToCompactList(top3Obj);
+          if (pageId() !== 'admin') {
+            writeLocalSilent('hvac_game_submissions', compactList);
+          }
+          return top3Obj;
+        }
+        // 만약 클라우드에 아직 games/top3 노드가 없다면 1회 한정으로 submissions에서 생성 후 캐싱
+        return fetch(cloudPath('games/submissions'), { cache: 'no-store' })
+          .then(function (sr) { return sr.ok ? sr.json() : null; })
+          .then(function (subMap) {
+            var list = (subMap && typeof subMap === 'object') ? Object.values(subMap).filter(Boolean) : [];
+            var summary = buildGameTop3SummaryFromList(list);
+            writeLocalSilent('hvac_game_top3', summary);
+            if (pageId() !== 'admin') {
+              writeLocalSilent('hvac_game_submissions', mergeSummaryToCompactList(summary));
+            }
+            fetch(cloudPath('games/top3'), {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(summary)
+            }).catch(function () {});
+            return summary;
+          });
+      })
+      .catch(function () {
+        return read('hvac_game_top3') || { top10s: [], top26c: [], count10s: 0, count26c: 0 };
+      });
+  }
+
   function fetchGameSubmissionsFromCloud() {
     var c = getCloudConfig();
     if (!c || !window.fetch) return Promise.resolve([]);
+    // 일반 참가자/리더보드 화면에서 호출 시 55KB 전체 목록 대신 450B Top 3 요약본만 반환하여 트래픽 99.2% 절감
+    if (pageId() !== 'admin') {
+      return fetchGameTop3FromCloud().then(function (summary) {
+        return mergeSummaryToCompactList(summary);
+      });
+    }
     return fetch(cloudPath('games/submissions'), { cache: 'no-store' })
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (subMap) {
         if (!subMap || typeof subMap !== 'object') return [];
         var list = Object.values(subMap).filter(Boolean);
         writeLocalSilent('hvac_game_submissions', list);
+        var summary = buildGameTop3SummaryFromList(list);
+        writeLocalSilent('hvac_game_top3', summary);
         return list;
       })
       .catch(function () { return []; });
@@ -1530,22 +1729,26 @@
   function resetGameSubmissionsOnCloud() {
     var c = getCloudConfig();
     if (!c || !window.fetch) return Promise.resolve(false);
-    return fetch(cloudPath('games/submissions'), {
-      method: 'DELETE'
-    }).then(function (r) {
-      if (r.ok) {
-        writeLocalSilent('hvac_game_submissions', []);
-        return touchCloudMeta('games').then(function () { return true; });
-      }
-      return false;
+    var emptySummary = { top10s: [], top26c: [], count10s: 0, count26c: 0, updatedAt: Date.now() };
+    return Promise.all([
+      fetch(cloudPath('games/submissions'), { method: 'DELETE' }),
+      fetch(cloudPath('games/top3'), {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(emptySummary)
+      })
+    ]).then(function () {
+      writeLocalSilent('hvac_game_submissions', []);
+      writeLocalSilent('hvac_game_top3', emptySummary);
+      return touchCloudMeta('games').then(function () { return true; });
     }).catch(function () { return false; });
   }
 
   // 개별 섹션 핀포인트 초고속 동기화 (SSE 스트림 이벤트 수신 시 즉시 호출)
-  function syncSpecificSection(secName) {
+  function syncSpecificSection(secName, forceAdminSync) {
     var pId = pageId();
     if (secName === 'quiz') {
-      if (pId === 'admin' || pId === 'quiz-winners') {
+      if (pId === 'quiz-winners' || (pId === 'admin' && (forceAdminSync || isAdminSectionNeeded('quiz')))) {
         return fetch(cloudPath('quiz/submissions'), { cache: 'no-store' })
           .then(function (r) { return r.ok ? r.json() : null; })
           .then(function (subMap) {
@@ -1553,9 +1756,11 @@
             if (subMap && typeof subMap === 'object') {
               list = Object.values(subMap).filter(Boolean);
             }
-            writeLocalSilent('hvac_quiz_submissions', list);
-            window.dispatchEvent(new CustomEvent('hvac:quiz-submissions-updated', { detail: { submissions: list } }));
-            window.dispatchEvent(new StorageEvent('storage', { key: 'hvac_quiz_submissions' }));
+            withCloudSyncLock(function () {
+              writeLocalSilent('hvac_quiz_submissions', list);
+              window.dispatchEvent(new CustomEvent('hvac:quiz-submissions-updated', { detail: { submissions: list } }));
+              window.dispatchEvent(new StorageEvent('storage', { key: 'hvac_quiz_submissions' }));
+            });
             return true;
           }).catch(function () { return false; });
       }
@@ -1570,51 +1775,54 @@
               arr = Object.values(chkData.items).filter(Boolean);
               arr.sort(function (a, b) { return (b.seq || 0) - (a.seq || 0); });
             }
-            writeLocalSilent('hvac_checkin_list', arr);
-            window.dispatchEvent(new CustomEvent('hvac:checkin-updated', { detail: { list: arr } }));
-            window.dispatchEvent(new StorageEvent('storage', { key: 'hvac_checkin_list' }));
-            if (chkData && Array.isArray(chkData.blocked)) {
-              writeLocalSilent('hvac_blocked_users', chkData.blocked);
-            }
+            withCloudSyncLock(function () {
+              writeLocalSilent('hvac_checkin_list', arr);
+              if (chkData && Array.isArray(chkData.blocked)) {
+                writeLocalSilent('hvac_blocked_users', chkData.blocked);
+              }
+              window.dispatchEvent(new CustomEvent('hvac:checkin-updated', { detail: { list: arr } }));
+              window.dispatchEvent(new StorageEvent('storage', { key: 'hvac_checkin_list' }));
+            });
             return true;
           }).catch(function () { return false; });
       } else {
-        // 일반 참석자는 본인 계정 상태(~200B) 및 차단 목록(~50B)만 핀포인트 확인하여 개인정보 보호 및 99.7% 트래픽 절감
+        // 일반 참석자는 본인 계정 상태(~200B)만 핀포인트 확인하여 개인정보 보호 및 99.7% 트래픽 절감
         var myUser = read('hvac_user_checked');
         if (myUser && myUser.email) {
           var myClean = String(myUser.email).toLowerCase().replace('@lge.com', '').replace(/[.#$\[\]\/]/g, '_');
           fetch(cloudPath('checkins/items/' + myClean), { cache: 'no-store' })
             .then(function (r) { return r.ok ? r.json() : null; })
             .then(function (serverUser) {
-              if (!serverUser || typeof serverUser !== 'object') {
-                // 클라우드 서버에 본인 출석 데이터가 존재하지 않음 (관리자에 의해 초기화/삭제됨)
-                writeLocalSilent('hvac_user_checked', null);
-                try { localStorage.removeItem('hvac_user_checked'); } catch (e) {}
-                try { localStorage.removeItem('hvac_checkin_user'); } catch (e) {}
-                window.dispatchEvent(new CustomEvent('hvac:session-terminated', {
-                  detail: { deviceType: '출석부 초기화 / 세션 만료', terminatedAt: Date.now() }
-                }));
-                return;
-              }
-              if (serverUser.sessionToken && myUser.sessionToken && serverUser.sessionToken !== myUser.sessionToken) {
-                writeLocalSilent('hvac_user_checked', null);
-                try { localStorage.removeItem('hvac_user_checked'); } catch (e) {}
-                try { localStorage.removeItem('hvac_checkin_user'); } catch (e) {}
-                window.dispatchEvent(new CustomEvent('hvac:session-terminated', {
-                  detail: { deviceType: serverUser.activeDeviceType || '다른 기기', terminatedAt: serverUser.lastActiveAt || Date.now() }
-                }));
-                return;
-              }
-              if (serverUser.giftStatus && myUser.giftStatus !== serverUser.giftStatus) {
-                myUser.giftStatus = serverUser.giftStatus;
-                writeLocalSilent('hvac_user_checked', myUser);
-                window.dispatchEvent(new StorageEvent('storage', { key: 'hvac_user_checked' }));
-              }
+              withCloudSyncLock(function () {
+                if (!serverUser || typeof serverUser !== 'object') {
+                  writeLocalSilent('hvac_user_checked', null);
+                  try { localStorage.removeItem('hvac_user_checked'); } catch (e) {}
+                  try { localStorage.removeItem('hvac_checkin_user'); } catch (e) {}
+                  window.dispatchEvent(new CustomEvent('hvac:session-terminated', {
+                    detail: { deviceType: '출석부 초기화 / 세션 만료', terminatedAt: Date.now() }
+                  }));
+                  return;
+                }
+                if (serverUser.sessionToken && myUser.sessionToken && serverUser.sessionToken !== myUser.sessionToken) {
+                  writeLocalSilent('hvac_user_checked', null);
+                  try { localStorage.removeItem('hvac_user_checked'); } catch (e) {}
+                  try { localStorage.removeItem('hvac_checkin_user'); } catch (e) {}
+                  window.dispatchEvent(new CustomEvent('hvac:session-terminated', {
+                    detail: { deviceType: serverUser.activeDeviceType || '다른 기기', terminatedAt: serverUser.lastActiveAt || Date.now() }
+                  }));
+                  return;
+                }
+                if (serverUser.giftStatus && myUser.giftStatus !== serverUser.giftStatus) {
+                  myUser.giftStatus = serverUser.giftStatus;
+                  writeLocalSilent('hvac_user_checked', myUser);
+                  window.dispatchEvent(new StorageEvent('storage', { key: 'hvac_user_checked' }));
+                }
+              });
             }).catch(function () {});
         }
       }
     } else if (secName === 'qna') {
-      if (pId === 'qna' || pId === 'admin' || pId === 'checkin') {
+      if (pId === 'qna' || pId === 'admin') {
         return fetch(cloudPath('qna/list'), { cache: 'no-store' })
           .then(function (r) { return r.ok ? r.json() : null; })
           .then(function (remoteQna) {
@@ -1631,34 +1839,52 @@
                 remoteQna.unshift(lq);
               }
             });
-            writeLocalSilent('hvac_qna_list', remoteQna);
-            window.dispatchEvent(new CustomEvent('hvac:qna-updated', { detail: { list: remoteQna } }));
-            window.dispatchEvent(new StorageEvent('storage', { key: 'hvac_qna_list' }));
+            withCloudSyncLock(function () {
+              writeLocalSilent('hvac_qna_list', remoteQna);
+              window.dispatchEvent(new CustomEvent('hvac:qna-updated', { detail: { list: remoteQna } }));
+              window.dispatchEvent(new StorageEvent('storage', { key: 'hvac_qna_list' }));
+            });
             return true;
           }).catch(function () { return false; });
       }
     } else if (secName === 'games') {
-      if (pId === 'admin' || pId === 'lunch-screen' || pId === 'game-leaderboard' || pId === 'game') {
+      if (pId === 'lunch-screen' || pId === 'game-leaderboard') {
+        // 전광판은 55KB 전체 목록 대신 450B 초경량 Top 3 노드만 조회
+        return fetchGameTop3FromCloud().then(function (summary) {
+          var compactList = mergeSummaryToCompactList(summary);
+          withCloudSyncLock(function () {
+            window.dispatchEvent(new CustomEvent('hvac:games-updated', { detail: { submissions: compactList, summary: summary } }));
+            window.dispatchEvent(new StorageEvent('storage', { key: 'hvac_game_submissions' }));
+          });
+          return true;
+        }).catch(function () { return false; });
+      } else if (pId === 'admin' && (forceAdminSync || isAdminSectionNeeded('games'))) {
         return fetch(cloudPath('games/submissions'), { cache: 'no-store' })
           .then(function (r) { return r.ok ? r.json() : null; })
           .then(function (subMap) {
             if (!subMap || typeof subMap !== 'object') return false;
             var list = Object.values(subMap).filter(Boolean);
-            writeLocalSilent('hvac_game_submissions', list);
-            window.dispatchEvent(new CustomEvent('hvac:games-updated', { detail: { submissions: list } }));
-            window.dispatchEvent(new StorageEvent('storage', { key: 'hvac_game_submissions' }));
+            var summary = buildGameTop3SummaryFromList(list);
+            withCloudSyncLock(function () {
+              writeLocalSilent('hvac_game_submissions', list);
+              writeLocalSilent('hvac_game_top3', summary);
+              window.dispatchEvent(new CustomEvent('hvac:games-updated', { detail: { submissions: list, summary: summary } }));
+              window.dispatchEvent(new StorageEvent('storage', { key: 'hvac_game_submissions' }));
+            });
             return true;
           }).catch(function () { return false; });
       }
     } else if (secName === 'surveys') {
-      if (pId === 'admin') {
+      if (pId === 'admin' && (forceAdminSync || isAdminSectionNeeded('surveys'))) {
         return fetch(cloudPath('surveys'), { cache: 'no-store' })
           .then(function (r) { return r.ok ? r.json() : null; })
           .then(function (survMap) {
             if (!survMap || typeof survMap !== 'object') return false;
             var list = Object.values(survMap).filter(Boolean);
-            writeLocalSilent('hvac_survey_responses', list);
-            window.dispatchEvent(new StorageEvent('storage', { key: 'hvac_survey_responses' }));
+            withCloudSyncLock(function () {
+              writeLocalSilent('hvac_survey_responses', list);
+              window.dispatchEvent(new StorageEvent('storage', { key: 'hvac_survey_responses' }));
+            });
             return true;
           }).catch(function () { return false; });
       }
@@ -1699,10 +1925,12 @@
       .then(function (r) { return r.ok ? r.json() : undefined; })
       .then(function (val) {
         if (val === undefined || val === null) return false;
-        writeLocalSilent(key, val);
-        refreshCommon();
-        notifyUpdated([key]);
-        try { window.dispatchEvent(new StorageEvent('storage', { key: key })); } catch (e) {}
+        withCloudSyncLock(function () {
+          writeLocalSilent(key, val);
+          refreshCommon();
+          notifyUpdated([key]);
+          try { window.dispatchEvent(new StorageEvent('storage', { key: key })); } catch (e) {}
+        });
         return true;
       }).catch(function () { return false; });
   }
@@ -1715,9 +1943,9 @@
       return syncSingleConfigKey(configKeyHint);
     }
 
-    // 2) 이미 정적 스케줄/퀴즈/설문 설정(site-config.json)이 로컬에 캐시된 일반 참가자 및 독립 전광판 화면에서는
-    // 무거운 정적 데이터(11.5KB)를 다시 받지 않고 페이지에 필요한 경량 동적 제어 키만 핀포인트 조회
-    if (!forceAll && hasLocalSectionCache('config') && pId !== 'admin' && configKeyHint !== 'all') {
+    // 2) 이미 정적 스케줄/퀴즈/설문 설정(site-config.json)이 로컬에 캐시된 경우 (관리자 포함)
+    // 무거운 정적 데이터(11.5KB)를 다시 받지 않고 동적 제어 키만 핀포인트 조회
+    if (!forceAll && hasLocalSectionCache('config') && configKeyHint !== 'all') {
       var dynamicKeys = ['hvac_quiz_unlocked_sessions', 'hvac_notice_banner', 'hvac_game_config', 'hvac_checkin_passcode', 'hvac_luckydraw_config', 'hvac_luckydraw_state', 'hvac_milestone_events'];
       var needed = dynamicKeys.filter(function (k) { return isConfigKeyNeededOnPage(k, pId); });
       return Promise.all(needed.map(syncSingleConfigKey)).then(function () { return true; });
@@ -1728,20 +1956,22 @@
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (cfgData) {
         if (!cfgData || typeof cfgData !== 'object') return false;
-        var changedKeys = [];
-        CONFIG_KEYS.forEach(function (k) {
-          if (cfgData[k] !== undefined && cfgData[k] !== null) {
-            writeLocalSilent(k, cfgData[k]);
-            changedKeys.push(k);
+        withCloudSyncLock(function () {
+          var changedKeys = [];
+          CONFIG_KEYS.forEach(function (k) {
+            if (cfgData[k] !== undefined && cfgData[k] !== null) {
+              writeLocalSilent(k, cfgData[k]);
+              changedKeys.push(k);
+            }
+          });
+          if (changedKeys.length) {
+            refreshCommon();
+            notifyUpdated(changedKeys);
+            changedKeys.forEach(function (k) {
+              try { window.dispatchEvent(new StorageEvent('storage', { key: k })); } catch (e) {}
+            });
           }
         });
-        if (changedKeys.length) {
-          refreshCommon();
-          notifyUpdated(changedKeys);
-          changedKeys.forEach(function (k) {
-            try { window.dispatchEvent(new StorageEvent('storage', { key: k })); } catch (e) {}
-          });
-        }
         return true;
       }).catch(function () { return false; });
   }
@@ -1774,12 +2004,14 @@
         if (myUser && myUser.email) {
           var userCheckedEpoch = Math.max(Number(myUser.checkedAt) || 0, Number(myUser.lastActiveAt) || 0, Number(myUser.checkinTimeMs) || 0);
           if (userCheckedEpoch < resetEpoch) {
-            writeLocalSilent('hvac_user_checked', null);
-            try { localStorage.removeItem('hvac_user_checked'); } catch (e) {}
-            try { localStorage.removeItem('hvac_checkin_user'); } catch (e) {}
-            window.dispatchEvent(new CustomEvent('hvac:session-terminated', {
-              detail: { deviceType: '관리자 전체 세션 강제 체크아웃', terminatedAt: resetEpoch }
-            }));
+            withCloudSyncLock(function () {
+              writeLocalSilent('hvac_user_checked', null);
+              try { localStorage.removeItem('hvac_user_checked'); } catch (e) {}
+              try { localStorage.removeItem('hvac_checkin_user'); } catch (e) {}
+              window.dispatchEvent(new CustomEvent('hvac:session-terminated', {
+                detail: { deviceType: '관리자 전체 세션 강제 체크아웃', terminatedAt: resetEpoch }
+              }));
+            });
           }
         }
       }
@@ -1804,7 +2036,7 @@
                 if (sec === 'config') {
                   syncConfigSmart(d.config_key || null, false);
                 } else {
-                  syncSpecificSection(sec);
+                  syncSpecificSection(sec, false);
                 }
               }
             });
@@ -1823,7 +2055,7 @@
           } else if (cleanSec && d !== lastSeenMeta[cleanSec]) {
             lastSeenMeta[cleanSec] = d || Date.now();
             saveLastSeenMeta();
-            syncSpecificSection(cleanSec);
+            syncSpecificSection(cleanSec, false);
           }
         }
       }
@@ -1874,186 +2106,60 @@
           tasks.push(syncConfigSmart(meta.config_key || null, !!forceAll));
         }
 
-        // 2) Q&A 변경 감지 (qna, admin, checkin 페이지에서 동기화)
+        // 2) Q&A 변경 감지 (qna, admin 페이지에서 동기화)
         if ((pId === 'qna' || pId === 'admin') && (forceAll || !hasLocalSectionCache('qna') || (meta.qna && meta.qna !== lastSeenMeta.qna))) {
           lastSeenMeta.qna = meta.qna || Date.now();
-          tasks.push(
-            fetch(cloudPath('qna/list'), { cache: 'no-store' })
-              .then(function (r) { return r.ok ? r.json() : null; })
-              .then(function (remoteQna) {
-                if (!Array.isArray(remoteQna)) return;
-                // 로컬 공감(isLiked) 표시 유지 및 신규 등록 질문 보존 병합
-                var localQna = read('hvac_qna_list') || [];
-                var likedMap = {};
-                var remoteIds = {};
-                remoteQna.forEach(function (q) { if (q && q.id) remoteIds[q.id] = true; });
-                localQna.forEach(function (q) { if (q && q.isLiked) likedMap[q.id] = true; });
-                remoteQna.forEach(function (q) { if (q && likedMap[q.id]) q.isLiked = true; });
-                var nowTs = Date.now();
-                localQna.forEach(function (lq) {
-                  if (lq && lq.id && !remoteIds[lq.id] && (nowTs - lq.id < 30000)) {
-                    remoteQna.unshift(lq);
-                  }
-                });
-                writeLocalSilent('hvac_qna_list', remoteQna);
-                window.dispatchEvent(new CustomEvent('hvac:qna-updated', { detail: { list: remoteQna } }));
-                window.dispatchEvent(new StorageEvent('storage', { key: 'hvac_qna_list' }));
-              })
-          );
+          tasks.push(syncSpecificSection('qna', !!forceAll));
         }
 
         // 3-A) 출석 명부 전체 동기화 (admin, attendance-dashboard, luckydraw-stage, quiz-winners)
         var fullCheckinPages = ['admin', 'attendance-dashboard', 'luckydraw-stage', 'quiz-winners'];
         if (fullCheckinPages.indexOf(pId) >= 0 && (forceAll || !hasLocalSectionCache('checkins') || (meta.checkins && meta.checkins !== lastSeenMeta.checkins))) {
           lastSeenMeta.checkins = meta.checkins || Date.now();
-          tasks.push(
-            fetch(cloudPath('checkins'), { cache: 'no-store' })
-              .then(function (r) { return r.ok ? r.json() : null; })
-              .then(function (chkData) {
-                var arr = [];
-                if (chkData && typeof chkData === 'object' && chkData.items && typeof chkData.items === 'object') {
-                  arr = Object.values(chkData.items).filter(Boolean);
-                  arr.sort(function (a, b) { return (b.seq || 0) - (a.seq || 0); });
-                }
-                writeLocalSilent('hvac_checkin_list', arr);
-                window.dispatchEvent(new CustomEvent('hvac:checkin-updated', { detail: { list: arr } }));
-                window.dispatchEvent(new StorageEvent('storage', { key: 'hvac_checkin_list' }));
-                if (chkData && Array.isArray(chkData.blocked)) {
-                  writeLocalSilent('hvac_blocked_users', chkData.blocked);
-                }
-              })
-          );
+          tasks.push(syncSpecificSection('checkins', !!forceAll));
         }
 
-        // 3-B) 일반 참석자 초경량 단일 계정 상태 검증 (차단 여부, 세션 리셋, 단일 기기 세션 핀포인트 조회)
-        // 200명 전체 명부(80KB)를 다운로드하지 않고 본인 노드(~200B) 및 차단 목록(~50B)만 조회하여 트래픽 99.7% 절감!
+        // 3-B) 일반 참석자 초경량 단일 계정 상태 검증
         if (fullCheckinPages.indexOf(pId) < 0 && (forceAll || (meta.checkins && meta.checkins !== lastSeenMeta.checkins) || (meta.session_reset_at && meta.session_reset_at !== lastSeenMeta.session_reset_at))) {
           lastSeenMeta.checkins = meta.checkins || Date.now();
           if (meta.session_reset_at) lastSeenMeta.session_reset_at = meta.session_reset_at;
           var myUser = read('hvac_user_checked');
           if (myUser && myUser.email) {
-            var myClean = String(myUser.email).toLowerCase().replace('@lge.com', '').replace(/[.#$\[\]\/]/g, '_');
-
-            // 0) 전체 세션 강제 체크아웃 시그널 감지
             var resetEpoch = Number(meta.session_reset_at) || 0;
             var userCheckedEpoch = Math.max(Number(myUser.checkedAt) || 0, Number(myUser.lastActiveAt) || 0, Number(myUser.checkinTimeMs) || 0);
             if (resetEpoch > 0 && userCheckedEpoch < resetEpoch) {
-              writeLocalSilent('hvac_user_checked', null);
-              try { localStorage.removeItem('hvac_user_checked'); } catch (e) {}
-              try { localStorage.removeItem('hvac_checkin_user'); } catch (e) {}
-              window.dispatchEvent(new CustomEvent('hvac:session-terminated', {
-                detail: { deviceType: '관리자 전체 세션 강제 체크아웃', terminatedAt: resetEpoch }
-              }));
+              withCloudSyncLock(function () {
+                writeLocalSilent('hvac_user_checked', null);
+                try { localStorage.removeItem('hvac_user_checked'); } catch (e) {}
+                try { localStorage.removeItem('hvac_checkin_user'); } catch (e) {}
+                window.dispatchEvent(new CustomEvent('hvac:session-terminated', {
+                  detail: { deviceType: '관리자 전체 세션 강제 체크아웃', terminatedAt: resetEpoch }
+                }));
+              });
               saveLastSeenMeta();
               isSyncingCloud = false;
               return false;
             }
-
-            // 1) 차단(강퇴) 목록 조회 (~50B)
-            tasks.push(
-              fetch(cloudPath('checkins/blocked'), { cache: 'no-store' })
-                .then(function (r) { return r.ok ? r.json() : null; })
-                .then(function (blockedList) {
-                  if (Array.isArray(blockedList)) {
-                    writeLocalSilent('hvac_blocked_users', blockedList);
-                    if (blockedList.indexOf(myClean) >= 0 || blockedList.indexOf(myUser.email) >= 0) {
-                      writeLocalSilent('hvac_user_checked', null);
-                      try { localStorage.removeItem('hvac_user_checked'); } catch (e) {}
-                      try { localStorage.removeItem('hvac_checkin_user'); } catch (e) {}
-                      window.dispatchEvent(new CustomEvent('hvac:session-terminated', {
-                        detail: { deviceType: '관리자 강퇴/차단 조치', terminatedAt: Date.now() }
-                      }));
-                    }
-                  }
-                })
-                .catch(function () {})
-            );
-
-            // 2) 본인 단일 출석 레코드 조회 (~200B)
-            tasks.push(
-              fetch(cloudPath('checkins/items/' + myClean), { cache: 'no-store' })
-                .then(function (r) { return r.ok ? r.json() : null; })
-                .then(function (serverUser) {
-                  if (!serverUser || typeof serverUser !== 'object') {
-                    // 서버에 본인 출석 레코드 없음 -> 세션 즉시 만료/체크아웃
-                    writeLocalSilent('hvac_user_checked', null);
-                    try { localStorage.removeItem('hvac_user_checked'); } catch (e) {}
-                    try { localStorage.removeItem('hvac_checkin_user'); } catch (e) {}
-                    window.dispatchEvent(new CustomEvent('hvac:session-terminated', {
-                      detail: { deviceType: '출석부 초기화 / 세션 만료', terminatedAt: Date.now() }
-                    }));
-                    return;
-                  }
-                  if (serverUser.sessionToken && myUser.sessionToken && serverUser.sessionToken !== myUser.sessionToken) {
-                    writeLocalSilent('hvac_user_checked', null);
-                    try { localStorage.removeItem('hvac_user_checked'); } catch (e) {}
-                    try { localStorage.removeItem('hvac_checkin_user'); } catch (e) {}
-                    window.dispatchEvent(new CustomEvent('hvac:session-terminated', {
-                      detail: {
-                        deviceType: serverUser.activeDeviceType || '다른 기기',
-                        terminatedAt: serverUser.lastActiveAt || Date.now()
-                      }
-                    }));
-                  }
-                  if (serverUser.giftStatus && myUser.giftStatus !== serverUser.giftStatus) {
-                    myUser.giftStatus = serverUser.giftStatus;
-                    writeLocalSilent('hvac_user_checked', myUser);
-                    window.dispatchEvent(new StorageEvent('storage', { key: 'hvac_user_checked' }));
-                  }
-                })
-                .catch(function () {})
-            );
+            tasks.push(syncSpecificSection('checkins', false));
           }
         }
 
-        // 4) 퀴즈 제출 현황 변경 감지 (admin 및 quiz-winners 사회자 화면 실시간 동기화)
-        if ((pId === 'admin' || pId === 'quiz-winners') && (forceAll || !hasLocalSectionCache('quiz') || (meta.quiz && meta.quiz !== lastSeenMeta.quiz))) {
+        // 4) 퀴즈 제출 현황 변경 감지 (admin 활성 탭 및 quiz-winners 사회자 화면 동기화)
+        if ((pId === 'quiz-winners' || (pId === 'admin' && (forceAll || isAdminSectionNeeded('quiz')))) && (forceAll || !hasLocalSectionCache('quiz') || (meta.quiz && meta.quiz !== lastSeenMeta.quiz))) {
           lastSeenMeta.quiz = meta.quiz || Date.now();
-          tasks.push(
-            fetch(cloudPath('quiz/submissions'), { cache: 'no-store' })
-              .then(function (r) { return r.ok ? r.json() : null; })
-              .then(function (subMap) {
-                var list = [];
-                if (subMap && typeof subMap === 'object') {
-                  list = Object.values(subMap).filter(Boolean);
-                }
-                writeLocalSilent('hvac_quiz_submissions', list);
-                window.dispatchEvent(new CustomEvent('hvac:quiz-submissions-updated', { detail: { submissions: list } }));
-                window.dispatchEvent(new StorageEvent('storage', { key: 'hvac_quiz_submissions' }));
-              })
-          );
+          tasks.push(syncSpecificSection('quiz', !!forceAll));
         }
 
-        // 5) 만족도 설문(survey) 응답 변경 감지 (admin 전용)
-        if (pId === 'admin' && (forceAll || !hasLocalSectionCache('surveys') || (meta.surveys && meta.surveys !== lastSeenMeta.surveys))) {
+        // 5) 만족도 설문(survey) 응답 변경 감지 (admin 서베이 탭 활성 시)
+        if (pId === 'admin' && (forceAll || isAdminSectionNeeded('surveys')) && (forceAll || !hasLocalSectionCache('surveys') || (meta.surveys && meta.surveys !== lastSeenMeta.surveys))) {
           lastSeenMeta.surveys = meta.surveys || Date.now();
-          tasks.push(
-            fetch(cloudPath('surveys'), { cache: 'no-store' })
-              .then(function (r) { return r.ok ? r.json() : null; })
-              .then(function (survMap) {
-                if (!survMap || typeof survMap !== 'object') return;
-                var list = Object.values(survMap).filter(Boolean);
-                writeLocalSilent('hvac_survey_responses', list);
-                window.dispatchEvent(new StorageEvent('storage', { key: 'hvac_survey_responses' }));
-              })
-          );
+          tasks.push(syncSpecificSection('surveys', !!forceAll));
         }
 
-        // 6) 점심 미니게임 변경 감지 (admin, lunch-screen, game)
-        if ((pId === 'admin' || pId === 'lunch-screen' || pId === 'game-leaderboard' || pId === 'game') && (forceAll || !hasLocalSectionCache('games') || (meta.games && meta.games !== lastSeenMeta.games))) {
+        // 6) 점심 미니게임 변경 감지 (전광판은 450B Top3만, admin은 미니게임 탭 활성 시에만)
+        if ((pId === 'lunch-screen' || pId === 'game-leaderboard' || (pId === 'admin' && (forceAll || isAdminSectionNeeded('games')))) && (forceAll || !hasLocalSectionCache('games') || (meta.games && meta.games !== lastSeenMeta.games))) {
           lastSeenMeta.games = meta.games || Date.now();
-          tasks.push(
-            fetch(cloudPath('games/submissions'), { cache: 'no-store' })
-              .then(function (r) { return r.ok ? r.json() : null; })
-              .then(function (subMap) {
-                if (!subMap || typeof subMap !== 'object') return;
-                var list = Object.values(subMap).filter(Boolean);
-                writeLocalSilent('hvac_game_submissions', list);
-                window.dispatchEvent(new CustomEvent('hvac:games-updated', { detail: { submissions: list } }));
-                window.dispatchEvent(new StorageEvent('storage', { key: 'hvac_game_submissions' }));
-              })
-              .catch(function () {})
-          );
+          tasks.push(syncSpecificSection('games', !!forceAll));
         }
 
         saveLastSeenMeta();
@@ -2069,11 +2175,15 @@
       });
   }
 
-  // localStorage.setItem 후킹: 기존 페이지 코드가 localStorage에 쓸 때 클라우드로 자동 전파
-  var origSetItem = Storage.prototype.setItem;
+  // localStorage.setItem 후킹: 기존 페이지 코드가 localStorage에 쓸 때 클라우드로 자동 전파 (동일값 재저장 및 클라우드 수신 중 에코백 완전 차단)
   Storage.prototype.setItem = function (key, value) {
+    var prevRaw = null;
+    if (this === window.localStorage) {
+      try { prevRaw = window.localStorage.getItem(key); } catch (e) {}
+    }
     origSetItem.call(this, key, value);
-    if (this !== window.localStorage || isSyncingCloud) return;
+    if (this !== window.localStorage || isSyncingCloud || cloudSyncLockCount > 0) return;
+    if (prevRaw === value) return; // 기존 로컬 값과 100% 동일하면 클라우드 PUT / meta 갱신 발생 안 함!
     var c = getCloudConfig();
     if (!c) return;
     try {
@@ -2082,9 +2192,9 @@
         pushConfigToCloud(key, JSON.parse(value));
       } else if (key === 'hvac_qna_list') {
         pushQnaListToCloud(JSON.parse(value));
-      } else if (key === 'hvac_checkin_list' && pageId() === 'admin') {
+      } else if (key === 'hvac_checkin_list' && curPid === 'admin') {
         pushCheckinListToCloud(JSON.parse(value), read('hvac_blocked_users'));
-      } else if (key === 'hvac_blocked_users' && pageId() === 'admin') {
+      } else if (key === 'hvac_blocked_users' && curPid === 'admin') {
         pushCheckinListToCloud(read('hvac_checkin_list'), JSON.parse(value));
       }
     } catch (e) {}
@@ -2327,6 +2437,7 @@
     buildPublishedConfig: buildPublishedConfig,
     CONFIG_KEYS: CONFIG_KEYS,
     read: read,
+    writeLocalSilent: writeLocalSilent,
     esc: esc,
     pageId: pageId,
     getSiteBaseUrl: getSiteBaseUrl,
@@ -2371,6 +2482,7 @@
       pushSurvey: pushSurveyResponseToCloud,
       pushGameRecord: pushGameRecordToCloud,
       fetchGames: fetchGameSubmissionsFromCloud,
+      fetchGameTop3: fetchGameTop3FromCloud,
       resetGames: resetGameSubmissionsOnCloud,
       saveLuckyDraw: function (state) { return pushConfigToCloud('hvac_luckydraw_state', state); },
       restart: startCloudLoop

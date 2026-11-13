@@ -1018,7 +1018,6 @@
           questions = JSON.parse(saved);
         } else {
           questions = [...defaultQuestions];
-          localStorage.setItem('hvac_qna_list', JSON.stringify(questions));
         }
       } catch (e) {
         questions = [...defaultQuestions];

@@ -644,6 +644,15 @@
 
       if (!forceNetwork) {
         try {
+          const top3Raw = localStorage.getItem('hvac_game_top3');
+          if (top3Raw !== null) {
+            const top3Obj = JSON.parse(top3Raw);
+            if (top3Obj && (Array.isArray(top3Obj.top10s) || Array.isArray(top3Obj.top26c))) {
+              renderBoard10s(top3Obj.top10s || [], top3Obj.count10s);
+              renderBoard26c(top3Obj.top26c || [], top3Obj.count26c);
+              return;
+            }
+          }
           const cachedRaw = localStorage.getItem('hvac_game_submissions');
           if (cachedRaw !== null) {
             const cachedList = JSON.parse(cachedRaw);
@@ -658,14 +667,22 @@
 
       if (!window.HVAC || !window.HVAC.cloud) return;
 
-      window.HVAC.cloud.fetchGames().then(list => {
-        if (!list || !Array.isArray(list)) list = [];
-        renderBoard10s(list);
-        renderBoard26c(list);
-      });
+      if (typeof window.HVAC.cloud.fetchGameTop3 === 'function') {
+        window.HVAC.cloud.fetchGameTop3().then(top3Obj => {
+          const obj = top3Obj || { top10s: [], top26c: [], count10s: 0, count26c: 0 };
+          renderBoard10s(obj.top10s || [], obj.count10s);
+          renderBoard26c(obj.top26c || [], obj.count26c);
+        });
+      } else {
+        window.HVAC.cloud.fetchGames().then(list => {
+          if (!list || !Array.isArray(list)) list = [];
+          renderBoard10s(list);
+          renderBoard26c(list);
+        });
+      }
     }
 
-    function renderBoard10s(all) {
+    function renderBoard10s(all, totalCountOverride) {
       const valid = all.filter(item => item.game10s && item.game10s.bestDiff !== null && item.game10s.bestDiff !== undefined);
       valid.sort((a, b) => {
         if (a.game10s.bestDiff !== b.game10s.bestDiff) {
@@ -674,7 +691,8 @@
         return (a.game10s.bestTime || 0) - (b.game10s.bestTime || 0);
       });
 
-      document.getElementById('countBadge10s').textContent = `참여 ${valid.length}명`;
+      const countVal = (totalCountOverride !== undefined && totalCountOverride !== null) ? Math.max(valid.length, Number(totalCountOverride) || 0) : valid.length;
+      document.getElementById('countBadge10s').textContent = `참여 ${countVal}명`;
 
       const firstCard = document.getElementById('firstCard10s');
       const tbody = document.getElementById('tableBody10s');
@@ -700,8 +718,8 @@
       }
       prevTop10sUser = top1.key;
 
-      // 2위 ~ 10위 표출
-      const rest = valid.slice(1, 10);
+      // 2위 ~ 3위 표출 (Top 3 초경량 동기화)
+      const rest = valid.slice(1, 3);
       if (!rest.length) {
         tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: rgba(255,255,255,0.4); padding: 20px;">2위 도전자를 기다리는 중입니다...</td></tr>`;
         return;
@@ -727,7 +745,7 @@
       }).join('');
     }
 
-    function renderBoard26c(all) {
+    function renderBoard26c(all, totalCountOverride) {
       const valid = all.filter(item => item.game26c && item.game26c.bestDiff !== null && item.game26c.bestDiff !== undefined);
       valid.sort((a, b) => {
         if (a.game26c.bestDiff !== b.game26c.bestDiff) {
@@ -736,7 +754,8 @@
         return (a.game26c.bestTemp || 0) - (b.game26c.bestTemp || 0);
       });
 
-      document.getElementById('countBadge26c').textContent = `참여 ${valid.length}명`;
+      const countVal = (totalCountOverride !== undefined && totalCountOverride !== null) ? Math.max(valid.length, Number(totalCountOverride) || 0) : valid.length;
+      document.getElementById('countBadge26c').textContent = `참여 ${countVal}명`;
 
       const firstCard = document.getElementById('firstCard26c');
       const tbody = document.getElementById('tableBody26c');
@@ -764,8 +783,8 @@
       }
       prevTop26cUser = top1.key;
 
-      // 2위 ~ 10위 표출
-      const rest = valid.slice(1, 10);
+      // 2위 ~ 3위 표출 (Top 3 초경량 동기화)
+      const rest = valid.slice(1, 3);
       if (!rest.length) {
         tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: rgba(255,255,255,0.4); padding: 20px;">2위 도전자를 기다리는 중입니다...</td></tr>`;
         return;

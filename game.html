@@ -1751,6 +1751,15 @@
 
       if (!forceNetwork) {
         try {
+          const top3Raw = localStorage.getItem('hvac_game_top3');
+          if (top3Raw !== null) {
+            const top3Obj = JSON.parse(top3Raw);
+            if (top3Obj && (Array.isArray(top3Obj.top10s) || Array.isArray(top3Obj.top26c))) {
+              const targetList = (currentTab === '10s') ? (top3Obj.top10s || []) : (top3Obj.top26c || []);
+              renderMiniLeaderboardList(targetList);
+              return;
+            }
+          }
           const cachedRaw = localStorage.getItem('hvac_game_submissions');
           if (cachedRaw !== null) {
             const cachedList = JSON.parse(cachedRaw);
