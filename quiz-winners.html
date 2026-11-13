@@ -312,7 +312,11 @@
 
       <!-- 액션 툴바 -->
       <div class="hero-toolbar">
-        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+        <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+          <div id="quizSocketIndicator" style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 9999px; font-size: 12px; font-weight: 700; background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.35); color: #34d399;">
+            <span id="quizSocketDot" style="width: 8px; height: 8px; border-radius: 50%; background: #10b981; box-shadow: 0 0 8px #10b981;"></span>
+            <span id="quizSocketText">⚡ 실시간 소켓 스트림 연동 중 (0초 즉시 반영)</span>
+          </div>
           <button class="btn-action" onclick="exportQuizSessionWinnersCsv()">
             📥 세션별 당첨자 CSV 다운로드
           </button>
@@ -792,14 +796,122 @@
       alert('✅ 퀴즈 풀이 이력 및 전광판 순위가 성공적으로 깨끗하게 초기화되었습니다. (현재 0건)');
     }
 
+    // =========================================================
+    // 전광판 화면 전용 Firebase RTDB 실시간 스트림 소켓 (SSE)
+    // 참가자 퀴즈 답안 제출 즉시 0초 지연으로 수신하여 세션 Top 2 갱신
+    // =========================================================
+    let quizEventSource = null;
+    let quizSubmissionsCache = {};
+
+    function updateSocketStatusUi(connected) {
+      const dot = document.getElementById('quizSocketDot');
+      const text = document.getElementById('quizSocketText');
+      const box = document.getElementById('quizSocketIndicator');
+      if (!box || !dot || !text) return;
+      if (connected) {
+        box.style.background = 'rgba(16, 185, 129, 0.12)';
+        box.style.borderColor = 'rgba(16, 185, 129, 0.35)';
+        box.style.color = '#34d399';
+        dot.style.background = '#10b981';
+        dot.style.boxShadow = '0 0 8px #10b981';
+        text.textContent = '⚡ 실시간 소켓 스트림 연동 (0초 즉시 반영)';
+      } else {
+        box.style.background = 'rgba(245, 158, 11, 0.12)';
+        box.style.borderColor = 'rgba(245, 158, 11, 0.35)';
+        box.style.color = '#fbbf24';
+        dot.style.background = '#f59e0b';
+        dot.style.boxShadow = '0 0 8px #f59e0b';
+        text.textContent = '🔄 소켓 재연결 중 (폴링 백업 가동)';
+      }
+    }
+
+    function initQuizSocketStream() {
+      if (typeof window === 'undefined' || !window.EventSource) return;
+      const cfg = (window.HVAC && window.HVAC.cloud && typeof window.HVAC.cloud.getConfig === 'function')
+        ? window.HVAC.cloud.getConfig()
+        : { dbUrl: 'https://lg-hvac-default-rtdb.asia-southeast1.firebasedatabase.app', roomKey: 'hvac2026' };
+      if (!cfg || !cfg.dbUrl) return;
+
+      const base = cfg.dbUrl.replace(/\/+$/, '') + '/' + cfg.roomKey;
+      const streamUrl = base + '/quiz/submissions.json';
+
+      if (quizEventSource) {
+        try { quizEventSource.close(); } catch (e) {}
+        quizEventSource = null;
+      }
+
+      try {
+        quizEventSource = new EventSource(streamUrl);
+
+        function handleQuizStream(payload) {
+          if (!payload) return;
+          const p = payload.path || '';
+          const d = payload.data;
+
+          if (p === '/' || p === '') {
+            if (d && typeof d === 'object') {
+              quizSubmissionsCache = { ...d };
+            } else {
+              quizSubmissionsCache = {};
+            }
+          } else {
+            const parts = p.replace(/^\//, '').split('/');
+            const userKey = parts[0];
+            if (userKey) {
+              if (parts.length === 1) {
+                if (d === null) {
+                  delete quizSubmissionsCache[userKey];
+                } else {
+                  quizSubmissionsCache[userKey] = d;
+                }
+              } else if (parts.length === 2 && quizSubmissionsCache[userKey]) {
+                quizSubmissionsCache[userKey][parts[1]] = d;
+              }
+            }
+          }
+
+          const list = Object.values(quizSubmissionsCache).filter(Boolean);
+          try {
+            localStorage.setItem('hvac_quiz_submissions', JSON.stringify(list));
+          } catch (e) {}
+          loadQuizWinners(false);
+        }
+
+        quizEventSource.addEventListener('put', (e) => {
+          if (!e || !e.data) return;
+          try { handleQuizStream(JSON.parse(e.data)); } catch (err) {}
+        });
+
+        quizEventSource.addEventListener('patch', (e) => {
+          if (!e || !e.data) return;
+          try { handleQuizStream(JSON.parse(e.data)); } catch (err) {}
+        });
+
+        quizEventSource.onopen = () => {
+          updateSocketStatusUi(true);
+        };
+
+        quizEventSource.onerror = () => {
+          updateSocketStatusUi(false);
+        };
+      } catch (err) {
+        console.warn('initQuizSocketStream error:', err);
+      }
+    }
+
     window.addEventListener('DOMContentLoaded', () => {
       loadQuizWinners();
       syncAndRefreshQuizWinners(false);
+      initQuizSocketStream();
       setInterval(loadQuizWinners, 4000);
     });
 
     window.addEventListener('storage', (e) => {
       if (e.key === 'hvac_quiz_submissions') loadQuizWinners();
+    });
+
+    window.addEventListener('hvac:quiz-submissions-updated', () => {
+      loadQuizWinners();
     });
   </script>
 </body>

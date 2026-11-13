@@ -546,12 +546,14 @@
     var u = cloudPath('meta/' + section);
     if (!u || !window.fetch) return Promise.resolve();
     var ts = Date.now();
-    lastSeenMeta[section] = ts;
     return fetch(u, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(ts)
-    }).catch(function () {});
+    }).then(function () {
+      lastSeenMeta[section] = ts;
+      return true;
+    }).catch(function () { return false; });
   }
 
   // 관리자 -> 클라우드: 설정 데이터 업로드
@@ -1365,7 +1367,8 @@
           answers: scoreObj.answers || {},
           deviceId: myDeviceId,
           isLocked: (scoreObj.answeredCount >= (scoreObj.total || 6)),
-          updatedAt: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
+          updatedAt: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }),
+          timestamp: Date.now()
         };
         return fetch(subUrl, {
           method: 'PUT',
@@ -1444,6 +1447,187 @@
     }).catch(function () { return false; });
   }
 
+  // 개별 섹션 핀포인트 초고속 동기화 (SSE 스트림 이벤트 수신 시 즉시 호출)
+  function syncSpecificSection(secName) {
+    var pId = pageId();
+    if (secName === 'quiz') {
+      if (pId === 'admin' || pId === 'quiz-winners') {
+        return fetch(cloudPath('quiz/submissions'), { cache: 'no-store' })
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (subMap) {
+            var list = [];
+            if (subMap && typeof subMap === 'object') {
+              list = Object.values(subMap).filter(Boolean);
+            }
+            writeLocalSilent('hvac_quiz_submissions', list);
+            window.dispatchEvent(new CustomEvent('hvac:quiz-submissions-updated', { detail: { submissions: list } }));
+            window.dispatchEvent(new StorageEvent('storage', { key: 'hvac_quiz_submissions' }));
+            return true;
+          }).catch(function () { return false; });
+      }
+    } else if (secName === 'checkins') {
+      var fullCheckinPages = ['admin', 'attendance-dashboard', 'luckydraw-stage', 'quiz-winners'];
+      if (fullCheckinPages.indexOf(pId) >= 0) {
+        return fetch(cloudPath('checkins'), { cache: 'no-store' })
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (chkData) {
+            var arr = [];
+            if (chkData && typeof chkData === 'object' && chkData.items && typeof chkData.items === 'object') {
+              arr = Object.values(chkData.items).filter(Boolean);
+              arr.sort(function (a, b) { return (b.seq || 0) - (a.seq || 0); });
+            }
+            writeLocalSilent('hvac_checkin_list', arr);
+            window.dispatchEvent(new CustomEvent('hvac:checkin-updated', { detail: { list: arr } }));
+            window.dispatchEvent(new StorageEvent('storage', { key: 'hvac_checkin_list' }));
+            if (chkData && Array.isArray(chkData.blocked)) {
+              writeLocalSilent('hvac_blocked_users', chkData.blocked);
+            }
+            return true;
+          }).catch(function () { return false; });
+      }
+    } else if (secName === 'qna') {
+      if (pId === 'qna' || pId === 'admin') {
+        return fetch(cloudPath('qna/list'), { cache: 'no-store' })
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (remoteQna) {
+            if (!Array.isArray(remoteQna)) return false;
+            var localQna = read('hvac_qna_list') || [];
+            var likedMap = {};
+            var remoteIds = {};
+            remoteQna.forEach(function (q) { if (q && q.id) remoteIds[q.id] = true; });
+            localQna.forEach(function (q) { if (q && q.isLiked) likedMap[q.id] = true; });
+            remoteQna.forEach(function (q) { if (q && likedMap[q.id]) q.isLiked = true; });
+            var nowTs = Date.now();
+            localQna.forEach(function (lq) {
+              if (lq && lq.id && !remoteIds[lq.id] && (nowTs - lq.id < 30000)) {
+                remoteQna.unshift(lq);
+              }
+            });
+            writeLocalSilent('hvac_qna_list', remoteQna);
+            window.dispatchEvent(new CustomEvent('hvac:qna-updated', { detail: { list: remoteQna } }));
+            window.dispatchEvent(new StorageEvent('storage', { key: 'hvac_qna_list' }));
+            return true;
+          }).catch(function () { return false; });
+      }
+    } else if (secName === 'games') {
+      if (pId === 'admin' || pId === 'lunch-screen' || pId === 'game-leaderboard' || pId === 'game') {
+        return fetch(cloudPath('games/submissions'), { cache: 'no-store' })
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (subMap) {
+            if (!subMap || typeof subMap !== 'object') return false;
+            var list = Object.values(subMap).filter(Boolean);
+            writeLocalSilent('hvac_game_submissions', list);
+            window.dispatchEvent(new CustomEvent('hvac:games-updated', { detail: { submissions: list } }));
+            window.dispatchEvent(new StorageEvent('storage', { key: 'hvac_game_submissions' }));
+            return true;
+          }).catch(function () { return false; });
+      }
+    } else if (secName === 'surveys') {
+      if (pId === 'admin') {
+        return fetch(cloudPath('surveys'), { cache: 'no-store' })
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (survMap) {
+            if (!survMap || typeof survMap !== 'object') return false;
+            var list = Object.values(survMap).filter(Boolean);
+            writeLocalSilent('hvac_survey_responses', list);
+            window.dispatchEvent(new StorageEvent('storage', { key: 'hvac_survey_responses' }));
+            return true;
+          }).catch(function () { return false; });
+      }
+    } else if (secName === 'config') {
+      return fetch(cloudPath('config'), { cache: 'no-store' })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (cfgData) {
+          if (!cfgData || typeof cfgData !== 'object') return false;
+          var changedKeys = [];
+          CONFIG_KEYS.forEach(function (k) {
+            if (cfgData[k] !== undefined) {
+              writeLocalSilent(k, cfgData[k]);
+              changedKeys.push(k);
+            }
+          });
+          if (changedKeys.length) {
+            refreshCommon();
+            notifyUpdated(changedKeys);
+          }
+          return true;
+        }).catch(function () { return false; });
+    }
+    return Promise.resolve(false);
+  }
+
+  // =========================================================
+  // 실시간 스트림 소켓 (Firebase RTDB Server-Sent Events / EventSource)
+  // 관리자/운영자/사회자 전광판 전용 0초 지연 실시간 Push 소켓 유지
+  // =========================================================
+  var cloudEventSource = null;
+  var streamConnected = false;
+
+  function initCloudStream() {
+    if (typeof window === 'undefined' || !window.EventSource) return;
+    var c = getCloudConfig();
+    if (!c || !c.enabled || !c.dbUrl) return;
+
+    var pId = pageId();
+    var operatorPages = ['admin', 'quiz-winners', 'attendance-dashboard', 'mc-qna', 'qna', 'lunch-screen', 'game-leaderboard', 'luckydraw-stage'];
+    if (operatorPages.indexOf(pId) < 0) return; // 일반 참석자는 폴링/온디맨드로 동시접속 안전하게 유지
+
+    if (cloudEventSource) {
+      try { cloudEventSource.close(); } catch (e) {}
+      cloudEventSource = null;
+    }
+
+    var streamUrl = cloudPath('meta');
+    try {
+      cloudEventSource = new EventSource(streamUrl);
+
+      function handleStreamPayload(payload) {
+        if (!payload || typeof payload !== 'object') return;
+        var p = payload.path || '';
+        var d = payload.data;
+
+        if (p === '/' || p === '') {
+          if (d && typeof d === 'object') {
+            ['quiz', 'checkins', 'qna', 'games', 'surveys', 'config'].forEach(function (sec) {
+              if (d[sec] && d[sec] !== lastSeenMeta[sec]) {
+                lastSeenMeta[sec] = d[sec];
+                syncSpecificSection(sec);
+              }
+            });
+          }
+        } else {
+          var cleanSec = p.replace(/^\//, '').split('/')[0];
+          if (cleanSec) {
+            lastSeenMeta[cleanSec] = d || Date.now();
+            syncSpecificSection(cleanSec);
+          }
+        }
+      }
+
+      cloudEventSource.addEventListener('put', function (e) {
+        if (!e || !e.data) return;
+        try { handleStreamPayload(JSON.parse(e.data)); } catch (err) {}
+      });
+
+      cloudEventSource.addEventListener('patch', function (e) {
+        if (!e || !e.data) return;
+        try { handleStreamPayload(JSON.parse(e.data)); } catch (err) {}
+      });
+
+      cloudEventSource.onopen = function () {
+        streamConnected = true;
+        window.dispatchEvent(new CustomEvent('hvac:stream-status', { detail: { connected: true, mode: 'stream' } }));
+      };
+
+      cloudEventSource.onerror = function () {
+        streamConnected = false;
+        window.dispatchEvent(new CustomEvent('hvac:stream-status', { detail: { connected: false, mode: 'polling' } }));
+      };
+    } catch (err) {
+      console.warn('initCloudStream error:', err);
+    }
+  }
+
   // 클라우드 -> 로컬 변경사항 폴링 (meta 타임스탬프 비교 후 변경된 섹션만 다운로드)
   function pollCloudChanges(forceAll) {
     var c = getCloudConfig();
@@ -1461,7 +1645,7 @@
         var pId = pageId();
 
         // 1) 설정(config) 변경 감지
-        if (forceAll || (meta.config && meta.config > lastSeenMeta.config)) {
+        if (forceAll || (meta.config && meta.config !== lastSeenMeta.config)) {
           lastSeenMeta.config = meta.config || Date.now();
           tasks.push(
             fetch(cloudPath('config'), { cache: 'no-store' })
@@ -1484,7 +1668,7 @@
         }
 
         // 2) Q&A 변경 감지 (qna, admin, checkin 페이지에서 동기화)
-        if ((pId === 'qna' || pId === 'admin') && (forceAll || (meta.qna && meta.qna > lastSeenMeta.qna))) {
+        if ((pId === 'qna' || pId === 'admin') && (forceAll || (meta.qna && meta.qna !== lastSeenMeta.qna))) {
           lastSeenMeta.qna = meta.qna || Date.now();
           tasks.push(
             fetch(cloudPath('qna/list'), { cache: 'no-store' })
@@ -1505,6 +1689,7 @@
                   }
                 });
                 writeLocalSilent('hvac_qna_list', remoteQna);
+                window.dispatchEvent(new CustomEvent('hvac:qna-updated', { detail: { list: remoteQna } }));
                 window.dispatchEvent(new StorageEvent('storage', { key: 'hvac_qna_list' }));
               })
           );
@@ -1512,7 +1697,7 @@
 
         // 3-A) 출석 명부 전체 동기화 (admin, attendance-dashboard, luckydraw-stage, quiz-winners)
         var fullCheckinPages = ['admin', 'attendance-dashboard', 'luckydraw-stage', 'quiz-winners'];
-        if (fullCheckinPages.indexOf(pId) >= 0 && (forceAll || (meta.checkins && meta.checkins > lastSeenMeta.checkins))) {
+        if (fullCheckinPages.indexOf(pId) >= 0 && (forceAll || (meta.checkins && meta.checkins !== lastSeenMeta.checkins))) {
           lastSeenMeta.checkins = meta.checkins || Date.now();
           tasks.push(
             fetch(cloudPath('checkins'), { cache: 'no-store' })
@@ -1524,6 +1709,7 @@
                   arr.sort(function (a, b) { return (b.seq || 0) - (a.seq || 0); });
                 }
                 writeLocalSilent('hvac_checkin_list', arr);
+                window.dispatchEvent(new CustomEvent('hvac:checkin-updated', { detail: { list: arr } }));
                 window.dispatchEvent(new StorageEvent('storage', { key: 'hvac_checkin_list' }));
                 if (chkData && Array.isArray(chkData.blocked)) {
                   writeLocalSilent('hvac_blocked_users', chkData.blocked);
@@ -1534,7 +1720,7 @@
 
         // 3-B) 일반 참석자(checkin) 초경량 단일 계정 상태 검증 (차단 여부 및 단일 기기 세션만 핀포인트 조회)
         // 200명 전체 명부(80KB)를 다운로드하지 않고 본인 노드(~200B) 및 차단 목록(~50B)만 조회하여 트래픽 99.7% 절감!
-        if (pId === 'checkin' && (forceAll || (meta.checkins && meta.checkins > lastSeenMeta.checkins))) {
+        if (pId === 'checkin' && (forceAll || (meta.checkins && meta.checkins !== lastSeenMeta.checkins))) {
           lastSeenMeta.checkins = meta.checkins || Date.now();
           var myUser = read('hvac_user_checked');
           if (myUser && myUser.email) {
@@ -1585,7 +1771,7 @@
         }
 
         // 4) 퀴즈 제출 현황 변경 감지 (admin 및 quiz-winners 사회자 화면 실시간 동기화)
-        if ((pId === 'admin' || pId === 'quiz-winners') && (forceAll || (meta.quiz && meta.quiz > lastSeenMeta.quiz))) {
+        if ((pId === 'admin' || pId === 'quiz-winners') && (forceAll || (meta.quiz && meta.quiz !== lastSeenMeta.quiz))) {
           lastSeenMeta.quiz = meta.quiz || Date.now();
           tasks.push(
             fetch(cloudPath('quiz/submissions'), { cache: 'no-store' })
@@ -1596,13 +1782,14 @@
                   list = Object.values(subMap).filter(Boolean);
                 }
                 writeLocalSilent('hvac_quiz_submissions', list);
+                window.dispatchEvent(new CustomEvent('hvac:quiz-submissions-updated', { detail: { submissions: list } }));
                 window.dispatchEvent(new StorageEvent('storage', { key: 'hvac_quiz_submissions' }));
               })
           );
         }
 
         // 5) 만족도 설문(survey) 응답 변경 감지 (admin 전용)
-        if (pId === 'admin' && (forceAll || (meta.surveys && meta.surveys > lastSeenMeta.surveys))) {
+        if (pId === 'admin' && (forceAll || (meta.surveys && meta.surveys !== lastSeenMeta.surveys))) {
           lastSeenMeta.surveys = meta.surveys || Date.now();
           tasks.push(
             fetch(cloudPath('surveys'), { cache: 'no-store' })
@@ -1617,7 +1804,7 @@
         }
 
         // 6) 점심 미니게임 변경 감지 (admin, lunch-screen, game)
-        if ((pId === 'admin' || pId === 'lunch-screen' || pId === 'game-leaderboard' || pId === 'game') && (forceAll || (meta.games && meta.games > lastSeenMeta.games))) {
+        if ((pId === 'admin' || pId === 'lunch-screen' || pId === 'game-leaderboard' || pId === 'game') && (forceAll || (meta.games && meta.games !== lastSeenMeta.games))) {
           lastSeenMeta.games = meta.games || Date.now();
           tasks.push(
             fetch(cloudPath('games/submissions'), { cache: 'no-store' })
@@ -1664,14 +1851,21 @@
     } catch (e) {}
   };
 
-  // 주기적 스마트 폴링 시작 (관리자/사회자/전광판은 3초 고속, 일반 참석자는 8초)
+  // 주기적 스마트 폴링 및 SSE 소켓 스트림 가동
   var pollTimer = null;
   function startCloudLoop() {
     if (pollTimer) clearInterval(pollTimer);
     if (!getCloudConfig()) return;
+
+    // 1. 초기 1회 전체 동기화
     pollCloudChanges(true);
+
+    // 2. 관리자/운영자 화면 실시간 SSE 소켓 스트림 연결 (0초 지연 푸시)
+    initCloudStream();
+
+    // 3. 주기적 안전 백업 폴링 (소켓 단절 대비 세이프가드)
     var fastPages = ['admin', 'qna', 'attendance-dashboard', 'quiz-winners', 'game-leaderboard', 'lunch-screen', 'luckydraw-stage'];
-    var intervalMs = fastPages.indexOf(pageId()) >= 0 ? 3000 : 8000;
+    var intervalMs = fastPages.indexOf(pageId()) >= 0 ? 6000 : 8000;
     pollTimer = setInterval(function () {
       pollCloudChanges(false);
     }, intervalMs);
@@ -1873,7 +2067,9 @@
       pushAllConfigs: pushAllConfigsToCloud,
       pushAllAdminConfig: pushAllConfigsToCloud,
       pullAllNow: function () { return pollCloudChanges(true); },
+      syncSection: syncSpecificSection,
       isActive: function () { var c = getCloudConfig(); return !!(c && c.enabled && c.dbUrl); },
+      isStreamConnected: function () { return !!streamConnected; },
       saveConfig: function (cfg) { writeLocalSilent(CLOUD_CFG_KEY, cfg); startCloudLoop(); },
       cloudPath: cloudPath,
       pushCheckinList: pushCheckinListToCloud,
