@@ -2458,17 +2458,17 @@
     </div>
   </div>
 
-  <!-- 세션 강제 종료 (다른 기기 접속 감지) 모달 -->
+  <!-- 세션 강제 종료 (다른 기기 접속 감지 / 관리자 초기화) 모달 -->
   <div class="modal-backdrop" id="modalSessionTerminated">
     <div class="confirm-card" style="text-align: center; border: 1px solid rgba(239, 68, 68, 0.4); box-shadow: 0 0 40px rgba(239, 68, 68, 0.3);">
       <div style="font-size: 42px; margin-bottom: 6px;">🔒</div>
-      <h3 style="color: #f87171;">다른 기기 접속 감지</h3>
-      <p class="sub" style="margin-bottom: 16px; line-height: 1.5;">
-        다른 기기에서 동일한 계정으로 새로 로그인되어<br>
-        <strong>1인 1기기 세션 보안 정책</strong>에 따라 현재 기기의 연결이 종료되었습니다.
+      <h3 style="color: #f87171;" id="sessionTerminatedTitle">세션 연결 종료 안내</h3>
+      <p class="sub" id="sessionTerminatedDesc" style="margin-bottom: 16px; line-height: 1.5;">
+        관리자에 의해 출석 세션이 초기화되었거나 다른 기기에서 새로 로그인되었습니다.<br>
+        <strong>출석 체크 화면으로 이동하여 다시 체크인을 진행해 주세요.</strong>
       </p>
       <button class="btn-modal-confirm" onclick="location.reload()" type="button" style="width: 100%; height: 48px; background: #ef4444; border-color: #ef4444;">
-        확인 (재로그인 화면으로 이동)
+        확인 (재체크인 화면으로 이동)
       </button>
     </div>
   </div>
@@ -3579,11 +3579,7 @@
 
       modalValEmail.textContent = cleanEmail;
 
-      // 마스터 Roster 및 운영진 확인
-      const roster = (window.HVAC && window.HVAC.read && window.HVAC.read('hvac_roster_list'))
-        || JSON.parse(localStorage.getItem('hvac_roster_list') || '[]');
-      const matchedRoster = roster.find(r => String(r.email || '').toLowerCase().replace('@lge.com', '').trim() === cleanEmail);
-
+      // 마스터 Roster 및 운영진 확인 (상단에서 이미 조회한 matchedRoster 활용)
       const isOp = (window.HVAC && window.HVAC.isOperatorEmail)
         ? window.HVAC.isOperatorEmail(cleanEmail)
         : (cleanEmail === 'youngsoo.lee' || cleanEmail === 'hvac.admin');
@@ -5477,6 +5473,19 @@
               return;
             }
 
+            // 출석부가 0명으로 초기화되었거나 전체 세션 리셋이 발생한 경우 복원 취소
+            const list = JSON.parse(localStorage.getItem('hvac_checkin_list') || '[]');
+            const resetAt = Number(localStorage.getItem('hvac_checkin_reset_at') || 0);
+            const userCheckedAt = Number(parsed.checkedAt || parsed.checkinTimeMs || 0);
+            if ((list.length === 0 && !parsed.isOperator) || (resetAt > 0 && userCheckedAt < resetAt)) {
+              localStorage.removeItem('hvac_user_checked');
+              localStorage.removeItem('hvac_checkin_user');
+              showScreen('intro');
+              const autoIdx = findCurrentOrUpcomingSessionIndex(sessions);
+              renderSession(autoIdx);
+              return;
+            }
+
             document.getElementById('menuUserName').textContent = formatUserNameWithTitle(parsed);
             document.getElementById('menuUserEmail').textContent = parsed.email.includes('@') ? parsed.email : parsed.email + '@lge.com';
 
@@ -5484,22 +5493,25 @@
             let checkinId = parsed.checkinId;
             if (!seq) {
               try {
-                const list = JSON.parse(localStorage.getItem('hvac_checkin_list') || '[]');
                 const cleanEmail = parsed.email ? parsed.email.toLowerCase().replace('@lge.com', '') : '';
                 const item = list.find(it => it.email && it.email.toLowerCase().replace('@lge.com', '') === cleanEmail);
                 if (item && item.seq) {
                   seq = item.seq;
                   checkinId = item.checkinId;
+                  parsed.seq = seq;
+                  parsed.checkinId = checkinId;
+                  localStorage.setItem('hvac_user_checked', JSON.stringify(parsed));
                 } else {
-                  seq = 1;
-                  checkinId = 'HVAC-001';
+                  localStorage.removeItem('hvac_user_checked');
+                  showScreen('intro');
+                  const autoIdx = findCurrentOrUpcomingSessionIndex(sessions);
+                  renderSession(autoIdx);
+                  return;
                 }
-                parsed.seq = seq;
-                parsed.checkinId = checkinId;
-                localStorage.setItem('hvac_user_checked', JSON.stringify(parsed));
               } catch (e) {
-                seq = 1;
-                checkinId = 'HVAC-001';
+                localStorage.removeItem('hvac_user_checked');
+                showScreen('intro');
+                return;
               }
             }
             document.getElementById('dashAttendeeSeq').textContent = 'No. ' + String(seq).padStart(3, '0');
@@ -5594,9 +5606,17 @@
       });
     }
 
-    // 다른 기기 접속 감지 시 현재 기기 자동 로그아웃 (1인 1기기 세션 보안)
+    // 다른 기기 접속 감지 / 관리자 초기화 시 현재 기기 자동 로그아웃 (세션 보안)
     window.addEventListener('hvac:session-terminated', (e) => {
       const modal = document.getElementById('modalSessionTerminated');
+      const titleEl = document.getElementById('sessionTerminatedTitle');
+      const descEl = document.getElementById('sessionTerminatedDesc');
+      if (e.detail && e.detail.deviceType) {
+        if (titleEl) titleEl.textContent = '🔒 ' + e.detail.deviceType;
+        if (descEl && String(e.detail.deviceType).includes('관리자')) {
+          descEl.innerHTML = '관리자에 의해 출석 세션이 전체 초기화되었습니다.<br><strong>출석 체크 화면으로 이동하여 다시 체크인을 진행해 주세요.</strong>';
+        }
+      }
       if (modal) modal.classList.add('show');
     });
   </script>

@@ -539,7 +539,7 @@
     return c.dbUrl + '/' + c.roomKey + '/' + subpath.replace(/^\/+/, '') + '.json';
   }
 
-  var lastSeenMeta = { config: 0, checkins: 0, qna: 0, quiz: 0, surveys: 0, games: 0 };
+  var lastSeenMeta = { config: 0, checkins: 0, qna: 0, quiz: 0, surveys: 0, games: 0, session_reset_at: 0 };
   var isSyncingCloud = false;
 
   function touchCloudMeta(section) {
@@ -1279,6 +1279,7 @@
                 sessionToken: newSessionToken,
                 activeDeviceId: getDeviceId(),
                 activeDeviceType: getDeviceType(),
+                checkedAt: Date.now(),
                 lastActiveAt: Date.now(),
                 isMilestoneWinner: isWinner,
                 milestonePrize: finalPrize
@@ -1505,7 +1506,7 @@
             }
             return true;
           }).catch(function () { return false; });
-      } else if (pId === 'checkin') {
+      } else {
         // 일반 참석자는 본인 계정 상태(~200B) 및 차단 목록(~50B)만 핀포인트 확인하여 개인정보 보호 및 99.7% 트래픽 절감
         var myUser = read('hvac_user_checked');
         if (myUser && myUser.email) {
@@ -1513,12 +1514,24 @@
           fetch(cloudPath('checkins/items/' + myClean), { cache: 'no-store' })
             .then(function (r) { return r.ok ? r.json() : null; })
             .then(function (serverUser) {
-              if (!serverUser || typeof serverUser !== 'object') return;
+              if (!serverUser || typeof serverUser !== 'object') {
+                // 클라우드 서버에 본인 출석 데이터가 존재하지 않음 (관리자에 의해 초기화/삭제됨)
+                writeLocalSilent('hvac_user_checked', null);
+                try { localStorage.removeItem('hvac_user_checked'); } catch (e) {}
+                try { localStorage.removeItem('hvac_checkin_user'); } catch (e) {}
+                window.dispatchEvent(new CustomEvent('hvac:session-terminated', {
+                  detail: { deviceType: '출석부 초기화 / 세션 만료', terminatedAt: Date.now() }
+                }));
+                return;
+              }
               if (serverUser.sessionToken && myUser.sessionToken && serverUser.sessionToken !== myUser.sessionToken) {
                 writeLocalSilent('hvac_user_checked', null);
+                try { localStorage.removeItem('hvac_user_checked'); } catch (e) {}
+                try { localStorage.removeItem('hvac_checkin_user'); } catch (e) {}
                 window.dispatchEvent(new CustomEvent('hvac:session-terminated', {
                   detail: { deviceType: serverUser.activeDeviceType || '다른 기기', terminatedAt: serverUser.lastActiveAt || Date.now() }
                 }));
+                return;
               }
               if (serverUser.giftStatus && myUser.giftStatus !== serverUser.giftStatus) {
                 myUser.giftStatus = serverUser.giftStatus;
@@ -1757,13 +1770,27 @@
           );
         }
 
-        // 3-B) 일반 참석자(checkin) 초경량 단일 계정 상태 검증 (차단 여부 및 단일 기기 세션만 핀포인트 조회)
+        // 3-B) 일반 참석자 초경량 단일 계정 상태 검증 (차단 여부, 세션 리셋, 단일 기기 세션 핀포인트 조회)
         // 200명 전체 명부(80KB)를 다운로드하지 않고 본인 노드(~200B) 및 차단 목록(~50B)만 조회하여 트래픽 99.7% 절감!
-        if (pId === 'checkin' && (forceAll || (meta.checkins && meta.checkins !== lastSeenMeta.checkins))) {
+        if (fullCheckinPages.indexOf(pId) < 0 && (forceAll || (meta.checkins && meta.checkins !== lastSeenMeta.checkins) || (meta.session_reset_at && meta.session_reset_at !== lastSeenMeta.session_reset_at))) {
           lastSeenMeta.checkins = meta.checkins || Date.now();
+          if (meta.session_reset_at) lastSeenMeta.session_reset_at = meta.session_reset_at;
           var myUser = read('hvac_user_checked');
           if (myUser && myUser.email) {
             var myClean = String(myUser.email).toLowerCase().replace('@lge.com', '').replace(/[.#$\[\]\/]/g, '_');
+
+            // 0) 전체 세션 강제 체크아웃 시그널 감지
+            var resetEpoch = Number(meta.session_reset_at) || 0;
+            var userCheckedEpoch = Number(myUser.checkedAt) || Number(myUser.checkinTimeMs) || 0;
+            if (resetEpoch > 0 && userCheckedEpoch < resetEpoch) {
+              writeLocalSilent('hvac_user_checked', null);
+              try { localStorage.removeItem('hvac_user_checked'); } catch (e) {}
+              try { localStorage.removeItem('hvac_checkin_user'); } catch (e) {}
+              window.dispatchEvent(new CustomEvent('hvac:session-terminated', {
+                detail: { deviceType: '관리자 전체 세션 강제 체크아웃', terminatedAt: resetEpoch }
+              }));
+              return;
+            }
 
             // 1) 차단(강퇴) 목록 조회 (~50B)
             tasks.push(
@@ -1774,6 +1801,8 @@
                     writeLocalSilent('hvac_blocked_users', blockedList);
                     if (blockedList.indexOf(myClean) >= 0 || blockedList.indexOf(myUser.email) >= 0) {
                       writeLocalSilent('hvac_user_checked', null);
+                      try { localStorage.removeItem('hvac_user_checked'); } catch (e) {}
+                      try { localStorage.removeItem('hvac_checkin_user'); } catch (e) {}
                       window.dispatchEvent(new CustomEvent('hvac:session-terminated', {
                         detail: { deviceType: '관리자 강퇴/차단 조치', terminatedAt: Date.now() }
                       }));
@@ -1788,9 +1817,20 @@
               fetch(cloudPath('checkins/items/' + myClean), { cache: 'no-store' })
                 .then(function (r) { return r.ok ? r.json() : null; })
                 .then(function (serverUser) {
-                  if (!serverUser || typeof serverUser !== 'object') return;
+                  if (!serverUser || typeof serverUser !== 'object') {
+                    // 서버에 본인 출석 레코드 없음 -> 세션 즉시 만료/체크아웃
+                    writeLocalSilent('hvac_user_checked', null);
+                    try { localStorage.removeItem('hvac_user_checked'); } catch (e) {}
+                    try { localStorage.removeItem('hvac_checkin_user'); } catch (e) {}
+                    window.dispatchEvent(new CustomEvent('hvac:session-terminated', {
+                      detail: { deviceType: '출석부 초기화 / 세션 만료', terminatedAt: Date.now() }
+                    }));
+                    return;
+                  }
                   if (serverUser.sessionToken && myUser.sessionToken && serverUser.sessionToken !== myUser.sessionToken) {
                     writeLocalSilent('hvac_user_checked', null);
+                    try { localStorage.removeItem('hvac_user_checked'); } catch (e) {}
+                    try { localStorage.removeItem('hvac_checkin_user'); } catch (e) {}
                     window.dispatchEvent(new CustomEvent('hvac:session-terminated', {
                       detail: {
                         deviceType: serverUser.activeDeviceType || '다른 기기',
@@ -2086,6 +2126,20 @@
     window.alert = function (message, title) {
       showCustomAlert(message, title);
     };
+
+    // 글로벌 세션 만료 및 강제 체크아웃 이벤트 핸들러
+    window.addEventListener('hvac:session-terminated', function (ev) {
+      writeLocalSilent('hvac_user_checked', null);
+      try { localStorage.removeItem('hvac_user_checked'); } catch (e) {}
+      try { localStorage.removeItem('hvac_checkin_user'); } catch (e) {}
+      var pid = pageId();
+      if (pid !== 'checkin' && pid !== 'admin' && pid !== 'attendance-dashboard' && pid !== 'luckydraw-stage' && pid !== 'quiz-winners') {
+        alert('⚠️ 안내: 관리자 권한에 의해 출석 세션이 초기화되었습니다.\n출석 체크 화면으로 이동합니다.');
+        setTimeout(function () {
+          window.location.href = './checkin.html';
+        }, 1200);
+      }
+    });
   }
 
   window.HVAC = {
