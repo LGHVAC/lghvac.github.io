@@ -838,16 +838,26 @@
 
     .kakao-features li {
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       gap: 10px;
       font-size: 14px;
       color: #e4e4e8;
+      line-height: 1.5;
     }
 
     .kakao-features li::before {
       content: "✓";
       color: var(--kakao-yellow);
       font-weight: 900;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .kakao-features .sub-desc {
+      display: block;
+      color: #a1a1aa;
+      font-size: 12.5px;
+      margin-top: 3px;
     }
 
     .btn-kakao-enter {
@@ -2163,8 +2173,15 @@
                 <h3>제10회 HVAC 엔지니어링 전문가 세미나</h3>
 
                 <ul class="kakao-features">
-                  <li><strong>입장 닉네임:</strong> <span style="color: #fef08a; font-weight: 800;">이름/직급/조직명</span> (예: 홍길동/책임/OOO팀)</li>
-                  <li><strong>실시간 공지:</strong> 세션 시작 알림 및 긴급 현장 안내 수신</li>
+                  <li>
+                    <div>
+                      <span style="white-space: nowrap;"><strong>입장 닉네임:</strong> <span style="color: #fef08a; font-weight: 800;">이름/직급/조직명</span></span>
+                      <span class="sub-desc">(예: 홍길동/책임/OOO팀)</span>
+                    </div>
+                  </li>
+                  <li>
+                    <div><strong>실시간 공지:</strong> 세션 시작 알림 및 긴급 현장 안내 수신</div>
+                  </li>
                 </ul>
               </div>
 
