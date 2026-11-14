@@ -163,8 +163,8 @@
   // 2) 링크
   // ---------------------------------------------------------
   var LINK_RULES = [
-    { key: 'kakaoChat', test: function (h) { return /pf\.kakao\.com/.test(h) && /\/chat/.test(h); } },
-    { key: 'kakaoChannel', test: function (h) { return /pf\.kakao\.com/.test(h); } },
+    { key: 'kakaoChat', test: function (h) { return (/pf\.kakao\.com/.test(h) && /\/chat/.test(h)) || /open\.kakao\.com/.test(h); } },
+    { key: 'kakaoChannel', test: function (h) { return /pf\.kakao\.com|open\.kakao\.com/.test(h); } },
     { key: 'attendanceForm', test: function (h) { return /\/r\/kaugdHpUxh/.test(h); } },
     { key: 'surveyForm', test: function (h) { return /ResponsePage\.aspx|forms\.cloud\.microsoft/.test(h); } },
     { key: 'googleMapUrl', test: function (h) { return /maps\.app\.goo\.gl|google\.[a-z.]+\/maps/.test(h); } },
