@@ -9,7 +9,7 @@
   <title>럭키드로우 | 제10회 2026 HVAC 전문가 세미나</title>
   <link rel="icon" href="./assets/favicon.ico">
   <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
-  <script src="./assets/hvac-core.js?v=261115_1730"></script>
+  <script src="./assets/hvac-core.js?v=261115_1800"></script>
   <style>
     :root {
       --bg: #030805;
@@ -1278,8 +1278,22 @@
     let surveyResponsesList = [];
     let stageTierIdx = 0;
     let isDrawRolling = false;
+    let pendingStageSync = false;
+    let lastKnownResetAt = 0;
 
-    function persistDrawState() {
+    function persistDrawState(isReset = false) {
+      if (!drawState || typeof drawState !== 'object') {
+        drawState = { drawnTiers: {}, confirmedTiers: {}, deliveredMilestones: {} };
+      }
+      if (!drawState.drawnTiers) drawState.drawnTiers = {};
+      if (!drawState.confirmedTiers) drawState.confirmedTiers = {};
+      if (!drawState.deliveredMilestones) drawState.deliveredMilestones = {};
+      const nowTs = Date.now();
+      drawState.updatedAt = Math.max(nowTs, (Number(drawState.updatedAt) || 0) + 1);
+      if (isReset) {
+        drawState.resetAt = drawState.updatedAt;
+        lastKnownResetAt = drawState.resetAt;
+      }
       try {
         localStorage.setItem('hvac_luckydraw_state', JSON.stringify(drawState));
       } catch (e) {}
@@ -1289,6 +1303,8 @@
     }
 
     function persistDrawConfig() {
+      if (!drawConfig || typeof drawConfig !== 'object') return;
+      drawConfig.updatedAt = Date.now();
       try {
         localStorage.setItem('hvac_luckydraw_config', JSON.stringify(drawConfig));
       } catch (e) {}
@@ -1488,9 +1504,38 @@
     // ---------------------------------------------------------
     // 기존 시스템 로드 및 초기화
     // ---------------------------------------------------------
+    function countTotalDrawnWinners(stObj) {
+      if (!stObj || !stObj.drawnTiers || typeof stObj.drawnTiers !== 'object') return 0;
+      let cnt = 0;
+      for (const k in stObj.drawnTiers) {
+        if (Array.isArray(stObj.drawnTiers[k])) cnt += stObj.drawnTiers[k].length;
+      }
+      return cnt;
+    }
+
     // 초기화 및 동기화
     function initStageSystem() {
-      if (isDrawRolling) return;
+      // 롤링 애니메이션 중이라도 다른 PC에서 '전체 초기화(리셋)'가 실행된 경우에는 즉시 반영!
+      if (isDrawRolling) {
+        try {
+          const rawCheck = localStorage.getItem('hvac_luckydraw_state');
+          const parsedCheck = (rawCheck && rawCheck !== 'null' && rawCheck !== 'undefined') ? JSON.parse(rawCheck) : null;
+          const isForceReset = !parsedCheck || countTotalDrawnWinners(parsedCheck) === 0 || (parsedCheck.resetAt && parsedCheck.resetAt !== lastKnownResetAt);
+          if (!isForceReset) {
+            pendingStageSync = true;
+            return;
+          }
+          isDrawRolling = false;
+          document.body.classList.remove('stage-spotlight-active');
+        } catch (e) {
+          pendingStageSync = true;
+          return;
+        }
+      }
+      pendingStageSync = false;
+
+      const prevWinnersCount = countTotalDrawnWinners(drawState);
+
       // 1. 설정 로드
       try {
         const sCfg = localStorage.getItem('hvac_luckydraw_config');
@@ -1508,17 +1553,27 @@
         }
       } catch (e) {}
 
-      // 2. 상태 로드
+      // 2. 상태 로드 (null이거나 비어 있을 때도 이전 메모리 drawState를 반드시 빈 객체로 초기화!)
+      let nextState = { drawnTiers: {}, confirmedTiers: {}, deliveredMilestones: {} };
       try {
         const sState = localStorage.getItem('hvac_luckydraw_state');
         if (sState && sState !== 'null' && sState !== 'undefined') {
           const parsedSt = JSON.parse(sState);
-          if (parsedSt && typeof parsedSt === 'object') drawState = parsedSt;
+          if (parsedSt && typeof parsedSt === 'object') {
+            nextState = parsedSt;
+          }
         }
       } catch (e) {}
-      if (!drawState.drawnTiers) drawState.drawnTiers = {};
-      if (!drawState.confirmedTiers) drawState.confirmedTiers = {};
-      if (!drawState.deliveredMilestones) drawState.deliveredMilestones = {};
+      if (!nextState.drawnTiers || typeof nextState.drawnTiers !== 'object') nextState.drawnTiers = {};
+      if (!nextState.confirmedTiers || typeof nextState.confirmedTiers !== 'object') nextState.confirmedTiers = {};
+      if (!nextState.deliveredMilestones || typeof nextState.deliveredMilestones !== 'object') nextState.deliveredMilestones = {};
+      drawState = nextState;
+
+      const newWinnersCount = countTotalDrawnWinners(drawState);
+      if ((drawState.resetAt && drawState.resetAt !== lastKnownResetAt) || (prevWinnersCount > 0 && newWinnersCount === 0)) {
+        if (drawState.resetAt) lastKnownResetAt = drawState.resetAt;
+        stageTierIdx = 0;
+      }
 
       // 3. 출석자 로드
       try {
@@ -2069,7 +2124,8 @@
 
         isDrawRolling = false;
         setTimeout(() => {
-          renderStageView();
+          if (pendingStageSync) initStageSystem();
+          else renderStageView();
         }, 1200);
 
       } else {
@@ -2105,7 +2161,8 @@
           isDrawRolling = false;
           StageSound.playFanfare(isFirst);
           runConfettiEffect();
-          renderStageView();
+          if (pendingStageSync) initStageSystem();
+          else renderStageView();
         }, rollDuration);
       }
     }
@@ -2371,9 +2428,29 @@
     function resetDrawStatePrompt() {
       if (isDrawRolling) return;
       requestSuperAdminAuth('🧹 클로징 럭키드로우 전체 추첨 결과 초기화 (완전 리셋)', () => {
-        drawState = { drawnTiers: {}, confirmedTiers: {}, deliveredMilestones: (drawState && drawState.deliveredMilestones) || {} };
+        drawState = {
+          drawnTiers: {},
+          confirmedTiers: {},
+          deliveredMilestones: (drawState && drawState.deliveredMilestones) || {}
+        };
+        if (drawConfig && Array.isArray(drawConfig.tiers)) {
+          let cfgChanged = false;
+          const hadExtra = drawConfig.tiers.some(t => t && t.isExtra);
+          if (hadExtra) {
+            drawConfig.tiers = drawConfig.tiers.filter(t => t && !t.isExtra);
+            cfgChanged = true;
+          }
+          drawConfig.tiers.forEach(t => {
+            if (t && t.initialCount) {
+              t.count = t.initialCount;
+              delete t.initialCount;
+              cfgChanged = true;
+            }
+          });
+          if (cfgChanged) persistDrawConfig();
+        }
         stageTierIdx = 0;
-        persistDrawState();
+        persistDrawState(true);
         renderStageView();
       });
     }

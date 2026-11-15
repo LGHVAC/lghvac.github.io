@@ -611,8 +611,7 @@
   function hasLocalSectionCache(sec) {
     var pId = pageId();
     if (sec === 'config') {
-      if (pId === 'admin') return read('hvac_schedule_settings') !== null && read('hvac_luckydraw_config') !== null && lastSeenMeta.config > 0;
-      if (pId === 'luckydraw-stage') return read('hvac_luckydraw_config') !== null && lastSeenMeta.config > 0;
+      if (pId === 'admin' || pId === 'luckydraw-stage') return read('hvac_schedule_settings') !== null && lastSeenMeta.config > 0;
       return read('hvac_schedule_settings') !== null;
     }
     if (sec === 'checkins') {
@@ -645,15 +644,64 @@
 
   var lastPushedConfigMap = {};
   var lastPushedSectionMap = {};
+  var lastGeneratedMetaTs = 0;
+
+  // BroadcastChannel을 통한 동일 기기/브라우저 내 열린 모든 탭 간 0ms 실시간 동기화
+  var localBcChannel = null;
+  try {
+    if (typeof window !== 'undefined' && typeof window.BroadcastChannel === 'function') {
+      localBcChannel = new BroadcastChannel('hvac_realtime_sync_v1');
+      localBcChannel.onmessage = function (ev) {
+        if (!ev || !ev.data || !ev.data.key) return;
+        var k = ev.data.key;
+        var v = ev.data.val;
+        withCloudSyncLock(function () {
+          if (v !== undefined) {
+            writeLocalSilent(k, v);
+          }
+          refreshCommon();
+          notifyUpdated([k]);
+          try { window.dispatchEvent(new StorageEvent('storage', { key: k })); } catch (e) {}
+        });
+      };
+    }
+  } catch (e) {}
+
+  function broadcastLocalKeyChange(key, val) {
+    try {
+      if (localBcChannel) {
+        localBcChannel.postMessage({ key: key, val: val, ts: Date.now() });
+      }
+    } catch (e) {}
+  }
+
+  // Firebase RTDB는 하위 프로퍼티가 모두 빈 객체({})이면 노드 전체를 자동 삭제(null)하므로,
+  // hvac_luckydraw_state에 항상 원시 리프 값(updatedAt)과 기본 객체 구조를 보장함
+  function normalizeLuckyDrawState(val) {
+    var base = (val && typeof val === 'object') ? Object.assign({}, val) : {};
+    if (!base.drawnTiers || typeof base.drawnTiers !== 'object') base.drawnTiers = {};
+    if (!base.confirmedTiers || typeof base.confirmedTiers !== 'object') base.confirmedTiers = {};
+    if (!base.deliveredMilestones || typeof base.deliveredMilestones !== 'object') base.deliveredMilestones = {};
+    if (!base.updatedAt) base.updatedAt = Date.now();
+    return base;
+  }
 
   function touchCloudMeta(section, subKey) {
     if (!window.fetch) return Promise.resolve();
-    var ts = Date.now();
+    var now = Date.now();
+    var prevSecTs = Number(lastSeenMeta[section]) || 0;
+    var prevRemoteTs = Number(latestRemoteMeta[section]) || 0;
+    var prevKeyTs = (section === 'config' && subKey) ? (Number(lastSeenCfgKeys[subKey]) || 0) : 0;
+    // PC 간 시계 오차(Clock Skew)가 있어도 항상 이전 타임스탬프보다 큰 단조 증가(Monotonic) 타임스탬프 보장
+    var ts = Math.max(now, lastGeneratedMetaTs + 1, prevSecTs + 1, prevRemoteTs + 1, prevKeyTs + 1);
+    lastGeneratedMetaTs = ts;
+
     if (section === 'config') {
       var metaUrl = cloudPath('meta');
       if (!metaUrl) return Promise.resolve();
       var cfgKeyName = subKey || 'all';
       lastSeenMeta.config = ts;
+      latestRemoteMeta.config = ts;
       saveLastSeenMeta();
       lastSeenCfgKeys[cfgKeyName] = ts;
       saveSeenCfgKeys();
@@ -670,6 +718,7 @@
     var u = cloudPath('meta/' + section);
     if (!u) return Promise.resolve();
     lastSeenMeta[section] = ts;
+    latestRemoteMeta[section] = ts;
     saveLastSeenMeta();
     return fetch(u, {
       method: 'PUT',
@@ -680,17 +729,32 @@
     }).catch(function () { return false; });
   }
 
-  // 관리자 -> 클라우드: 설정 데이터 업로드 (동일 키 1.5초 내 중복 PUT 방지 + 핀포인트 config_key 브로드캐스트)
+  // 관리자 -> 클라우드: 설정 데이터 업로드 (럭키드로우 상태/설정은 디바운스 없이 즉시 PUT + 핀포인트 config_key 브로드캐스트)
   function pushConfigToCloud(key, val) {
     var u = cloudPath('config/' + key);
     if (!u || !window.fetch) return Promise.resolve(false);
-    var bodyStr = JSON.stringify(val);
+    var payloadVal = val;
+    if (key === 'hvac_luckydraw_state') {
+      payloadVal = normalizeLuckyDrawState(val);
+      payloadVal.updatedAt = Math.max(Date.now(), (Number(payloadVal.updatedAt) || 0) + 1);
+      withCloudSyncLock(function () {
+        writeLocalSilent(key, payloadVal);
+      });
+    } else if (key === 'hvac_luckydraw_config' && payloadVal && typeof payloadVal === 'object') {
+      payloadVal = Object.assign({}, payloadVal, { updatedAt: Date.now() });
+      withCloudSyncLock(function () {
+        writeLocalSilent(key, payloadVal);
+      });
+    }
+    var bodyStr = JSON.stringify(payloadVal);
     var now = Date.now();
+    var isCriticalRealtimeKey = (key === 'hvac_luckydraw_state' || key === 'hvac_luckydraw_config');
     var prev = lastPushedConfigMap[key];
-    if (prev && prev.body === bodyStr && (now - prev.ts < 1500)) {
+    if (!isCriticalRealtimeKey && prev && prev.body === bodyStr && (now - prev.ts < 1500)) {
       return Promise.resolve(true);
     }
     lastPushedConfigMap[key] = { body: bodyStr, ts: now };
+    broadcastLocalKeyChange(key, payloadVal);
 
     return fetch(u, {
       method: 'PUT',
@@ -800,7 +864,7 @@
   // -------------------------------------------------------------
   // 앱 빌드 버전 검증 및 구버전 로컬 캐시 자동 무효화 / 정합성 갱신
   // -------------------------------------------------------------
-  var HVAC_BUILD_VERSION = '261115_1730';
+  var HVAC_BUILD_VERSION = '261115_1800';
 
   (function checkBuildVersion() {
     try {
@@ -808,9 +872,11 @@
       if (lastVersion !== HVAC_BUILD_VERSION) {
         localStorage.setItem('hvac_app_build_version', HVAC_BUILD_VERSION);
 
-        // 1. 구버전 로컬스토리지 명부/운영진 캐시 삭제 (최신 DEFAULT_ROSTER 즉시 반영)
+        // 1. 구버전 로컬스토리지 명부/운영진/메타타임스탬프 캐시 삭제 (최신 DEFAULT_ROSTER 및 클라우드 상태 즉시 반영)
         localStorage.removeItem('hvac_roster_list');
         localStorage.removeItem('hvac_operator_list');
+        localStorage.removeItem('hvac_last_seen_cfgkeys');
+        localStorage.removeItem('hvac_last_seen_meta');
         localStorage.removeItem(APPLIED_MARKER);
 
         // 2. 이미 체크인된 사용자 정보가 있다면, 최신 마스터 명부 기준으로 호칭/직급/소속/카테고리/등록방식 자동 갱신
@@ -835,7 +901,6 @@
               localStorage.setItem('hvac_user_checked', JSON.stringify(userObj));
             }
           } catch (e) {}
-        }
         }
         console.log('[HVAC] App updated to build version:', HVAC_BUILD_VERSION);
       }
@@ -2025,12 +2090,28 @@
     return fetch(cloudPath('config/' + key), { cache: 'no-store' })
       .then(function (r) { return r.ok ? r.json() : undefined; })
       .then(function (val) {
-        if (val === undefined || val === null) return false;
+        if (val === undefined) return false;
+        // 핵심 패치: Firebase RTDB에서 빈 객체({}) PUT 시 노드가 삭제되어 null이 반환되는 경우,
+        // hvac_luckydraw_state는 무시하지 않고 빈 초기 상태로 즉시 덮어써서 이전 2등/3등 잔여 캐시를 완벽히 리셋함!
+        if (val === null) {
+          if (key === 'hvac_luckydraw_state') {
+            val = { drawnTiers: {}, confirmedTiers: {}, deliveredMilestones: {}, updatedAt: Date.now() };
+          } else {
+            return false;
+          }
+        } else if (key === 'hvac_luckydraw_state') {
+          val = normalizeLuckyDrawState(val);
+        }
+        var prevRaw = null;
+        try { prevRaw = localStorage.getItem(key); } catch (e) {}
+        var nextRaw = typeof val === 'string' ? val : JSON.stringify(val);
         withCloudSyncLock(function () {
           writeLocalSilent(key, val);
-          refreshCommon();
-          notifyUpdated([key]);
-          try { window.dispatchEvent(new StorageEvent('storage', { key: key })); } catch (e) {}
+          if (prevRaw !== nextRaw || key === 'hvac_luckydraw_state' || key === 'hvac_luckydraw_config') {
+            refreshCommon();
+            notifyUpdated([key]);
+            try { window.dispatchEvent(new StorageEvent('storage', { key: key })); } catch (e) {}
+          }
         });
         return true;
       }).catch(function () { return false; });
@@ -2056,12 +2137,18 @@
     return fetch(cloudPath('config'), { cache: 'no-store' })
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (cfgData) {
-        if (!cfgData || typeof cfgData !== 'object') return false;
+        if (!cfgData || typeof cfgData !== 'object') cfgData = {};
         withCloudSyncLock(function () {
           var changedKeys = [];
           CONFIG_KEYS.forEach(function (k) {
             if (cfgData[k] !== undefined && cfgData[k] !== null) {
-              writeLocalSilent(k, cfgData[k]);
+              var v = (k === 'hvac_luckydraw_state') ? normalizeLuckyDrawState(cfgData[k]) : cfgData[k];
+              writeLocalSilent(k, v);
+              changedKeys.push(k);
+            } else if (k === 'hvac_luckydraw_state' && isConfigKeyNeededOnPage(k, pId)) {
+              // 클라우드 config에서 hvac_luckydraw_state가 비어 삭제(null/undefined)된 상태라면 로컬도 즉시 초기화!
+              var emptyState = { drawnTiers: {}, confirmedTiers: {}, deliveredMilestones: {}, updatedAt: Date.now() };
+              writeLocalSilent(k, emptyState);
               changedKeys.push(k);
             }
           });
@@ -2090,6 +2177,8 @@
     return map;
   }
 
+  var STATIC_PUBLISHED_KEYS = ['hvac_schedule_settings', 'hvac_theme_settings', 'hvac_site_links', 'hvac_site_content', 'hvac_quiz_config', 'hvac_survey_config'];
+
   // 설정 키별 타임스탬프 비교 후 실제로 변경된(그리고 현재 페이지에 필요한) 키만 다운로드
   function syncConfigFromMeta(d, forceAll) {
     var pId = pageId();
@@ -2099,7 +2188,7 @@
     if (forceAll || !hasLocalSectionCache('config')) {
       mapKeys.forEach(function (k) {
         var ts = Number(cfgMap[k]) || 0;
-        if (ts > (Number(lastSeenCfgKeys[k]) || 0)) lastSeenCfgKeys[k] = ts;
+        if (ts > 0) lastSeenCfgKeys[k] = ts;
       });
       saveSeenCfgKeys();
       return syncConfigSmart(null, !!forceAll);
@@ -2107,10 +2196,10 @@
 
     if (mapKeys.length > 0) {
       var allTs = Number(cfgMap.all) || 0;
-      if (allTs > (Number(lastSeenCfgKeys.all) || 0)) {
+      if (allTs > 0 && allTs !== (Number(lastSeenCfgKeys.all) || 0)) {
         mapKeys.forEach(function (k) {
           var ts = Number(cfgMap[k]) || 0;
-          if (ts > (Number(lastSeenCfgKeys[k]) || 0)) lastSeenCfgKeys[k] = ts;
+          if (ts > 0) lastSeenCfgKeys[k] = ts;
         });
         saveSeenCfgKeys();
         return syncConfigSmart(null, true);
@@ -2119,7 +2208,15 @@
       mapKeys.forEach(function (k) {
         if (k === 'all' || CONFIG_KEYS.indexOf(k) < 0) return;
         var ts = Number(cfgMap[k]) || 0;
-        if (ts <= (Number(lastSeenCfgKeys[k]) || 0)) return;
+        if (ts <= 0) return;
+        var seenTs = Number(lastSeenCfgKeys[k]) || 0;
+        // 정적 배포 키는 site-config.json의 metaConfigTs보다 클 때만 동기화하고,
+        // 럭키드로우 등 동적 실시간 키는 PC 간 시계 오차(Clock Skew)가 있어도 타임스탬프가 다르면(ts !== seenTs) 즉시 동기화!
+        if (STATIC_PUBLISHED_KEYS.indexOf(k) >= 0) {
+          if (ts <= seenTs) return;
+        } else {
+          if (ts === seenTs) return;
+        }
         if (!isConfigKeyNeededOnPage(k, pId)) return; // 다른 페이지용 키는 '미확인'으로 남겨둠
         lastSeenCfgKeys[k] = ts;
         targets.push(k);
@@ -2363,13 +2460,15 @@
       try { prevRaw = window.localStorage.getItem(key); } catch (e) {}
     }
     origSetItem.call(this, key, value);
-    if (this !== window.localStorage || isSyncingCloud || cloudSyncLockCount > 0) return;
-    if (prevRaw === value) return; // 기존 로컬 값과 100% 동일하면 클라우드 PUT / meta 갱신 발생 안 함!
+    // 주의: isSyncingCloud(폴링 네트워크 대기 중)일 때 사용자가 버튼을 눌러 setItem한 변경이 무시되지 않도록 cloudSyncLockCount > 0 만 체크!
+    if (this !== window.localStorage || cloudSyncLockCount > 0) return;
+    var isLuckyKey = (key === 'hvac_luckydraw_state' || key === 'hvac_luckydraw_config');
+    if (prevRaw === value && !isLuckyKey) return; // 기존 로컬 값과 100% 동일하면 클라우드 PUT / meta 갱신 발생 안 함 (단, 럭키드로우는 강제 동기화 허용)
     var c = getCloudConfig();
     if (!c) return;
     try {
       var curPid = pageId();
-      if (CONFIG_KEYS.indexOf(key) >= 0 && (curPid === 'admin' || (curPid === 'luckydraw-stage' && (key === 'hvac_luckydraw_state' || key === 'hvac_luckydraw_config')))) {
+      if (CONFIG_KEYS.indexOf(key) >= 0 && (curPid === 'admin' || (curPid === 'luckydraw-stage' && isLuckyKey))) {
         pushConfigToCloud(key, JSON.parse(value));
       } else if (key === 'hvac_qna_list') {
         pushQnaListToCloud(JSON.parse(value));
@@ -2394,34 +2493,53 @@
       syncSingleConfigKey('hvac_checkin_passcode');
     }
 
+    // 관리자 콘솔(admin) 및 사회자 무대(luckydraw-stage)는 페이지 진입 즉시 클라우드의 최신 럭키드로우 상태/설정을 강제 검증
+    if (pId === 'admin' || pId === 'luckydraw-stage') {
+      syncSingleConfigKey('hvac_luckydraw_config');
+      syncSingleConfigKey('hvac_luckydraw_state');
+    }
+
     // 1. 200명 전원 실시간 SSE 소켓 스트림 연결 (초기 put 이벤트로 변경된 섹션만 차등 동기화)
     initCloudStream();
 
     // 2. SSE 소켓이 2.5초 내 연결되지 않은 경우에만 초기 백업 폴링 1회 수행 (중복 다운로드 방지)
     setTimeout(function () {
-      if (!streamConnected) {
+      if (!streamConnected || pId === 'admin' || pId === 'luckydraw-stage') {
         pollCloudChanges(false);
       }
     }, 2500);
 
-    // 3. 주기적 안전 백업 폴링 (소켓 단절 시에만 동작, 정상 스트림 중에는 0회 호출)
+    // 3. 주기적 안전 백업 폴링
+    // - 일반 참석자 페이지: SSE 정상 연결 중에는 폴링 생략 (트래픽 0B)
+    // - 관리자(admin) 및 사회자 럭키드로우(luckydraw-stage): 경품이 걸린 크리티컬 화면이므로 4초 주기로 초경량 meta 폴링 병행 (SSE 사일런트 드롭 완벽 방어)
+    var isCriticalStagePage = (pId === 'admin' || pId === 'luckydraw-stage');
     var fastPages = ['admin', 'qna', 'attendance-dashboard', 'quiz-winners', 'game-leaderboard', 'lunch-screen', 'luckydraw-stage'];
-    var intervalMs = fastPages.indexOf(pId) >= 0 ? 15000 : 30000;
+    var intervalMs = isCriticalStagePage ? 4000 : (fastPages.indexOf(pId) >= 0 ? 15000 : 30000);
     pollTimer = setInterval(function () {
-      if (streamConnected && cloudEventSource && cloudEventSource.readyState === 1) return;
+      if (!isCriticalStagePage && streamConnected && cloudEventSource && cloudEventSource.readyState === 1) return;
       pollCloudChanges(false);
     }, intervalMs);
   }
 
-  // 모바일 화면 꺼짐 복귀 / 백그라운드 탭 전환 시 스트림 및 데이터 재연결 (3초 디바운스 + 정상 연결 시 폴링 생략)
+  // 모바일 화면 꺼짐 복귀 / 백그라운드 탭 전환 시 스트림 및 데이터 재연결
   var lastResumeCheckAt = 0;
   function checkAndResumeStream() {
     checkRemoteAppVersion();
-    if (pageId() === 'index') return;
+    var pId = pageId();
+    if (pId === 'index') return;
     var now = Date.now();
-    if (now - lastResumeCheckAt < 3000) return;
+    if (now - lastResumeCheckAt < 2000) return;
     lastResumeCheckAt = now;
     if (!getCloudConfig()) return;
+    // 관리자 및 럭키드로우 무대 화면은 탭 포커스 복귀 시 즉시 최신 상태 확인
+    if (pId === 'admin' || pId === 'luckydraw-stage') {
+      pollCloudChanges(false);
+      syncSingleConfigKey('hvac_luckydraw_state');
+      if (!cloudEventSource || cloudEventSource.readyState === 2) {
+        initCloudStream();
+      }
+      return;
+    }
     if (streamConnected && cloudEventSource && cloudEventSource.readyState === 1) {
       return;
     }

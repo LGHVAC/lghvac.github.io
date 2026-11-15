@@ -1,8 +1,8 @@
 {
-  "version": "261115_1730",
-  "publishedAt": "2026-11-15T08:40:30.905Z",
-  "metaConfigTs": 1794732030905,
-  "note": "2026 HVAC Expert Seminar - Pre-Registration Method Alignment for All Roster Members",
+  "version": "261115_1800",
+  "publishedAt": "2026-11-15T09:05:13.533Z",
+  "metaConfigTs": 1794733513533,
+  "note": "2026 HVAC Expert Seminar - Lucky Draw Realtime Cloud Sync & Full Reset Null-Handling Fix",
   "data": {
     "hvac_cloud_config": {
       "enabled": true,
