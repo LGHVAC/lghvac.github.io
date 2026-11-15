@@ -611,7 +611,6 @@
   function hasLocalSectionCache(sec) {
     var pId = pageId();
     if (sec === 'config') {
-      if (pId === 'admin' || pId === 'luckydraw-stage') return read('hvac_schedule_settings') !== null && lastSeenMeta.config > 0;
       return read('hvac_schedule_settings') !== null;
     }
     if (sec === 'checkins') {
@@ -1292,7 +1291,7 @@
   // -------------------------------------------------------------
   // 앱 빌드 버전 검증 및 구버전 로컬 캐시 자동 무효화 / 정합성 갱신
   // -------------------------------------------------------------
-  var HVAC_BUILD_VERSION = '261115_2340';
+  var HVAC_BUILD_VERSION = '261116_0006';
 
   // 캐시 무효화용 일회성 _hv 쿼리 파라미터가 있으면 URL 깔끔하게 정리 (기존 쿼리/해시 보존)
   try {
@@ -2541,13 +2540,22 @@
               arr = Object.values(chkData.items).filter(Boolean);
               arr.sort(function (a, b) { return (b.seq || 0) - (a.seq || 0); });
             }
+            var prevArrRaw = null;
+            try { prevArrRaw = localStorage.getItem('hvac_checkin_list'); } catch (e) {}
+            var nextArrRaw = JSON.stringify(arr);
+            var isCheckinChanged = (prevArrRaw !== nextArrRaw);
+
             withCloudSyncLock(function () {
-              writeLocalSilent('hvac_checkin_list', arr);
+              if (isCheckinChanged) {
+                writeLocalSilent('hvac_checkin_list', arr);
+              }
               if (chkData && Array.isArray(chkData.blocked)) {
                 writeLocalSilent('hvac_blocked_users', chkData.blocked);
               }
-              window.dispatchEvent(new CustomEvent('hvac:checkin-updated', { detail: { list: arr } }));
-              window.dispatchEvent(new StorageEvent('storage', { key: 'hvac_checkin_list' }));
+              if (isCheckinChanged) {
+                try { window.dispatchEvent(new CustomEvent('hvac:checkin-updated', { detail: { list: arr } })); } catch (e) {}
+                try { window.dispatchEvent(new StorageEvent('storage', { key: 'hvac_checkin_list' })); } catch (e) {}
+              }
             });
             return true;
           }).catch(function () { return false; });
@@ -2701,7 +2709,7 @@
         var nextRaw = typeof val === 'string' ? val : JSON.stringify(val);
         withCloudSyncLock(function () {
           writeLocalSilent(key, val);
-          if (prevRaw !== nextRaw || key === 'hvac_luckydraw_state' || key === 'hvac_luckydraw_config') {
+          if (prevRaw !== nextRaw) {
             refreshCommon();
             notifyUpdated([key]);
             try { window.dispatchEvent(new StorageEvent('storage', { key: key })); } catch (e) {}
@@ -2876,13 +2884,23 @@
               metaChanged = true;
               checkSessionResetSignal(d.session_reset_at);
             }
-            var hasCfgKeys = Object.keys(extractCfgKeysMap(d)).length > 0;
+            var streamCfgMap = extractCfgKeysMap(d);
+            var streamHasChangedCfg = false;
+            var streamKeys = Object.keys(streamCfgMap);
+            for (var si = 0; si < streamKeys.length; si++) {
+              var sk = streamKeys[si];
+              var sts = Number(streamCfgMap[sk]) || 0;
+              if (sts > 0 && sts !== (Number(lastSeenCfgKeys[sk]) || 0) && isConfigKeyNeededOnPage(sk, pageId())) {
+                streamHasChangedCfg = true;
+                break;
+              }
+            }
+
             ['quiz', 'checkins', 'qna', 'games', 'surveys', 'config'].forEach(function (sec) {
               if (d[sec]) latestRemoteMeta[sec] = d[sec];
               if (pageId() === 'admin' && !isAdminSectionNeeded(sec)) return;
               if (sec === 'config') {
-                // 설정은 키별 타임스탬프(config_keys)를 항상 비교하여 놓친 변경분까지 복구
-                if (hasCfgKeys || (d.config && d.config !== lastSeenMeta.config) || !hasLocalSectionCache('config')) {
+                if (streamHasChangedCfg || (d.config && d.config !== lastSeenMeta.config) || !hasLocalSectionCache('config')) {
                   if (d.config) lastSeenMeta.config = d.config;
                   metaChanged = true;
                   syncConfigFromMeta(d, false);
@@ -2971,9 +2989,20 @@
           if (meta[sec]) latestRemoteMeta[sec] = meta[sec];
         });
 
-        // 1) 설정(config) 변경 감지 (설정 키별 타임스탬프 비교 → 변경된 키만 핀포인트 동기화)
-        var pollHasCfgKeys = Object.keys(extractCfgKeysMap(meta)).length > 0;
-        if (forceAll || !hasLocalSectionCache('config') || pollHasCfgKeys || (meta.config && meta.config !== lastSeenMeta.config)) {
+        // 1) 설정(config) 변경 감지 (설정 키별 타임스탬프 비교 → 실제로 변경된 키가 있을 때만 동기화)
+        var cfgKeysMap = extractCfgKeysMap(meta);
+        var hasChangedCfgKey = false;
+        var mapKeys = Object.keys(cfgKeysMap);
+        for (var i = 0; i < mapKeys.length; i++) {
+          var k = mapKeys[i];
+          var ts = Number(cfgKeysMap[k]) || 0;
+          if (ts > 0 && ts !== (Number(lastSeenCfgKeys[k]) || 0) && isConfigKeyNeededOnPage(k, pId)) {
+            hasChangedCfgKey = true;
+            break;
+          }
+        }
+
+        if (forceAll || !hasLocalSectionCache('config') || hasChangedCfgKey || (meta.config && meta.config !== lastSeenMeta.config)) {
           lastSeenMeta.config = meta.config || Date.now();
           tasks.push(syncConfigFromMeta(meta, !!forceAll));
         }
