@@ -743,13 +743,32 @@
   }
 
   var DEFAULT_OPERATORS = [
-    { email: 'hvac.admin', name: '세미나운영진', role: 'admin', position: '운영팀' },
-    { email: 'youngsoo.lee', name: '이영수', role: 'admin', position: '책임' }
+    { email: 'luis.kim', name: '김태호', role: 'admin', position: '책임', dept: 'ES아카데미팀' },
+    { email: 'jungeun.lee', name: '이정은', role: 'admin', position: '책임', dept: 'ES아카데미팀' },
+    { email: 'sangeun.park', name: '박상은', role: 'admin', position: '책임', dept: 'ES아카데미팀' },
+    { email: 'deokjin.lee', name: '이덕진', role: 'admin', position: '책임', dept: 'ES아카데미팀' },
+    { email: 'youngsoo.lee', name: '이영수', role: 'admin', position: '책임', dept: 'ES아카데미팀' },
+    { email: 'jaeuk.oh', name: '오재욱', role: 'admin', position: '책임', dept: 'ES아카데미팀' },
+    { email: 'jaewon28.kim', name: '김재원', role: 'admin', position: '책임', dept: 'ES아카데미팀' },
+    { email: 'were77.kim', name: '김창환', role: 'admin', position: '책임', dept: 'ES아카데미팀' },
+    { email: 'minyoung.ryu', name: '류민영', role: 'admin', position: '책임', dept: 'ES아카데미팀' },
+    { email: 'hongkon.ryu', name: '류홍곤', role: 'admin', position: '책임', dept: 'ES아카데미팀' },
+    { email: 'george.gong', name: '공성락', role: 'admin', position: '책임', dept: 'ES아카데미팀' },
+    { email: 'hobeom.lee', name: '이호범', role: 'admin', position: '책임', dept: 'ES아카데미팀' },
+    { email: 'gabae.han', name: '한가배', role: 'admin', position: '사원', dept: 'ES아카데미팀' },
+    { email: 'hyukyoon.kwon', name: '권윤호', role: 'admin', position: '기정', dept: 'ES아카데미팀' },
+    { email: 'jeongog65.kim', name: '김정옥', role: 'admin', position: '기성', dept: 'ES아카데미팀' },
+    { email: 'hvac.admin', name: '세미나운영진', role: 'admin', position: '운영팀', dept: 'ES아카데미팀' }
   ];
 
   function getOperatorList() {
-    var list = read('hvac_operator_list');
-    if (Array.isArray(list) && list.length) return list;
+    var roster = read('hvac_roster_list');
+    if (Array.isArray(roster) && roster.length) {
+      var ops = roster.filter(function (r) {
+        return r && (r.category === 'operator' || r.regMethod === 'operator' || (r.dept && r.dept.indexOf('ES아카데미') >= 0));
+      });
+      if (ops.length > 0) return ops;
+    }
     return DEFAULT_OPERATORS;
   }
 
@@ -770,6 +789,7 @@
   function isOperatorEmail(email) {
     if (!email) return false;
     var clean = String(email).trim().toLowerCase().replace('@lge.com', '');
+    if (clean === 'hvac.admin') return true;
     var ops = getOperatorList();
     return ops.some(function (o) {
       var opClean = String(o.email || '').trim().toLowerCase().replace('@lge.com', '');
