@@ -744,7 +744,7 @@
 
   var DEFAULT_OPERATORS = [
     { email: 'hvac.admin', name: '세미나운영진', role: 'admin', position: '운영팀' },
-    { email: 'youngsoo.lee', name: '이영수', role: 'admin', position: '운영총괄' }
+    { email: 'youngsoo.lee', name: '이영수', role: 'admin', position: '책임' }
   ];
 
   function getOperatorList() {
