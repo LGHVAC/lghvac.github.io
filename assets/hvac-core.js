@@ -1393,7 +1393,7 @@
   // -------------------------------------------------------------
   // 앱 빌드 버전 검증 및 구버전 로컬 캐시 자동 무효화 / 정합성 갱신
   // -------------------------------------------------------------
-  var HVAC_BUILD_VERSION = '261116_0810';
+  var HVAC_BUILD_VERSION = '261116_0830';
 
   function getCurrentAppVersion() {
     try {
@@ -1707,6 +1707,17 @@
     return reg[cleanEmail];
   }
 
+  function removeLocalGiftReceipt(cleanEmail) {
+    cleanEmail = String(cleanEmail || '').toLowerCase().replace('@lge.com', '').replace(/[.#$\[\]\/]/g, '_');
+    var reg = getLocalGiftRegistry();
+    if (reg[cleanEmail]) {
+      delete reg[cleanEmail];
+      try {
+        localStorage.setItem(GIFT_REGISTRY_KEY, JSON.stringify(reg));
+      } catch (e) {}
+    }
+  }
+
   function syncGiftToLocalCheckins(cleanEmail, giftStatus, giftReceivedAt) {
     try {
       var list = JSON.parse(localStorage.getItem('hvac_checkin_list') || '[]');
@@ -1885,6 +1896,75 @@
           giftReceivedAt: nowTimeStr
         };
       });
+  }
+
+  // 🎁 [관리자 전용] 선물 수령 상태 강제 수정 / 원복 / 취소
+  function cloudAdminSetGiftStatus(cleanEmail, targetStatus, meta) {
+    cleanEmail = String(cleanEmail || '').toLowerCase().replace('@lge.com', '').replace(/[.#$\[\]\/]/g, '_');
+    meta = meta || {};
+
+    var padZero = function (n) { return String(n).padStart(2, '0'); };
+    var now = new Date();
+    var nowTimeStr = now.getFullYear() + '-' + padZero(now.getMonth() + 1) + '-' + padZero(now.getDate()) + ' ' +
+                     padZero(now.getHours()) + ':' + padZero(now.getMinutes()) + ':' + padZero(now.getSeconds());
+
+    var isReset = (targetStatus === 'unclaimed' || !targetStatus);
+    var finalStatus = isReset ? 'unclaimed' : (targetStatus === 'vip' ? 'vip' : 'received');
+    var finalTimeStr = isReset ? '' : nowTimeStr;
+
+    var c = getCloudConfig();
+    var receiptUrl = cloudPath('gift_receipts/' + cleanEmail);
+    var itemUrl = cloudPath('checkins/items/' + cleanEmail);
+
+    // 1) 로컬 동기화
+    if (isReset) {
+      removeLocalGiftReceipt(cleanEmail);
+    } else {
+      saveLocalGiftToRegistry(cleanEmail, {
+        cleanEmail: cleanEmail,
+        giftStatus: finalStatus,
+        giftReceivedAt: finalTimeStr,
+        claimedAt: Date.now(),
+        meta: meta
+      });
+    }
+    syncGiftToLocalCheckins(cleanEmail, finalStatus, finalTimeStr);
+
+    if (!c || !window.fetch) {
+      return Promise.resolve({ success: true, giftStatus: finalStatus, giftReceivedAt: finalTimeStr });
+    }
+
+    // 2) 클라우드 gift_receipts 처리 (취소 시 DELETE, 설정 시 PUT)
+    var receiptPromise = isReset
+      ? fetch(receiptUrl, { method: 'DELETE' }).catch(function () {})
+      : fetch(receiptUrl, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            cleanEmail: cleanEmail,
+            giftStatus: finalStatus,
+            giftReceivedAt: finalTimeStr,
+            claimedAt: Date.now(),
+            meta: meta
+          })
+        }).catch(function () {});
+
+    // 3) 클라우드 checkins/items 패치 및 meta 터치
+    return receiptPromise.then(function () {
+      return fetch(itemUrl, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          giftStatus: finalStatus,
+          giftReceivedAt: finalTimeStr
+        })
+      }).catch(function () {});
+    }).then(function () {
+      touchCloudMeta('checkins');
+      return { success: true, giftStatus: finalStatus, giftReceivedAt: finalTimeStr };
+    }).catch(function () {
+      return { success: true, giftStatus: finalStatus, giftReceivedAt: finalTimeStr };
+    });
   }
 
   function cloudCheckin(attendee) {
@@ -3883,6 +3963,7 @@
       toggleQnaLike: toggleQnaLikeInCloud,
       checkin: cloudCheckin,
       verifyAndClaimGift: cloudVerifyAndClaimGift,
+      adminSetGiftStatus: cloudAdminSetGiftStatus,
       getGiftStatus: cloudGetGiftStatus,
       pushQuizScore: pushQuizScoreToCloud,
       pushSurvey: pushSurveyResponseToCloud,

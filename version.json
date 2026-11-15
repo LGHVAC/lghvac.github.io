@@ -1,7 +1,7 @@
 {
-  "version": "261116_0810",
-  "buildTime": "2026-11-16T08:10:00+09:00",
-  "note": "2026 HVAC Expert Seminar - Filter 1, 10, 100 milestone winners and sort recent checkin feed by latest checkin time",
-  "updatedAt": "2026-11-15T23:10:00.000Z",
-  "description": "Enforce 1, 10, 100 milestone events and sort attendance feed by checkedAt timestamp so general attendees appear in realtime"
+  "version": "261116_0830",
+  "buildTime": "2026-11-16T08:30:00+09:00",
+  "note": "2026 HVAC Expert Seminar - Support admin gift status modification and cancellation",
+  "updatedAt": "2026-11-15T23:30:00.000Z",
+  "description": "Allow seminar administrators to modify or cancel gift claim status and VIP separate delivery"
 }
