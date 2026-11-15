@@ -1,7 +1,7 @@
 {
-  "version": "261116_0725",
-  "buildTime": "2026-11-15T23:28:00+09:00",
-  "note": "2026 HVAC Expert Seminar - Prevent duplicate & looping update toast banner",
-  "updatedAt": "2026-11-15T22:27:23.811Z",
-  "description": "Replace browser alert with custom dark modal for mini-game notice and change lunch term to 점심"
+  "version": "261116_0740",
+  "buildTime": "2026-11-16T07:40:00+09:00",
+  "note": "2026 HVAC Expert Seminar - Fix hvac-core.js syntax error and restore realtime cloud badge sync",
+  "updatedAt": "2026-11-15T22:40:00.000Z",
+  "description": "Resolve hvac-core.js syntax error to ensure window.HVAC loads properly and cloud realtime sync works seamlessly"
 }

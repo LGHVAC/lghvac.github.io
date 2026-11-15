@@ -1393,7 +1393,7 @@
   // -------------------------------------------------------------
   // 앱 빌드 버전 검증 및 구버전 로컬 캐시 자동 무효화 / 정합성 갱신
   // -------------------------------------------------------------
-  var HVAC_BUILD_VERSION = '261116_0725';
+  var HVAC_BUILD_VERSION = '261116_0740';
 
   function getCurrentAppVersion() {
     try {
@@ -3584,15 +3584,6 @@
       } catch (e) {}
       var nextUrl = buildCacheBustedUrl(verStr);
       try {
-        fetch(window.location.href.split('#')[0], { cache: 'reload' })
-          .catch(function () {})
-          .finally(function () { window.location.replace(nextUrl); });
-      } catch (e) {
-        window.location.replace(nextUrl);
-      }
-    });
-    document.body.appendChild(banner);
-  }
         fetch(window.location.href.split('#')[0], { cache: 'reload' })
           .catch(function () {})
           .finally(function () { window.location.replace(nextUrl); });
