@@ -1140,7 +1140,7 @@
     {"category":"external","dept":"단국대학교","email":"hongchong@gmail.com","name":"조홍종","position":"교수","regMethod":"pre","regMethodLabel":"사전 등록"},
     {"category":"external","dept":"토지주택연구원","email":"jhyoo@lh.or.kr","name":"유정현","position":"수석","regMethod":"pre","regMethodLabel":"사전 등록"},
     {"category":"external","dept":"특강 연사","email":"---","name":"이정모","position":"관장","regMethod":"pre","regMethodLabel":"사전 등록"},
-    {"category":"him","dept":"공조지원파트","email":"hyunseok.kang","name":"강석현","position":"파트장","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"him","dept":"공조지원파트","email":"hyunseok.kang","name":"강현석","position":"파트장","regMethod":"pre","regMethodLabel":"사전 등록"},
     {"category":"him","dept":"공조지원파트","email":"jongchil.noh","name":"노종칠","position":"선임","regMethod":"pre","regMethodLabel":"사전 등록"}
   ];
 
@@ -1393,7 +1393,7 @@
   // -------------------------------------------------------------
   // 앱 빌드 버전 검증 및 구버전 로컬 캐시 자동 무효화 / 정합성 갱신
   // -------------------------------------------------------------
-  var HVAC_BUILD_VERSION = '261116_0830';
+  var HVAC_BUILD_VERSION = '261116_0835';
 
   function getCurrentAppVersion() {
     try {

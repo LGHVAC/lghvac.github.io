@@ -1,7 +1,7 @@
 {
-  "version": "261116_0830",
-  "buildTime": "2026-11-16T08:30:00+09:00",
-  "note": "2026 HVAC Expert Seminar - Support admin gift status modification and cancellation",
-  "updatedAt": "2026-11-15T23:30:00.000Z",
-  "description": "Allow seminar administrators to modify or cancel gift claim status and VIP separate delivery"
+  "version": "261116_0835",
+  "buildTime": "2026-11-16T08:35:00+09:00",
+  "note": "2026 HVAC Expert Seminar - Correct attendee name typo from 강석현 to 강현석 without affecting checkin data",
+  "updatedAt": "2026-11-15T23:35:00.000Z",
+  "description": "Safely update attendee name to 강현석 in roster and live checkin DB while preserving all checkin and gift records"
 }
