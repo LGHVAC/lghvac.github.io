@@ -2398,12 +2398,17 @@
         </div>
       </div>
 
-      <button type="button" id="btnPreEventClose" style="width: 100%; height: 44px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 10px; color: #fff; padding: 10px; font-size: 13.5px; font-weight: 800; cursor: pointer;">
-        닫기
-      </button>
-      <div style="margin-top: 10px; text-align: center;">
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        <button type="button" id="btnPreEventProceed" style="width: 100%; height: 46px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); border: none; border-radius: 10px; color: #fff; padding: 10px; font-size: 14.5px; font-weight: 850; cursor: pointer; box-shadow: 0 4px 14px rgba(16,185,129,0.35);">
+          체크인 진행 이동 ➔
+        </button>
+        <button type="button" id="btnPreEventClose" style="width: 100%; height: 40px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.18); border-radius: 10px; color: rgba(255,255,255,0.8); padding: 8px; font-size: 13px; font-weight: 700; cursor: pointer;">
+          안내 닫기
+        </button>
+      </div>
+      <div style="margin-top: 8px; text-align: center;">
         <button type="button" id="btnPreEventRelogin" style="background: none; border: none; font-size: 12px; color: rgba(255,255,255,0.6); text-decoration: underline; cursor: pointer; padding: 4px;">
-          이미 체크인하셨나요? 기존 정보로 다시 로그인 ➔
+          기존 정보로 다시 체크인 ➔
         </button>
       </div>
     </div>
@@ -3512,23 +3517,35 @@
       }, 250);
     }
 
-    // 1단계: 인트로 -> 현장 인증 비밀번호(PIN) 입력 이동 (11/15일까지 신규 참석자는 팝업 안내, 11/16 당일은 직행)
+    // 1단계: 인트로 -> 현장 인증 비밀번호(PIN) 입력 이동 (행사 전날이어도 체크인 진행 허용)
     btnGoStep1.addEventListener('click', () => {
-      if (isPreEventPeriod()) {
-        openPreEventModal();
-      } else {
-        proceedToStep1();
-      }
+      proceedToStep1();
     });
 
-    // 기존 체크인 이력자 및 운영진 재로그인 버튼 (인트로 화면에서 바로 본인 확인 Step2로 이동)
+    // 기존 체크인 이력자 및 운영진 재로그인 버튼 (이메일/성명 프리필 후 비밀번호 입력 Step1으로 이동)
     const btnIntroRelogin = document.getElementById('btnIntroRelogin');
     if (btnIntroRelogin) {
       btnIntroRelogin.addEventListener('click', () => {
-        showScreen('step2');
-        setTimeout(() => {
-          if (inputEmail) inputEmail.focus();
-        }, 250);
+        let lastChecked = null;
+        try {
+          const rawLast = localStorage.getItem('hvac_last_checked_user');
+          if (rawLast) lastChecked = JSON.parse(rawLast);
+        } catch (e) {}
+        if (lastChecked && lastChecked.email && inputEmail && !inputEmail.value) {
+          inputEmail.value = String(lastChecked.email).replace(/@lge\.com$/i, '');
+        }
+        if (lastChecked && lastChecked.name && inputName && !inputName.value) {
+          inputName.value = String(lastChecked.name);
+        }
+        if (inputPin) {
+          inputPin.value = '';
+          if (btnGoStep2) {
+            btnGoStep2.classList.add('btn-disabled');
+            btnGoStep2.setAttribute('disabled', 'true');
+          }
+        }
+        validateStep2();
+        proceedToStep1();
       });
     }
 
@@ -3555,10 +3572,26 @@
     if (btnPreEventRelogin) {
       btnPreEventRelogin.addEventListener('click', () => {
         closePreEventModal();
-        showScreen('step2');
-        setTimeout(() => {
-          if (inputEmail) inputEmail.focus();
-        }, 250);
+        let lastChecked = null;
+        try {
+          const rawLast = localStorage.getItem('hvac_last_checked_user');
+          if (rawLast) lastChecked = JSON.parse(rawLast);
+        } catch (e) {}
+        if (lastChecked && lastChecked.email && inputEmail && !inputEmail.value) {
+          inputEmail.value = String(lastChecked.email).replace(/@lge\.com$/i, '');
+        }
+        if (lastChecked && lastChecked.name && inputName && !inputName.value) {
+          inputName.value = String(lastChecked.name);
+        }
+        if (inputPin) {
+          inputPin.value = '';
+          if (btnGoStep2) {
+            btnGoStep2.classList.add('btn-disabled');
+            btnGoStep2.setAttribute('disabled', 'true');
+          }
+        }
+        validateStep2();
+        proceedToStep1();
       });
     }
 
@@ -3808,11 +3841,10 @@
         }
       } catch (e) {}
 
-      // 🔐 현장 인증 암호(PIN) 검증 (단, 이미 체크인했던 이력이 있고 성명까지 일치하는 재로그인 사용자는 PIN 재검증 면제)
-      const isVerifiedReturningUser = !!(existRecord && (!existRecord.name || String(existRecord.name).trim() === rawName));
+      // 🔐 현장 인증 암호(PIN) 검증 (재로그인/사전등록 포함 모든 사용자 PIN 필수 검증, 우회 불가)
       let enteredPin = (inputPin ? inputPin.value : '').trim();
       let targetPin = getCheckinPasscode();
-      if (!isVerifiedReturningUser && enteredPin !== targetPin && window.HVAC && HVAC.cloud && HVAC.cloud.cloudPath) {
+      if (enteredPin !== targetPin && window.HVAC && HVAC.cloud && HVAC.cloud.cloudPath) {
         try {
           const r = await fetch(HVAC.cloud.cloudPath('config/hvac_checkin_passcode'), { cache: 'no-store' });
           if (r && r.ok) {
@@ -3827,7 +3859,7 @@
           }
         } catch (e) {}
       }
-      if (!isVerifiedReturningUser && enteredPin !== targetPin) {
+      if (enteredPin !== targetPin) {
         showScreen('step1');
         if (pinErrorMsg) pinErrorMsg.style.display = 'block';
         if (inputPin) {
@@ -3839,12 +3871,7 @@
       if (pinErrorMsg) pinErrorMsg.style.display = 'none';
       if (inputPin) inputPin.style.borderColor = '';
 
-      // 🚨 2-A) 행사 당일(11/16) 이전 접속 시: 이미 체크인했던 이력이 있거나 운영진인 경우에만 재로그인 허용!
-      //         신규 일반 참석자가 checkin.html 경로로 직접 들어온 경우 안내 팝업 표출 후 차단
-      if (isPreEventPeriod() && !existRecord && !isOperatorOrRosterOp) {
-        openPreEventModal();
-        return;
-      }
+      // (행사 전날이어도 올바른 현장 비밀번호를 입력하고 체크인 진행 시 정상 등록 허용)
 
       try {
         const existInLocal = existRecord;
@@ -5847,9 +5874,9 @@
       window.open(kakaoUrl, '_blank');
     });
 
-    // 체크아웃 (로그아웃 / 재체크인)
+    // 체크아웃 (로그아웃 / 재체크인) - 현장 비밀번호 재입력 필수화
     document.getElementById('menuItemLogout').addEventListener('click', () => {
-      if (confirm('체크인을 다시 진행하시겠습니까?')) {
+      if (confirm('체크인을 다시 진행하시겠습니까?\n현장 인증 비밀번호(4자리) 확인 후 다시 체크인할 수 있습니다.')) {
         let prevUser = null;
         try {
           const savedRaw = localStorage.getItem('hvac_user_checked');
@@ -5859,21 +5886,18 @@
           }
           localStorage.removeItem('hvac_user_checked');
         } catch (e) {}
-        inputEmail.value = prevUser && prevUser.email ? String(prevUser.email).replace(/@lge\.com$/i, '') : '';
-        inputName.value = prevUser && prevUser.name ? String(prevUser.name) : '';
+        if (inputEmail) inputEmail.value = prevUser && prevUser.email ? String(prevUser.email).replace(/@lge\.com$/i, '') : '';
+        if (inputName) inputName.value = prevUser && prevUser.name ? String(prevUser.name) : '';
         if (inputPin) {
-          inputPin.value = getCheckinPasscode();
+          inputPin.value = '';
           if (btnGoStep2) {
-            btnGoStep2.classList.remove('btn-disabled');
-            btnGoStep2.removeAttribute('disabled');
+            btnGoStep2.classList.add('btn-disabled');
+            btnGoStep2.setAttribute('disabled', 'true');
           }
         }
         validateStep2();
         menuPopover.classList.remove('show');
-        showScreen('step2');
-        setTimeout(() => {
-          if (inputEmail) inputEmail.focus();
-        }, 250);
+        proceedToStep1();
       }
     });
 
@@ -6000,21 +6024,25 @@
         if (rawLast) lastChecked = JSON.parse(rawLast);
       } catch (e) {}
 
-      if (isReloginParam || (lastChecked && lastChecked.email && lastChecked.name)) {
-        if (lastChecked && lastChecked.email && inputEmail && !inputEmail.value) inputEmail.value = String(lastChecked.email).replace(/@lge\.com$/i, '');
-        if (lastChecked && lastChecked.name && inputName && !inputName.value) inputName.value = String(lastChecked.name);
-        if (inputPin) {
-          inputPin.value = getCheckinPasscode();
-          if (btnGoStep2) {
-            btnGoStep2.classList.remove('btn-disabled');
-            btnGoStep2.removeAttribute('disabled');
-          }
+      // 이전 기기 체크인 이력이 있으면 이메일/성명만 프리필하고, 비밀번호는 자동 주입하지 않음
+      if (lastChecked && lastChecked.email && inputEmail && !inputEmail.value) {
+        inputEmail.value = String(lastChecked.email).replace(/@lge\.com$/i, '');
+      }
+      if (lastChecked && lastChecked.name && inputName && !inputName.value) {
+        inputName.value = String(lastChecked.name);
+      }
+      if (inputPin) {
+        inputPin.value = '';
+        if (btnGoStep2) {
+          btnGoStep2.classList.add('btn-disabled');
+          btnGoStep2.setAttribute('disabled', 'true');
         }
-        validateStep2();
-        showScreen('step2');
-        setTimeout(() => {
-          if (inputEmail && !inputEmail.value) inputEmail.focus();
-        }, 250);
+      }
+      validateStep2();
+
+      if (isReloginParam) {
+        // relogin=1 파라미터가 명시된 경우 비밀번호 입력(Step 1)으로 이동
+        proceedToStep1();
       } else if (isPreEventPeriod()) {
         showScreen('intro');
         // 11/15(일)까지 접속 시 현장 비밀번호 사전 안내 팝업을 즉시 오픈
