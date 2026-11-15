@@ -504,6 +504,9 @@
           const parsed = JSON.parse(sCfg);
           if (parsed && typeof parsed === 'object') {
             drawConfig = Object.assign({}, drawConfig, parsed);
+            if (drawConfig.tiers && !Array.isArray(drawConfig.tiers) && typeof drawConfig.tiers === 'object') {
+              drawConfig.tiers = Object.values(drawConfig.tiers).filter(Boolean);
+            }
           }
         }
         if (!drawConfig || !Array.isArray(drawConfig.tiers) || drawConfig.tiers.length === 0) {
