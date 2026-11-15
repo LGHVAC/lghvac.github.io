@@ -1,7 +1,7 @@
 {
-  "version": "261116_0655",
+  "version": "261116_0715",
   "buildTime": "2026-11-15T23:28:00+09:00",
   "note": "2026 HVAC Expert Seminar - Prevent duplicate & looping update toast banner",
-  "updatedAt": "2026-11-15T21:50:42.298Z",
-  "description": "Remove hardcoded schedule text mutations and enforce change-based dynamic synchronization"
+  "updatedAt": "2026-11-15T22:14:56.432Z",
+  "description": "Fix repeating update banner: dynamically detect running version and enforce persistent reload/dismiss flags"
 }

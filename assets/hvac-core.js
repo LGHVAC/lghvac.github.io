@@ -1393,7 +1393,26 @@
   // -------------------------------------------------------------
   // 앱 빌드 버전 검증 및 구버전 로컬 캐시 자동 무효화 / 정합성 갱신
   // -------------------------------------------------------------
-  var HVAC_BUILD_VERSION = '261116_0630';
+  var HVAC_BUILD_VERSION = '261116_0715';
+
+  function getCurrentAppVersion() {
+    try {
+      var cs = document.currentScript;
+      if (!cs) {
+        var scripts = document.querySelectorAll('script[src*="hvac-core.js"]');
+        if (scripts.length > 0) cs = scripts[scripts.length - 1];
+      }
+      if (cs && cs.src) {
+        var m = cs.src.match(/[?&]v=([a-zA-Z0-9_]+)/);
+        if (m && m[1]) return m[1];
+      }
+    } catch (e) {}
+    try {
+      var appVer = localStorage.getItem('hvac_app_build_version');
+      if (appVer) return appVer;
+    } catch (e) {}
+    return HVAC_BUILD_VERSION;
+  }
 
   // 캐시 무효화용 일회성 _hv 쿼리 파라미터가 있으면 URL 깔끔하게 정리 (기존 쿼리/해시 보존)
   try {
@@ -1410,9 +1429,10 @@
 
   (function checkBuildVersion() {
     try {
+      var activeVer = getCurrentAppVersion();
       var lastVersion = localStorage.getItem('hvac_app_build_version');
-      if (lastVersion !== HVAC_BUILD_VERSION) {
-        localStorage.setItem('hvac_app_build_version', HVAC_BUILD_VERSION);
+      if (lastVersion !== activeVer) {
+        localStorage.setItem('hvac_app_build_version', activeVer);
 
         // 1. 구버전 로컬스토리지 명부/운영진/메타타임스탬프 캐시 삭제 (최신 DEFAULT_ROSTER 및 클라우드 상태 즉시 반영)
         localStorage.removeItem('hvac_roster_list');
@@ -3439,7 +3459,8 @@
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (info) {
         if (!info || !info.version) return;
-        if (isNewerRemoteVersion(info.version, HVAC_BUILD_VERSION)) {
+        var curVer = getCurrentAppVersion();
+        if (isNewerRemoteVersion(info.version, curVer)) {
           showVersionUpdateToast(info.version);
         } else {
           // 이미 최신 버전이 반영되었으면 기존 배너/재시도 플래그 정리
@@ -3476,14 +3497,18 @@
     var verStr = String(newVer || '').trim();
     if (!verStr) return;
 
-    // 1. 이미 사용자가 같은 버전에 대해 닫았거나 방금 새로고침을 눌렀다면 중복 표시 차단 (2분 쿨다운)
+    var curVer = getCurrentAppVersion();
+    if (!isNewerRemoteVersion(verStr, curVer)) return;
+
+    // 1. 이미 사용자가 같은 버전에 대해 닫았거나 이미 새로고침을 진행한 경우 중복 표시 영구 차단
     try {
-      if (window.sessionStorage) {
-        if (window.sessionStorage.getItem('hvac_update_dismissed_ver') === verStr) return;
-        var reloadedVer = window.sessionStorage.getItem('hvac_update_reloaded_ver');
-        var reloadedTs = Number(window.sessionStorage.getItem('hvac_update_reloaded_ts') || 0);
-        if (reloadedVer === verStr && (Date.now() - reloadedTs < 120000)) return;
-      }
+      var disVer = (window.sessionStorage && window.sessionStorage.getItem('hvac_update_dismissed_ver')) ||
+                   (window.localStorage && window.localStorage.getItem('hvac_update_dismissed_ver'));
+      if (disVer && !isNewerRemoteVersion(verStr, disVer)) return;
+
+      var relVer = (window.sessionStorage && window.sessionStorage.getItem('hvac_update_reloaded_ver')) ||
+                   (window.localStorage && window.localStorage.getItem('hvac_update_reloaded_ver'));
+      if (relVer && !isNewerRemoteVersion(verStr, relVer)) return;
     } catch (e) {}
 
     // 2. DOM ready 보장 & 중복 배너 원천 차단 (싱글턴)
@@ -3531,6 +3556,10 @@
       ev.stopPropagation();
       try {
         if (window.sessionStorage) window.sessionStorage.setItem('hvac_update_dismissed_ver', verStr);
+        if (window.localStorage) {
+          window.localStorage.setItem('hvac_update_dismissed_ver', verStr);
+          window.localStorage.setItem('hvac_update_dismissed_ts', String(Date.now()));
+        }
       } catch (e) {}
       if (banner.parentNode) banner.parentNode.removeChild(banner);
     });
@@ -3545,9 +3574,22 @@
           window.sessionStorage.setItem('hvac_update_reloaded_ver', verStr);
           window.sessionStorage.setItem('hvac_update_reloaded_ts', String(Date.now()));
         }
+        if (window.localStorage) {
+          window.localStorage.setItem('hvac_update_reloaded_ver', verStr);
+          window.localStorage.setItem('hvac_app_build_version', verStr);
+        }
       } catch (e) {}
       var nextUrl = buildCacheBustedUrl(verStr);
       try {
+        fetch(window.location.href.split('#')[0], { cache: 'reload' })
+          .catch(function () {})
+          .finally(function () { window.location.replace(nextUrl); });
+      } catch (e) {
+        window.location.replace(nextUrl);
+      }
+    });
+    document.body.appendChild(banner);
+  }
         fetch(window.location.href.split('#')[0], { cache: 'reload' })
           .catch(function () {})
           .finally(function () { window.location.replace(nextUrl); });
