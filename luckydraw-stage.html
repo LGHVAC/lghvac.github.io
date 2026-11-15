@@ -9,7 +9,7 @@
   <title>럭키드로우 | 제10회 2026 HVAC 전문가 세미나</title>
   <link rel="icon" href="./assets/favicon.ico">
   <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
-  <script src="./assets/hvac-core.js?v=261115_1800"></script>
+  <script src="./assets/hvac-core.js?v=261115_1850"></script>
   <style>
     :root {
       --bg: #030805;
@@ -1644,25 +1644,54 @@
       }
 
       return checkinList.filter(att => {
+        if (!att) return false;
         const cleanEmail = (att.email || '').toLowerCase().trim().replace('@lge.com', '');
         const cId = (att.checkinId || '').toUpperCase().trim();
         const sVal = String(att.seq || '');
+        const seqNum = Number(att.seq) || 0;
 
-        if (blocked.some(b => String(b).toLowerCase().replace('@lge.com', '') === cleanEmail)) return false;
-
-        const cat = String(att.category || att.type || '').trim().toLowerCase();
-        const dept = String(att.dept || att.org || '').trim().toLowerCase();
-        const pos = String(att.position || '').trim().toLowerCase();
-
-        // 사외 및 하이엠 제외
-        if (cat.includes('사외') || dept.includes('사외') || pos.includes('강사') || pos.includes('교수') || pos.includes('학생') || cat.includes('외부') || cat === 'external') return false;
-        if (cat.includes('하이엠') || dept.includes('하이엠') || pos.includes('하이엠') || cleanEmail.includes('him.co.kr') || cat === 'him') return false;
-
-        // 사전등록 일치 필터 옵션
-        const isOp = !!(att.isOperator || (window.HVAC && window.HVAC.isOperatorEmail && window.HVAC.isOperatorEmail(cleanEmail)) || cat.includes('운영') || cat === 'operator');
-        if (drawConfig.onlyMatched && !isOp) {
-          if (att.type === 'walkin' || cat === 'walkin') return false;
+        // 1) 공통 럭키드로우 대상자 검증 (사전 등록 임직원 + 현장 등록 임직원만 포함 / VIP·하이엠·외부인원·차단자 100% 제외)
+        if (window.HVAC && typeof window.HVAC.isLuckyDrawEligibleAttendee === 'function') {
+          if (!window.HVAC.isLuckyDrawEligibleAttendee(att, blocked)) return false;
+        } else {
+          if (blocked.some(b => String(b).toLowerCase().replace('@lge.com', '') === cleanEmail)) return false;
         }
+
+        const rosterEntry = (window.HVAC && typeof window.HVAC.findRosterEntry === 'function')
+          ? window.HVAC.findRosterEntry(att.email, att.name)
+          : null;
+        const rosterCat = rosterEntry ? String(rosterEntry.category || '').toLowerCase().trim() : '';
+
+        const cat = String(att.category || '').trim().toLowerCase();
+        const tVal = String(att.type || '').trim().toLowerCase();
+        const dept = String(att.dept || att.org || (rosterEntry && rosterEntry.dept) || '').trim().toLowerCase();
+        const pos = String(att.position || (rosterEntry && (rosterEntry.position || rosterEntry.title)) || '').trim().toLowerCase();
+
+        // 2) 외부 인원 제외 (사전 등록 외부 초청 + 현장 등록 후 관리자가 '외부 인원(external)'으로 분류한 인원 전원 제외)
+        if (
+          cat === 'external' || tVal === 'external' || rosterCat === 'external' ||
+          cat.includes('외부') || cat.includes('사외') ||
+          dept.includes('사외') || dept.includes('외부') ||
+          pos.includes('강사') || pos.includes('교수') || pos.includes('관장') || pos.includes('학생') ||
+          (seqNum >= 500 && seqNum < 700)
+        ) return false;
+
+        // 3) VIP 초대 인원 제외 (사전 등록 VIP + 현장 VIP 분류 인원 전원 제외)
+        if (
+          cat === 'vip' || tVal === 'vip' || rosterCat === 'vip' ||
+          cat.includes('vip') || dept.includes('vip') || pos.includes('vip') || pos.includes('초대') ||
+          (seqNum >= 700 && seqNum < 900)
+        ) return false;
+
+        // 4) 하이엠 인원 제외 (사전 등록 하이엠 + 현장 하이엠 분류 인원 전원 제외)
+        if (
+          cat === 'him' || tVal === 'him' || rosterCat === 'him' ||
+          cat.includes('하이엠') || dept.includes('하이엠') || pos.includes('하이엠') || cleanEmail.includes('him.co.kr') ||
+          (seqNum >= 900 && seqNum < 1000)
+        ) return false;
+
+        // 5) 사전 등록 임직원(pre, operator) 및 현장 등록 임직원(walkin) 모두 추첨 대상에 포함
+        const isOp = !!(att.isOperator || (window.HVAC && window.HVAC.isOperatorEmail && window.HVAC.isOperatorEmail(cleanEmail)) || cat.includes('운영') || cat === 'operator' || rosterCat === 'operator');
 
         // N번째 순번 당첨자 제외 옵션
         if (drawConfig.excludeMilestones && (att.isMilestoneWinner || isSeqMilestoneWinner(att.seq))) return false;

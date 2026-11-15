@@ -9,7 +9,7 @@
   <title>실시간 출석 현황 대시보드 | 제10회 2026 HVAC 전문가 세미나</title>
   <link rel="icon" href="./assets/favicon.ico">
   <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
-  <script src="./assets/hvac-core.js?v=261115_1800"></script>
+  <script src="./assets/hvac-core.js?v=261115_1850"></script>
   <style>
     :root {
       --bg: #07130b;
@@ -625,10 +625,13 @@
 
       list.forEach(att => {
         const cleanEmail = String(att.email || '').toLowerCase().replace('@lge.com', '');
-        const isOp = att.isOperator || (window.HVAC && window.HVAC.isOperatorEmail && window.HVAC.isOperatorEmail(cleanEmail));
+        const rosterMatch = (window.HVAC && typeof window.HVAC.findRosterEntry === 'function')
+          ? window.HVAC.findRosterEntry(att.email, att.name)
+          : null;
+        const isOp = att.isOperator || att.category === 'operator' || (window.HVAC && window.HVAC.isOperatorEmail && window.HVAC.isOperatorEmail(cleanEmail)) || (rosterMatch && rosterMatch.category === 'operator');
         if (isOp) {
           operatorCount++;
-        } else if (att.type === 'pre_registered') {
+        } else if (att.regMethod === 'pre' || att.type === 'pre_registered' || att.category === 'pre' || !!rosterMatch) {
           preRegisteredCount++;
         } else {
           walkinCount++;
@@ -789,10 +792,13 @@
       } else {
         recentGrid.innerHTML = recentList.map(att => {
           const ce = String(att.email || '').toLowerCase().replace('@lge.com', '');
-          const isOp = att.isOperator || (window.HVAC && window.HVAC.isOperatorEmail && window.HVAC.isOperatorEmail(ce));
-          const isWalkin = (!isOp && att.type !== 'pre_registered');
+          const rosterMatch = (window.HVAC && typeof window.HVAC.findRosterEntry === 'function')
+            ? window.HVAC.findRosterEntry(att.email, att.name)
+            : null;
+          const isOp = att.isOperator || att.category === 'operator' || (window.HVAC && window.HVAC.isOperatorEmail && window.HVAC.isOperatorEmail(ce)) || (rosterMatch && rosterMatch.category === 'operator');
+          const isPre = (att.regMethod === 'pre' || att.type === 'pre_registered' || att.category === 'pre' || !!rosterMatch);
           const typeBadge = isOp ? '<span style="color:#c084fc;font-size:10.5px;font-weight:800;">🟣 운영진</span>'
-            : (isWalkin ? '<span class="tag-walkin">🟡 현장</span>' : '<span class="tag-pre">🟢 사전</span>');
+            : (isPre ? '<span class="tag-pre">🟢 사전</span>' : '<span class="tag-walkin">🟡 현장</span>');
 
           return `
             <div class="attendee-mini-card">

@@ -24,7 +24,7 @@
   <meta name="theme-color" content="#040906">
 
   <!-- 공통 코어: 테마·링크·공지 배너·배포 설정(site-config.json) 동기화 -->
-  <script src="./assets/hvac-core.js?v=261115_1800"></script>
+  <script src="./assets/hvac-core.js?v=261115_1850"></script>
 
   <style>
     :root {
@@ -3929,8 +3929,11 @@
 
       const rosterPos = (matchedRoster && (matchedRoster.position || matchedRoster.title)) || (existRecord && existRecord.position) || '';
       const rosterDept = (matchedRoster && matchedRoster.dept) || (existRecord && existRecord.dept) || '';
+      const hasExistingRecord = !!(existRecord && existRecord.seq);
+      const existingSeqVal = existRecord && existRecord.seq;
+      const existingCheckinIdVal = existRecord && existRecord.checkinId;
 
-      if (isOp || (matchedRoster && (matchedRoster.category === 'operator' || matchedRoster.regMethod === 'operator'))) {
+      if (isOp || (matchedRoster && (matchedRoster.category === 'operator' || matchedRoster.regMethod === 'operator' || matchedRoster.dept === 'ES아카데미팀'))) {
         const opPos = rosterPos || '';
         const opDept = rosterDept || 'ES아카데미팀';
         currentCheckinMeta = { 
@@ -3940,7 +3943,10 @@
           position: opPos, 
           dept: opDept, 
           empNo: (matchedRoster && matchedRoster.empNo) || '', 
-          isOperator: true 
+          isOperator: true,
+          allowDeviceTakeover: hasExistingRecord,
+          existingSeq: existingSeqVal,
+          existingCheckinId: existingCheckinIdVal
         };
         if (badgeEl) {
           badgeEl.style.background = 'rgba(168, 85, 247, 0.2)';
@@ -3958,7 +3964,7 @@
         const empNo = matchedRoster.empNo || '';
         const cat = matchedRoster.category || matchedRoster.regMethod || (
           String(dept + ' ' + pos).includes('하이엠') ? 'him' :
-          String(dept + ' ' + pos).includes('교수') || String(dept + ' ' + pos).includes('강사') || String(dept + ' ' + pos).includes('사외') || String(dept + ' ' + pos).includes('외부') ? 'external' :
+          String(dept + ' ' + pos).includes('교수') || String(dept + ' ' + pos).includes('강사') || String(dept + ' ' + pos).includes('관장') || String(dept + ' ' + pos).includes('사외') || String(dept + ' ' + pos).includes('외부') ? 'external' :
           String(dept + ' ' + pos).includes('VIP') || String(dept + ' ' + pos).includes('초대') ? 'vip' :
           'pre'
         );
@@ -3969,7 +3975,10 @@
           position: pos,
           dept: dept,
           empNo: empNo,
-          isOperator: false
+          isOperator: false,
+          allowDeviceTakeover: hasExistingRecord,
+          existingSeq: existingSeqVal,
+          existingCheckinId: existingCheckinIdVal
         };
 
         if (cat === 'him') {
@@ -4021,7 +4030,22 @@
         if (btnConfirmEl) btnConfirmEl.textContent = '체크인 완료 (입장)';
         modalValName.textContent = pos ? `${rawName} ${pos}` : rawName;
       } else {
-        currentCheckinMeta = { type: 'walkin', category: 'walkin', regMethod: 'walkin', position: '', dept: '', empNo: '', isOperator: false };
+        // 사전 등록 명부에 없는 현장 등록자: 기존 출석 기록에서 관리자가 지정한 카테고리(예: external 등)가 있으면 보존
+        const preservedWalkinCat = (existRecord && existRecord.category) || 'walkin';
+        const preservedWalkinPos = (existRecord && existRecord.position) || '';
+        const preservedWalkinDept = (existRecord && existRecord.dept) || '';
+        currentCheckinMeta = {
+          type: preservedWalkinCat === 'walkin' ? 'walkin' : preservedWalkinCat,
+          category: preservedWalkinCat,
+          regMethod: (existRecord && existRecord.regMethod) || 'walkin',
+          position: preservedWalkinPos,
+          dept: preservedWalkinDept,
+          empNo: (existRecord && existRecord.empNo) || '',
+          isOperator: false,
+          allowDeviceTakeover: hasExistingRecord,
+          existingSeq: existingSeqVal,
+          existingCheckinId: existingCheckinIdVal
+        };
         if (badgeEl) {
           badgeEl.style.background = 'rgba(245, 158, 11, 0.2)';
           badgeEl.style.color = '#f59e0b';
@@ -4031,7 +4055,7 @@
         if (titleEl) titleEl.textContent = '💡 현장 추가 등록 안내';
         if (subEl) subEl.innerHTML = '사전 신청 명단에 등록되지 않은 이메일입니다.<br><strong style="color: #f59e0b;">현장 참석자(Walk-in)</strong>로 추가 등록하여 세미나에 입장하시겠습니까?';
         if (btnConfirmEl) btnConfirmEl.textContent = '현장 등록으로 입장하기';
-        modalValName.textContent = rawName;
+        modalValName.textContent = preservedWalkinPos ? `${rawName} ${preservedWalkinPos}` : rawName;
       }
 
       modalConfirm.classList.add('show');
@@ -4075,27 +4099,34 @@
     // 🎁 출석 선물 수령권 모달 핸들러 & 다중 기기 중복 방어
     // =========================================================
     
-    // 참석자 등록 유형 판별기 (사전등록 vs 현장등록 vs 운영진 vs VIP)
+    // 참석자 등록 유형 판별기 (사전등록 vs 현장등록 vs 운영진 vs VIP vs 외부 vs 하이엠)
     function getAttendeeRegistrationType(data) {
       if (!data) return 'walkin';
       const cleanEmail = String(data.email || '').toLowerCase().replace('@lge.com', '').trim();
+      const cat = String(data.category || '').toLowerCase().trim();
 
       // 1) 운영진 여부
-      if (data.isOperator || (window.HVAC && window.HVAC.isOperatorEmail && window.HVAC.isOperatorEmail(cleanEmail))) {
+      if (data.isOperator || cat === 'operator' || data.type === 'operator' || (window.HVAC && window.HVAC.isOperatorEmail && window.HVAC.isOperatorEmail(cleanEmail))) {
         return 'operator';
       }
 
-      // 2) 명시적 type 필드
-      if (data.type === 'vip') return 'vip';
-      if (data.type === 'operator') return 'operator';
-      if (data.type === 'pre_registered') return 'pre_registered';
-      if (data.type === 'walkin') return 'walkin';
+      // 2) 명시적 카테고리/유형 필드 (관리자 분류 우선)
+      if (cat === 'vip' || data.type === 'vip') return 'vip';
+      if (cat === 'external' || data.type === 'external') return 'external';
+      if (cat === 'him' || data.type === 'him') return 'him';
+      if (cat === 'pre' || data.regMethod === 'pre' || data.type === 'pre_registered') return 'pre_registered';
 
       // 3) 사전 등록 명부 대조 (Fallback)
       try {
         const roster = getMasterRoster();
-        const isMatched = roster.some(r => String(r.email || '').toLowerCase().replace('@lge.com', '').trim() === cleanEmail);
-        if (isMatched) return 'pre_registered';
+        const found = roster.find(r => String(r.email || '').toLowerCase().replace('@lge.com', '').trim() === cleanEmail);
+        if (found) {
+          if (found.category === 'operator' || found.dept === 'ES아카데미팀') return 'operator';
+          if (found.category === 'vip') return 'vip';
+          if (found.category === 'external') return 'external';
+          if (found.category === 'him') return 'him';
+          return 'pre_registered';
+        }
       } catch (e) {}
 
       return 'walkin';
@@ -4149,6 +4180,14 @@
         } else if (regType === 'vip') {
           typeBadgeEl.className = 'gift-reg-badge badge-vip';
           typeBadgeEl.innerHTML = '👑 VIP 초청 인사';
+          if (seqBoxEl) seqBoxEl.className = 'gift-seq-box';
+        } else if (regType === 'external') {
+          typeBadgeEl.className = 'gift-reg-badge badge-pre';
+          typeBadgeEl.innerHTML = '🌐 외부 초청 인원';
+          if (seqBoxEl) seqBoxEl.className = 'gift-seq-box';
+        } else if (regType === 'him') {
+          typeBadgeEl.className = 'gift-reg-badge badge-pre';
+          typeBadgeEl.innerHTML = '🏢 하이엠 참석자';
           if (seqBoxEl) seqBoxEl.className = 'gift-seq-box';
         }
       }

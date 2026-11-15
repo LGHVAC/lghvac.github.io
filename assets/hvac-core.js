@@ -825,8 +825,297 @@
     { email: 'hvac.admin', name: '세미나운영진', role: 'admin', position: '운영팀', dept: 'ES아카데미팀' }
   ];
 
+  // 사전 등록 마스터 명부 (214명: 일반 사전등록 임직원 184명, 운영진 15명, VIP초대 7명, 외부초청 6명, 하이엠 2명)
+  var DEFAULT_ROSTER = [
+    {"category":"pre","dept":"ES CX/상품전략팀","email":"bongjin.park","name":"박봉진","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES전략기획팀","email":"sol.park","name":"박솔","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES전략기획팀","email":"jinock.kim","name":"김진옥","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES서비스사업실","email":"jinsung83.kim","name":"김진성","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES서비스팀","email":"hanyoung.jeong","name":"정한영","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES서비스팀","email":"gd.bae","name":"배건덕","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES서비스팀","email":"juongwoong.park","name":"박정웅","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES서비스팀","email":"kyunglok.kang","name":"강경록","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES유지보수영업팀","email":"sh.ahn","name":"안상현","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES유지보수영업팀","email":"changhoon777.lee","name":"이창훈","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES유지보수영업팀","email":"woosang.oh","name":"오우상","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES유지보수영업팀","email":"ivy.lee","name":"이수정","position":"선임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"칠러서비스파트","email":"gyuyul.yoo","name":"유규열","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES에너지컨설팅팀","email":"airjaeho.park","name":"박재호","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES에너지컨설팅팀","email":"jungwon1.lee","name":"이정원","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES에너지컨설팅팀","email":"minsoo7.kim","name":"김민수","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES에너지컨설팅팀","email":"hobok.lee","name":"이호복","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES에너지컨설팅팀","email":"hf.kim","name":"김해봉","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES에너지컨설팅팀","email":"youngjin41.jang","name":"장영진","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES에너지컨설팅팀","email":"youngdae16.kim","name":"김영대","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES에너지컨설팅팀","email":"ih.park","name":"박인환","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES에너지컨설팅팀","email":"kwangju.jeong","name":"정광주","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES에너지컨설팅팀","email":"younghoon.oh","name":"오영훈","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES에너지컨설팅팀","email":"sungil.yun","name":"윤성일","position":"선임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES엔지니어링AX팀","email":"jk.joung","name":"정진기","position":"책임연구원","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES엔지니어링AX팀","email":"jaeyong.lee","name":"이재용","position":"책임연구원","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES엔지니어링AX팀","email":"huidong.kim","name":"김휘동","position":"책임연구원","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES엔지니어링AX팀","email":"hyesung.yang","name":"양혜성","position":"책임연구원","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES엔지니어링AX팀","email":"myunghwan.choi","name":"최명환","position":"책임연구원","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES엔지니어링AX팀","email":"jinpa.jo","name":"조진파","position":"책임연구원","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES엔지니어링AX팀","email":"garam.lee","name":"이가람","position":"선임연구원","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES엔지니어링AX팀","email":"amy.lee","name":"이혜림","position":"선임연구원","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES엔지니어링기획팀","email":"seunghun.yeom","name":"염승훈","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES엔지니어링기획팀","email":"seungyong1004.lee","name":"이승용","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES엔지니어링기획팀","email":"jonghak.kim","name":"김종학","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES엔지니어링기획팀","email":"hd.jang","name":"장헌덕","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES엔지니어링기획팀","email":"ilkeun.nam","name":"남일근","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES엔지니어링기획팀","email":"byungkii.kim","name":"김병기","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES엔지니어링기획팀","email":"tom.kim","name":"김근수","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES엔지니어링기획팀","email":"seonghoon.han","name":"한성훈","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES엔지니어링기획팀","email":"yongseon.jo","name":"조용선","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES엔지니어링기획팀","email":"lee.chaeyoung","name":"이채영","position":"사원","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES엔지니어링담당","email":"ohik.kang","name":"강기호","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES엔지니어링담당","email":"byungkyu.bae","name":"배병규","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES엔지니어링담당","email":"sh.min","name":"민승환","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES엔지니어링담당","email":"youshin.hwang","name":"황유신","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES엔지니어링제어팀","email":"hyeongseop.kim","name":"김형섭","position":"책임연구원","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES엔지니어링제어팀","email":"seunghyup.noh","name":"노승협","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES엔지니어링제어팀","email":"junh26.lee","name":"이준희","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES엔지니어링제어팀","email":"junseok.mun","name":"문준석","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES엔지니어링제어팀","email":"daekuk.kim","name":"김대국","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES엔지니어링제어팀","email":"shinwon.ahn","name":"안신원","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES엔지니어링제어팀","email":"jake.nam","name":"남명진","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES엔지니어링제어팀","email":"ea.ko","name":"고은애","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES엔지니어링제어팀","email":"jisun14.lee","name":"이지선","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES엔지니어링제어팀","email":"kyu.kim","name":"김명규","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES엔지니어링제어팀","email":"yongchul.cho","name":"조용출","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES엔지니어링제어팀","email":"jongpil.yu","name":"유종필","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES엔지니어링제어팀","email":"jinyoung0923.choi","name":"최진영","position":"선임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES필드엔지니어링팀","email":"ryon.heo","name":"허원행","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES필드엔지니어링팀","email":"jinwoo.kim","name":"김진우","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES필드엔지니어링팀","email":"dokyu.lee","name":"이도규","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES필드엔지니어링팀","email":"mihyun.kim","name":"김미현","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES필드엔지니어링팀","email":"gyuhyun.hwang","name":"황규현","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES필드엔지니어링팀","email":"hyunjiny.nam","name":"남현진","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES필드엔지니어링팀","email":"bonmin.ku","name":"구본민","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES필드엔지니어링팀","email":"derrick.jeong","name":"정성주","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES필드엔지니어링팀","email":"woongseok.noh","name":"노웅석","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES필드엔지니어링팀","email":"hyeongdae.ju","name":"주형대","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES필드엔지니어링팀","email":"kh.cho","name":"조광희","position":"선임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES필드엔지니어링팀","email":"junyoung.oh","name":"오준영","position":"선임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES한국SE팀","email":"junggyu9.park","name":"박정규","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES한국SE팀","email":"hch.kim","name":"김현철","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES한국SE팀","email":"daegun1.park","name":"박대건","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES한국SE팀","email":"kyomin.koo","name":"구교민","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES한국SE팀","email":"hyunju.shin","name":"신현주","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES한국SE팀","email":"haegyoun.kim","name":"김해균","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES한국SE팀","email":"myeongjun.ko","name":"고명준","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES한국SE팀","email":"namgui.cho","name":"조남귀","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES한국SE팀","email":"hyuno1.kim","name":"김현오","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES한국SE팀","email":"sukjung.kang","name":"강석중","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES한국SE팀","email":"taejin.yu","name":"유태진","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES한국SE팀","email":"yj4498.song","name":"송영중","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES한국SE팀","email":"taejoon.heo","name":"허태준","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES한국SE팀","email":"haio.yang","name":"양해오","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES한국SE팀","email":"joohwan82.lee","name":"이주환","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES한국SE팀","email":"js.seo","name":"서정석","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES한국SE팀","email":"soohyuk.park","name":"박수혁","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES한국SE팀","email":"jinhan.park","name":"박진한","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES한국SE팀","email":"yoonsung.choi","name":"최윤성","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES한국SE팀","email":"yha.an","name":"안양환","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES한국SE팀","email":"kyuho.shim","name":"심규호","position":"선임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES한국SE팀","email":"jaehwan.jeong","name":"정재환","position":"선임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES한국SE팀","email":"sunju1.kim","name":"김선주","position":"선임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"Air Science Task","email":"keonwang.lee","name":"이건왕","position":"책임연구원","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES AI/SW솔루션기획파트","email":"sungyong.sohn","name":"손성용","position":"책임연구원","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES CAE팀","email":"jungsoo91.lee","name":"이정수","position":"책임연구원","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES데이터솔루션개발Project","email":"youngjin86.kim","name":"김영진","position":"책임연구원","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES선행연구1팀","email":"hyunjong22.kim","name":"김현종","position":"책임연구원","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES응용공조연구2Project","email":"juntae1.kim","name":"김준태","position":"책임연구원","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES응용공조연구2Project","email":"yechan1.lee","name":"이예찬","position":"연구원","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES B2B아웃소싱사업지원파트","email":"byoungkook.moon","name":"문병국","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES B2B아웃소싱사업지원파트","email":"kwangseuk.kim","name":"김광석","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES B2B아웃소싱사업지원파트","email":"younghyo.kwon","name":"권영효","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES SW품질보증팀","email":"hyuna.yu","name":"유현아","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES신뢰성/FMEA팀","email":"youngmo.kim","name":"김영모","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES Electrification Task","email":"nick.lee","name":"이재원","position":"선임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES북미/중남미SE팀","email":"jimmy.kil","name":"길성진","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES북미/중남미SE팀","email":"ks.kwon","name":"권기상","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES북미/중남미SE팀","email":"yongnam.cho","name":"조용남","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES북미/중남미SE팀","email":"minhyeok17.kim","name":"김민혁","position":"선임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES북미/중남미SE팀","email":"jaeyoung3692.cho","name":"조재영","position":"선임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES북미/중남미SE팀","email":"sungmin88.kang","name":"강성민","position":"선임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES북미/중남미영업1팀","email":"bomi.ryu","name":"류보미","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES북미/중남미영업1팀","email":"taejin.sim","name":"심태진","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES아시아/인도SE팀","email":"heon7.lee","name":"이헌","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES아시아/인도SE팀","email":"taewon7.kang","name":"강태원","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES아시아/인도SE팀","email":"sewon630.park","name":"박세원","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES아시아/인도SE팀","email":"sanghun.yang","name":"양상훈","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES아시아/인도SE팀","email":"hanyoul.nam","name":"남한열","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES아시아/인도SE팀","email":"yonghyun81.kim","name":"김용현","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES아시아/인도SE팀","email":"junsung.maeng","name":"맹준성","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES유럽/중아SE팀","email":"seongchan.jo","name":"조성찬","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES유럽/중아SE팀","email":"myongsok.ryu","name":"류명석","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES유럽/중아SE팀","email":"seungtak.kang","name":"강승탁","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES유럽/중아SE팀","email":"taejoon.park","name":"박태준","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES유럽/중아SE팀","email":"soongin.lee","name":"이숭인","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES유럽/중아SE팀","email":"kyoungmun.kang","name":"강경문","position":"선임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES유럽/중아SE팀","email":"moonkyo.choi","name":"최문교","position":"선임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES중아영업1팀","email":"jungjune.yoon","name":"윤정준","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES해외건설영업팀","email":"bumsuk.kim","name":"김범석","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"글로벌히팅매출확대Task","email":"kwangin.yeom","name":"염광인","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"칠러해외영업팀","email":"shihyeong.lee","name":"이시형","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"스마트파크전시운영파트","email":"crystal7.lee","name":"이수정","position":"선임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"SAC규격팀","email":"eunkyung.lee","name":"이은경","position":"책임연구원","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"SAC규격팀","email":"jeewoong.sang","name":"상지웅","position":"책임연구원","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"SAC사업성장Task","email":"channy.park","name":"박순찬","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"SAC사이클로직Project","email":"jinsik.kim","name":"김진식","position":"책임연구원","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"SAC상품기획팀","email":"dalnim.jung","name":"정이안","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"SAC상품기획팀","email":"soy.kim","name":"김소윤","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"SAC상품기획팀","email":"claude.lee","name":"이상훈","position":"선임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"SAC어플라이드사업Task","email":"joonwoo.kim","name":"김준우","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"히팅개발Project","email":"dooryoung.park","name":"박두룡","position":"선임연구원","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"BMS팀","email":"jayong.koo","name":"구자용","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"BMS팀","email":"chulky.kim","name":"김철기","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"BMS팀","email":"jongcool.lee","name":"이종환","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"BMS팀","email":"ee.lee","name":"이승섭","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"BMS팀","email":"sangmoo.kim","name":"김상무","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"ES현장PM파트","email":"junwon.choi","name":"최준원","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"데이터센터솔루션Task","email":"taeyoon82.kim","name":"김태윤","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"데이터센터솔루션Task","email":"myungkyu.lee","name":"이명규","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"어플라이드SE1팀","email":"js85.kang","name":"강종석","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"어플라이드SE1팀","email":"soo.choi","name":"최수인","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"어플라이드SE1팀","email":"youngwook.kwon","name":"권영욱","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"어플라이드SE1팀","email":"jh37.lee","name":"이재혁","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"어플라이드SE1팀","email":"taehee04.kim","name":"김태희","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"어플라이드SE1팀","email":"ho1.lee","name":"이호","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"어플라이드SE1팀","email":"yeongnam.choi","name":"최영남","position":"선임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"어플라이드SE2팀","email":"jinseob.noh","name":"노진섭","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"어플라이드SE2팀","email":"changho0.han","name":"한창호","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"어플라이드SE2팀","email":"inho.seo","name":"서인호","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"어플라이드SE2팀","email":"jinwoo1020.nam","name":"남진우","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"어플라이드SE2팀","email":"hyeonseok.kim","name":"김현석","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"어플라이드SE2팀","email":"chanhoe.goo","name":"구찬회","position":"선임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"어플라이드SE3팀","email":"kj.keum","name":"금기정","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"어플라이드SE3팀","email":"kyungil.jung","name":"정경일","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"어플라이드SE3팀","email":"myunghoon.cho","name":"조명훈","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"어플라이드SE3팀","email":"henrik.sim","name":"심재훈","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"어플라이드SE3팀","email":"jaesang.lee","name":"이재상","position":"선임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"어플라이드영업1팀","email":"jerry.jang","name":"장준영","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"어플라이드영업1팀","email":"myoungsu2.kim","name":"김명수","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"어플라이드영업2팀","email":"junho.park","name":"박준호","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"어플라이드플랜트영업팀","email":"sunghoon4.kim","name":"김성훈","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"어플라이드플랜트영업팀","email":"gil.han","name":"한길","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"어플라이드플랜트영업팀","email":"daewon.lee","name":"이대원","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"어플라이드플랜트영업팀","email":"maeum1.han","name":"한마음","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"어플라이드플랜트영업팀","email":"jungsuh.park","name":"박정수","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"데이터센터칠러개발TDR","email":"junnhak.park","name":"박준학","position":"선임연구원","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"데이터센터칠러개발TDR","email":"jeongtaek.oh","name":"오정택","position":"선임연구원","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"데이터센터칠러개발TDR","email":"jihoo.kim","name":"김지후","position":"선임연구원","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"칠러개발실","email":"hyunuk.cho","name":"조현욱","position":"책임연구원","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"칠러사업담당","email":"tg00.kim","name":"김태근","position":"책임연구원","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"칠러상품기획파트","email":"taewang.kim","name":"김태왕","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"pre","dept":"칠러원전개발Project","email":"blueani.kim","name":"김용훈","position":"책임연구원","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"operator","dept":"ES아카데미팀","email":"luis.kim","name":"김태호","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"operator","dept":"ES아카데미팀","email":"jungeun.lee","name":"이정은","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"operator","dept":"ES아카데미팀","email":"sangeun.park","name":"박상은","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"operator","dept":"ES아카데미팀","email":"deokjin.lee","name":"이덕진","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"operator","dept":"ES아카데미팀","email":"youngsoo.lee","name":"이영수","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"operator","dept":"ES아카데미팀","email":"jaeuk.oh","name":"오재욱","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"operator","dept":"ES아카데미팀","email":"jaewon28.kim","name":"김재원","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"operator","dept":"ES아카데미팀","email":"were77.kim","name":"김창환","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"operator","dept":"ES아카데미팀","email":"minyoung.ryu","name":"류민영","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"operator","dept":"ES아카데미팀","email":"hongkon.ryu","name":"류홍곤","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"operator","dept":"ES아카데미팀","email":"george.gong","name":"공성락","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"operator","dept":"ES아카데미팀","email":"hobeom.lee","name":"이호범","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"operator","dept":"ES아카데미팀","email":"gabae.han","name":"한가배","position":"사원","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"operator","dept":"ES아카데미팀","email":"hyukyoon.kwon","name":"권윤호","position":"기정","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"operator","dept":"ES아카데미팀","email":"jeongog65.kim","name":"김정옥","position":"기성","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"vip","dept":"ES사업본부","email":"jameslee.lee","name":"이재성","position":"본부장","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"vip","dept":"ES연구소","email":"saikee.oh","name":"오세기","position":"연구소장","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"vip","dept":"SAC사업부","email":"john.bae","name":"배정현","position":"사업부장","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"vip","dept":"ES엔지니어링담당","email":"marino.kwon","name":"권민호","position":"담당","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"vip","dept":"Air Science Task","email":"hh.park","name":"박형호","position":"수석연구위원","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"vip","dept":"ES응용공조연구1Project","email":"yongcheol.sa","name":"사용철","position":"연구위원","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"vip","dept":"어플라이드SE실","email":"minho.so","name":"소민호","position":"실장","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"external","dept":"국민대학교","email":"yschang@kookmin.ac.kr","name":"장영수","position":"교수","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"external","dept":"서울대학교","email":"msyeo@snu.ac.kr","name":"여명석","position":"교수","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"external","dept":"중앙대학교","email":"shlee89@cau.ac.kr","name":"이성혁","position":"교수","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"external","dept":"단국대학교","email":"hongchong@gmail.com","name":"조홍종","position":"교수","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"external","dept":"토지주택연구원","email":"jhyoo@lh.or.kr","name":"유정현","position":"수석","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"external","dept":"특강 연사","email":"---","name":"이정모","position":"관장","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"him","dept":"공조지원파트","email":"hyunseok.kang","name":"강석현","position":"파트장","regMethod":"pre","regMethodLabel":"사전 등록"},
+    {"category":"him","dept":"공조지원파트","email":"jongchil.noh","name":"노종칠","position":"선임","regMethod":"pre","regMethodLabel":"사전 등록"}
+  ];
+
+  function getRosterList() {
+    try {
+      var saved = read('hvac_roster_list');
+      if (Array.isArray(saved) && saved.length >= DEFAULT_ROSTER.length && !saved.some(function (r) { return r && r.email === 'user1'; })) {
+        return saved;
+      }
+      writeLocalSilent('hvac_roster_list', DEFAULT_ROSTER);
+      return DEFAULT_ROSTER;
+    } catch (e) {
+      return DEFAULT_ROSTER;
+    }
+  }
+
+  function findRosterEntry(email, name) {
+    var cleanEmail = String(email || '').toLowerCase().replace('@lge.com', '').trim();
+    var cleanName = String(name || '').trim();
+    var roster = getRosterList();
+    return roster.find(function (r) {
+      if (!r) return false;
+      var rEmail = String(r.email || '').toLowerCase().replace('@lge.com', '').trim();
+      if (rEmail && rEmail !== '---' && cleanEmail && rEmail === cleanEmail) return true;
+      if (rEmail === '---' && cleanName && String(r.name || '').trim() === cleanName) return true;
+      return false;
+    }) || null;
+  }
+
+  // 럭키드로우 추첨 대상자 적격 판정 (사전 등록 임직원[일반/운영진] + 현장 등록 임직원만 선정; VIP초대, 하이엠, 외부 인원[현장등록 후 외부로 분류된 인원 포함], 차단계정 100% 제외)
+  function isLuckyDrawEligibleAttendee(att, blockedList) {
+    if (!att) return false;
+    var cleanEmail = String(att.email || '').toLowerCase().replace('@lge.com', '').trim();
+    var cleanName = String(att.name || '').trim();
+    var blocked = Array.isArray(blockedList) ? blockedList : (read('hvac_blocked_users') || []);
+    if (blocked.some(function (b) { return String(b || '').toLowerCase().replace('@lge.com', '').trim() === cleanEmail; })) {
+      return false;
+    }
+
+    var seqNum = Number(att.seq) || 0;
+    var cat = String(att.category || '').trim().toLowerCase();
+    var type = String(att.type || '').trim().toLowerCase();
+    var reg = String(att.regMethod || '').trim().toLowerCase();
+    var dept = String(att.dept || att.org || '').trim().toLowerCase();
+    var pos = String(att.position || att.title || '').trim().toLowerCase();
+
+    var rosterEntry = findRosterEntry(cleanEmail, cleanName);
+    var rosterCat = rosterEntry ? String(rosterEntry.category || '').trim().toLowerCase() : '';
+
+    // 1. 외부 인원 (external) 제외 — 사전 등록 외부 초청 인원 + 현장 등록 후 외부 인원으로 분류된 인원 모두 제외
+    if (cat === 'external' || type === 'external' || reg === 'external' || rosterCat === 'external') return false;
+    if (seqNum >= 500 && seqNum < 700) return false;
+    if (cat.indexOf('외부') >= 0 || cat.indexOf('사외') >= 0 || dept.indexOf('외부') >= 0 || dept.indexOf('사외') >= 0 || pos.indexOf('강사') >= 0 || pos.indexOf('교수') >= 0 || pos.indexOf('관장') >= 0 || pos.indexOf('학생') >= 0) {
+      return false;
+    }
+
+    // 2. VIP 초대 인원 (vip) 제외
+    if (cat === 'vip' || type === 'vip' || reg === 'vip' || rosterCat === 'vip') return false;
+    if (seqNum >= 700 && seqNum < 900) return false;
+    if (cat.indexOf('vip') >= 0 || cat.indexOf('초대') >= 0 || dept.indexOf('vip') >= 0 || dept.indexOf('초대') >= 0 || pos.indexOf('vip') >= 0 || pos.indexOf('초대') >= 0) {
+      return false;
+    }
+
+    // 3. 하이엠 인원 (him) 제외
+    if (cat === 'him' || type === 'him' || reg === 'him' || rosterCat === 'him') return false;
+    if (seqNum >= 900 && seqNum < 1000) return false;
+    if (cat.indexOf('하이엠') >= 0 || dept.indexOf('하이엠') >= 0 || pos.indexOf('하이엠') >= 0 || cleanEmail.indexOf('him.co.kr') >= 0) {
+      return false;
+    }
+
+    // 4. 남은 인원: 사전 등록 임직원(pre, operator) 및 현장 등록 임직원(walkin) -> 추첨 대상 포함!
+    return true;
+  }
+
   function getOperatorList() {
-    var roster = read('hvac_roster_list');
+    var roster = getRosterList();
     if (Array.isArray(roster) && roster.length) {
       var ops = roster.filter(function (r) {
         return r && (r.category === 'operator' || r.regMethod === 'operator' || (r.dept && r.dept.indexOf('ES아카데미') >= 0));
@@ -864,7 +1153,7 @@
   // -------------------------------------------------------------
   // 앱 빌드 버전 검증 및 구버전 로컬 캐시 자동 무효화 / 정합성 갱신
   // -------------------------------------------------------------
-  var HVAC_BUILD_VERSION = '261115_1800';
+  var HVAC_BUILD_VERSION = '261115_1850';
 
   (function checkBuildVersion() {
     try {
@@ -885,11 +1174,7 @@
           try {
             var userObj = JSON.parse(savedUserRaw);
             if (userObj && userObj.email) {
-              var cleanEmail = String(userObj.email).toLowerCase().replace('@lge.com', '').trim();
-              var curRoster = getRosterList();
-              var rMatch = curRoster.find(function (r) {
-                return String(r.email || '').toLowerCase().replace('@lge.com', '').trim() === cleanEmail;
-              });
+              var rMatch = findRosterEntry(userObj.email, userObj.name);
               if (rMatch) {
                 userObj.regMethod = 'pre';
                 if (rMatch.category) userObj.category = rMatch.category;
@@ -1345,17 +1630,21 @@
 
     var cleanEmail = String(attendee.email || '').toLowerCase().replace('@lge.com', '').replace(/[.#$\[\]\/]/g, '_');
     var existingUrl = cloudPath('checkins/items/' + cleanEmail);
-    var isOp = isOperatorEmail(cleanEmail) || !!attendee.isOperator;
+    var rosterMatch = findRosterEntry(attendee.email, attendee.name);
+    var isOp = isOperatorEmail(cleanEmail) || !!attendee.isOperator || (rosterMatch && (rosterMatch.category === 'operator' || rosterMatch.dept === 'ES아카데미팀'));
     var newSessionToken = 'tok_' + getDeviceId() + '_' + Date.now();
 
     // 카테고리 결정: 운영진(300번대) / 외부(500번대) / VIP(700번대) / 하이엠(900번대) / 현장추가(200번대) / 사전등록(1번대)
     var cat = attendee.category;
+    if (!cat && rosterMatch && rosterMatch.category) {
+      cat = rosterMatch.category;
+    }
     if (!cat) {
       if (isOp || attendee.type === 'operator') cat = 'operator';
       else if (String(attendee.dept || '').includes('하이엠') || String(attendee.position || '').includes('하이엠')) cat = 'him';
-      else if (String(attendee.dept || '').includes('사외') || String(attendee.position || '').includes('강사') || String(attendee.position || '').includes('교수') || String(attendee.dept || '').includes('외부')) cat = 'external';
+      else if (String(attendee.dept || '').includes('사외') || String(attendee.position || '').includes('강사') || String(attendee.position || '').includes('교수') || String(attendee.position || '').includes('관장') || String(attendee.dept || '').includes('외부')) cat = 'external';
       else if (String(attendee.dept || '').includes('VIP') || String(attendee.position || '').includes('초대')) cat = 'vip';
-      else if (attendee.type === 'pre' || attendee.type === 'matched' || attendee.type === 'pre_registered') cat = 'pre';
+      else if (attendee.type === 'pre' || attendee.type === 'matched' || attendee.type === 'pre_registered' || !!rosterMatch) cat = 'pre';
       else cat = 'walkin';
     }
 
@@ -1407,12 +1696,31 @@
           }
 
           var nowEpoch = Date.now();
-          var updated = Object.assign({}, existing, attendee, {
+          // 관리자가 기출석자 카테고리를 수정한 경우(예: 현장등록자를 'external' 등 외부 인원으로 분류) 기존 값 우선 보존!
+          // 단, 기존에 walkin으로 잘못 저장되어 있었는데 사전 명부에 있는 인원인 경우 사전 명부 카테고리로 보정
+          var preservedCat = existing.category || cat;
+          if (preservedCat === 'walkin' && rosterMatch && rosterMatch.category) {
+            preservedCat = rosterMatch.category;
+          }
+          var preservedRegMethod = existing.regMethod || attendee.regMethod || (rosterMatch ? 'pre' : 'walkin');
+          if (preservedRegMethod === 'walkin' && rosterMatch) {
+            preservedRegMethod = 'pre';
+          }
+          var preservedType = isOp ? 'operator' : (preservedCat === 'external' || preservedCat === 'vip' || preservedCat === 'him' ? preservedCat : (rosterMatch ? 'pre_registered' : (existing.type || attendee.type || 'walkin')));
+          var preservedDept = existing.dept || attendee.dept || (rosterMatch ? rosterMatch.dept : '');
+          var preservedPos = existing.position || attendee.position || (rosterMatch ? (rosterMatch.position || rosterMatch.title || '') : '');
+
+          var updated = Object.assign({}, attendee, existing, {
             seq: existing.seq,
             checkinId: existing.checkinId || ('HVAC-' + String(existing.seq).padStart(3, '0')),
-            category: existing.category || cat,
+            name: existing.name || attendee.name,
+            email: existing.email || attendee.email,
+            category: preservedCat,
+            regMethod: preservedRegMethod,
             isOperator: isOp,
-            type: isOp ? 'operator' : (existing.type || 'walkin'),
+            type: preservedType,
+            dept: preservedDept,
+            position: preservedPos,
             sessionToken: newSessionToken,
             activeDeviceId: curDeviceId,
             activeDeviceType: getDeviceType(),
@@ -1516,12 +1824,6 @@
                 }
               }
 
-              // 사전 등록 명부 검색
-              var roster = read('hvac_roster_list') || [];
-              var rosterMatch = roster.find(function (r) {
-                return String(r.email || '').toLowerCase().replace('@lge.com', '').trim() === cleanEmail;
-              });
-
               var checkinType = isOp ? 'operator' : (rosterMatch ? (rosterMatch.type || 'pre_registered') : (attendee.type || 'walkin'));
               var position = attendee.position || (rosterMatch ? (rosterMatch.position || rosterMatch.title || '') : '');
               var dept = attendee.dept || (rosterMatch ? (rosterMatch.dept || '') : '');
@@ -1565,6 +1867,8 @@
 
   // 출석 목록 전체 클라우드 동기화 (관리자 수정/초기화 시, 1.5초 중복 PUT 방지)
   function pushCheckinListToCloud(list, blocked) {
+    // 동일 브라우저 내 열려 있는 다른 탭(사회자 럭키드로우 화면 등)에도 즉시 브로드캐스트!
+    try { broadcastLocalKeyChange('hvac_checkin_list', list || []); } catch (e) {}
     var c = getCloudConfig();
     if (!c || !window.fetch) return Promise.resolve(false);
     var itemsMap = {};
@@ -2789,6 +3093,10 @@
     isOperatorEmail: isOperatorEmail,
     getOperatorList: getOperatorList,
     saveOperatorList: saveOperatorList,
+    DEFAULT_ROSTER: DEFAULT_ROSTER,
+    getRosterList: getRosterList,
+    findRosterEntry: findRosterEntry,
+    isLuckyDrawEligibleAttendee: isLuckyDrawEligibleAttendee,
     getSurveyConfig: getSurveyConfig,
     saveSurveyConfig: saveSurveyConfig,
     DEFAULT_SURVEY_CONFIG: DEFAULT_SURVEY_CONFIG,
@@ -2835,18 +3143,13 @@
       isStreamConnected: function () { return !!streamConnected; },
       saveConfig: function (cfg) { writeLocalSilent(CLOUD_CFG_KEY, cfg); startCloudLoop(); },
       cloudPath: cloudPath,
-      lookupRosterEntry: function (email) {
-        if (!email) return Promise.resolve(null);
-        var cleanEmail = String(email).toLowerCase().replace('@lge.com', '').trim();
+      lookupRosterEntry: function (email, name) {
+        if (!email && !name) return Promise.resolve(null);
+        var found = findRosterEntry(email, name);
+        if (found) return Promise.resolve(found);
+        var cleanEmail = String(email || '').toLowerCase().replace('@lge.com', '').trim();
         var cleanKey = cleanEmail.replace(/[.#$\[\]\/]/g, '_');
-        var localRoster = read('hvac_roster_list');
-        if (Array.isArray(localRoster) && localRoster.length > 0 && !localRoster.some(function (r) { return r && r.email === 'user1'; })) {
-          var found = localRoster.find(function (r) {
-            return String(r.email || '').toLowerCase().replace('@lge.com', '').trim() === cleanEmail;
-          });
-          if (found) return Promise.resolve(found);
-        }
-        if (!window.fetch || !getCloudConfig()) return Promise.resolve(null);
+        if (!window.fetch || !getCloudConfig() || !cleanKey) return Promise.resolve(null);
         return fetch(cloudPath('roster_map/' + cleanKey), { cache: 'no-store' })
           .then(function (r) { return r.ok ? r.json() : null; })
           .then(function (entry) {
