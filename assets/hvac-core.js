@@ -1393,7 +1393,7 @@
   // -------------------------------------------------------------
   // 앱 빌드 버전 검증 및 구버전 로컬 캐시 자동 무효화 / 정합성 갱신
   // -------------------------------------------------------------
-  var HVAC_BUILD_VERSION = '261116_0715';
+  var HVAC_BUILD_VERSION = '261116_0725';
 
   function getCurrentAppVersion() {
     try {
@@ -1623,7 +1623,7 @@
 
   var DEFAULT_GAME_CONFIG = {
     enabled: false,
-    lockMessage: '점심시간 미니게임은 12:30 오찬 시간에 맞춰 공식 오픈됩니다. 잠시 후 참여해 주세요!',
+    lockMessage: '점심시간 미니게임은 12:30 점심 시간에 맞춰 공식 오픈됩니다. 잠시 후 참여해 주세요!',
     openedAt: null,
     resetAt: 0,
     stopwatchBlindSec: 3,
@@ -1634,8 +1634,11 @@
 
   function getGameConfig() {
     var saved = read('hvac_game_config');
-    if (!saved) return DEFAULT_GAME_CONFIG;
-    return Object.assign({}, DEFAULT_GAME_CONFIG, saved);
+    var res = saved ? Object.assign({}, DEFAULT_GAME_CONFIG, saved) : DEFAULT_GAME_CONFIG;
+    if (res && res.lockMessage && res.lockMessage.indexOf('오찬') >= 0) {
+      res.lockMessage = res.lockMessage.replace(/오찬/g, '점심');
+    }
+    return res;
   }
 
   function saveGameConfig(newCfg) {

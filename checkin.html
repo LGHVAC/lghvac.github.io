@@ -24,7 +24,7 @@
   <meta name="theme-color" content="#040906">
 
   <!-- 공통 코어: 테마·링크·공지 배너·배포 설정(site-config.json) 동기화 -->
-  <script src="./assets/hvac-core.js?v=261116_0715"></script>
+  <script src="./assets/hvac-core.js?v=261116_0725"></script>
 
   <style>
     :root {
@@ -2474,6 +2474,20 @@
     </div>
   </div>
 
+  <!-- 커스텀 안내 모달 (브라우저 기본 alert 대체: 상단 도메인 문구 대신 커스텀 타이틀 표시) -->
+  <div class="modal-backdrop" id="modalCustomAlert" onclick="if(event.target===this)closeCustomAlert()">
+    <div class="confirm-card" style="text-align: center; border: 1px solid rgba(243, 196, 72, 0.35); box-shadow: 0 0 40px rgba(0, 0, 0, 0.85); max-width: 350px;">
+      <div style="font-size: 42px; margin-bottom: 8px;" id="customAlertIcon">🎮</div>
+      <h3 style="color: #ffffff; font-size: 19px; margin-bottom: 10px;" id="customAlertTitle">미니게임 오픈 안내</h3>
+      <p class="sub" id="customAlertDesc" style="margin-bottom: 22px; line-height: 1.55; color: rgba(255, 255, 255, 0.85); font-size: 13.5px; word-break: keep-all;">
+        점심시간 미니게임은 12:30 점심 시간에 맞춰 공식 오픈됩니다. 잠시 후 참여해 주세요!
+      </p>
+      <button class="btn-modal-confirm" onclick="closeCustomAlert()" type="button" style="width: 100%; height: 46px; border-radius: 12px; font-size: 14.5px; font-weight: 800;">
+        확인
+      </button>
+    </div>
+  </div>
+
   <!-- =========================================================
        MODAL 1-B: N번째 체크인 깜짝 당첨 축하 팝업 (전체화면 축하 뷰)
   ========================================================= -->
@@ -2791,7 +2805,7 @@
           <div class="map-loc-icon">🍱</div>
           <div class="map-loc-content">
             <strong>점심 식당: '청향' (법학관 5층)</strong>
-            <span>12:30 ~ 14:00 오찬 장소 (본부관 앞 기념촬영 후 도보 2~3분 이동)</span>
+            <span>12:30 ~ 14:00 점심 식사 장소 (본부관 앞 기념촬영 후 도보 2~3분 이동)</span>
           </div>
         </div>
 
@@ -4083,6 +4097,26 @@
       } catch (e) {
         return null;
       }
+    }
+
+    function showCustomAlert(title, message, icon) {
+      const modal = document.getElementById('modalCustomAlert');
+      if (!modal) {
+        alert((title ? `[${title}]\n\n` : '') + message);
+        return;
+      }
+      const iconEl = document.getElementById('customAlertIcon');
+      const titleEl = document.getElementById('customAlertTitle');
+      const descEl = document.getElementById('customAlertDesc');
+      if (iconEl) iconEl.textContent = icon || 'ℹ️';
+      if (titleEl) titleEl.textContent = title || '안내';
+      if (descEl) descEl.textContent = message || '';
+      modal.classList.add('show');
+    }
+
+    function closeCustomAlert() {
+      const modal = document.getElementById('modalCustomAlert');
+      if (modal) modal.classList.remove('show');
     }
 
     async function openGiftReceiptModal(customData) {
@@ -5565,7 +5599,8 @@
         menuPopover.classList.remove('show');
         const gameCfg = (window.HVAC && window.HVAC.getGameConfig) ? window.HVAC.getGameConfig() : { enabled: false };
         if (!gameCfg.enabled) {
-          alert(gameCfg.lockMessage || '점심시간 미니게임은 12:30 오찬 시간에 맞춰 공식 오픈됩니다. 잠시 후 참여해 주세요!');
+          const lockMsg = ((gameCfg.lockMessage || '').replace(/오찬/g, '점심')) || '점심시간 미니게임은 12:30 점심 시간에 맞춰 공식 오픈됩니다. 잠시 후 참여해 주세요!';
+          showCustomAlert('미니게임 오픈 안내', lockMsg, '🎮');
           return;
         }
         window.location.href = './game.html';
@@ -5696,7 +5731,8 @@
       if (isMeal) {
         const gameCfg = (window.HVAC && window.HVAC.getGameConfig) ? window.HVAC.getGameConfig() : { enabled: false };
         if (!gameCfg.enabled) {
-          alert(gameCfg.lockMessage || '점심시간 미니게임은 12:30 오찬 시간에 맞춰 공식 오픈됩니다. 잠시 후 참여해 주세요!');
+          const lockMsg = ((gameCfg.lockMessage || '').replace(/오찬/g, '점심')) || '점심시간 미니게임은 12:30 점심 시간에 맞춰 공식 오픈됩니다. 잠시 후 참여해 주세요!';
+          showCustomAlert('미니게임 오픈 안내', lockMsg, '🎮');
           return;
         }
         window.location.href = './game.html';

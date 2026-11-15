@@ -1,7 +1,7 @@
 {
-  "version": "261116_0715",
-  "publishedAt": "2026-11-15T22:14:56.432Z",
-  "metaConfigTs": 1794780896432,
+  "version": "261116_0725",
+  "publishedAt": "2026-11-15T22:27:23.811Z",
+  "metaConfigTs": 1794781643811,
   "note": "2026 HVAC Expert Seminar - Prevent duplicate & looping update toast banner",
   "data": {
     "hvac_cloud_config": {
@@ -652,7 +652,7 @@
     },
     "hvac_game_config": {
       "enabled": false,
-      "lockMessage": "점심시간 미니게임은 12:30 오찬 시간에 맞춰 공식 오픈됩니다. 잠시 후 참여해 주세요!",
+      "lockMessage": "점심시간 미니게임은 12:30 점심 시간에 맞춰 공식 오픈됩니다. 잠시 후 참여해 주세요!",
       "maxTries": 3,
       "openedAt": "2026-11-13T03:49:17.356Z",
       "resetAt": 1794490526756,
