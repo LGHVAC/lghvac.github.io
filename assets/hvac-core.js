@@ -800,7 +800,7 @@
   // -------------------------------------------------------------
   // 앱 빌드 버전 검증 및 구버전 로컬 캐시 자동 무효화 / 정합성 갱신
   // -------------------------------------------------------------
-  var HVAC_BUILD_VERSION = '261115_1720';
+  var HVAC_BUILD_VERSION = '261115_1730';
 
   (function checkBuildVersion() {
     try {
@@ -813,32 +813,29 @@
         localStorage.removeItem('hvac_operator_list');
         localStorage.removeItem(APPLIED_MARKER);
 
-        // 2. 이미 체크인된 사용자 정보가 있다면, 최신 마스터 명부 기준으로 호칭/직급/소속/카테고리 자동 갱신
+        // 2. 이미 체크인된 사용자 정보가 있다면, 최신 마스터 명부 기준으로 호칭/직급/소속/카테고리/등록방식 자동 갱신
         var savedUserRaw = localStorage.getItem('hvac_user_checked');
         if (savedUserRaw) {
           try {
             var userObj = JSON.parse(savedUserRaw);
             if (userObj && userObj.email) {
               var cleanEmail = String(userObj.email).toLowerCase().replace('@lge.com', '').trim();
-              var ops = getOperatorList();
-              var isOp = ops.some(function (o) {
-                return String(o.email || '').toLowerCase().replace('@lge.com', '').trim() === cleanEmail;
+              var curRoster = getRosterList();
+              var rMatch = curRoster.find(function (r) {
+                return String(r.email || '').toLowerCase().replace('@lge.com', '').trim() === cleanEmail;
               });
-              if (isOp) {
-                userObj.isOperator = true;
-                userObj.category = 'operator';
-                var opMatch = ops.find(function (o) {
-                  return String(o.email || '').toLowerCase().replace('@lge.com', '').trim() === cleanEmail;
-                });
-                if (opMatch) {
-                  if (opMatch.position) userObj.position = opMatch.position;
-                  if (opMatch.title) userObj.title = opMatch.title;
-                  if (opMatch.dept) userObj.dept = opMatch.dept;
-                }
-                localStorage.setItem('hvac_user_checked', JSON.stringify(userObj));
+              if (rMatch) {
+                userObj.regMethod = 'pre';
+                if (rMatch.category) userObj.category = rMatch.category;
+                if (rMatch.position) userObj.position = rMatch.position;
+                if (rMatch.title) userObj.title = rMatch.title;
+                if (rMatch.dept) userObj.dept = rMatch.dept;
+                if (rMatch.category === 'operator') userObj.isOperator = true;
               }
+              localStorage.setItem('hvac_user_checked', JSON.stringify(userObj));
             }
           } catch (e) {}
+        }
         }
         console.log('[HVAC] App updated to build version:', HVAC_BUILD_VERSION);
       }
@@ -1465,7 +1462,7 @@
               var dept = attendee.dept || (rosterMatch ? (rosterMatch.dept || '') : '');
               var empNo = attendee.empNo || (rosterMatch ? (rosterMatch.empNo || '') : '');
               var resolvedCat = attendee.category || (rosterMatch ? (rosterMatch.category || rosterMatch.regMethod) : cat);
-              var resolvedReg = attendee.regMethod || (rosterMatch ? (rosterMatch.regMethod || 'pre') : 'walkin');
+              var resolvedReg = (attendee.regMethod === 'manual' || attendee.isManual) ? 'manual' : (rosterMatch ? 'pre' : (attendee.regMethod || 'walkin'));
 
               var record = Object.assign({}, attendee, {
                 seq: seq,

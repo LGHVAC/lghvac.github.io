@@ -24,7 +24,7 @@
   <meta name="theme-color" content="#040906">
 
   <!-- 공통 코어: 테마·링크·공지 배너·배포 설정(site-config.json) 동기화 -->
-  <script src="./assets/hvac-core.js?v=261115_1720"></script>
+  <script src="./assets/hvac-core.js?v=261115_1730"></script>
 
   <style>
     :root {
@@ -2302,9 +2302,9 @@
             <li class="menu-item" id="menuItemMiniGame" style="color: #f3c448; font-weight: 850;">🎮 점심 미니게임</li>
             <li class="menu-item" id="menuItemMap">🗺️ 행사장 안내 약도</li>
             <li class="menu-item" id="menuItemKakao">💬 카카오톡 오픈채팅방</li>
-            <li class="menu-item" id="menuItemLogout" style="color: #ff5366;">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" y1="2" x2="12" y2="12"></line></svg>
-              체크아웃 (재입력)
+            <li class="menu-item" id="menuItemLogout" style="color: #ff5366; display: flex; align-items: center; gap: 8px;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" y1="2" x2="12" y2="12"></line></svg>
+              <span>체크아웃 (재입력)</span>
             </li>
           </ul>
           <div style="padding: 10px 18px 12px; font-size: 11px; color: rgba(255, 255, 255, 0.4); text-align: center; border-top: 1px solid rgba(255, 255, 255, 0.08); line-height: 1.4;">
@@ -2317,8 +2317,8 @@
       <div id="checkinAttendeeBanner" style="display: flex; align-items: center; justify-content: space-between; background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 12px; padding: 9px 13px; margin: 4px 0 11px;">
         <div style="display: flex; align-items: center; gap: 7px;">
           <span style="font-size: 16px; line-height: 1;">🎫</span>
-          <span style="color: rgba(255,255,255,0.75); font-size: 13.5px; font-weight: 700;">입장 순번:</span>
-          <strong id="dashAttendeeSeq" style="color: #ffffff; font-size: 15.5px; font-weight: 900; letter-spacing: 0.02em;">No. -</strong>
+          <span style="color: rgba(255,255,255,0.75); font-size: 14.5px; font-weight: 700;">입장 순번:</span>
+          <strong id="dashAttendeeSeq" style="color: #ffffff; font-size: 17px; font-weight: 900; letter-spacing: 0.02em;">No. -</strong>
           <code id="dashAttendeeId" style="display: none;">HVAC-000</code>
         </div>
         <div style="display: flex; align-items: center; gap: 6px;">
@@ -3029,36 +3029,36 @@
       {"category":"pre","dept":"칠러사업담당","email":"tg00.kim","name":"김태근","position":"책임연구원","regMethod":"pre","regMethodLabel":"사전 등록"},
       {"category":"pre","dept":"칠러상품기획파트","email":"taewang.kim","name":"김태왕","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
       {"category":"pre","dept":"칠러원전개발Project","email":"blueani.kim","name":"김용훈","position":"책임연구원","regMethod":"pre","regMethodLabel":"사전 등록"},
-      {"category":"operator","dept":"ES아카데미팀","email":"luis.kim","name":"김태호","position":"책임","regMethod":"operator","regMethodLabel":"운영진"},
-      {"category":"operator","dept":"ES아카데미팀","email":"jungeun.lee","name":"이정은","position":"책임","regMethod":"operator","regMethodLabel":"운영진"},
-      {"category":"operator","dept":"ES아카데미팀","email":"sangeun.park","name":"박상은","position":"책임","regMethod":"operator","regMethodLabel":"운영진"},
-      {"category":"operator","dept":"ES아카데미팀","email":"deokjin.lee","name":"이덕진","position":"책임","regMethod":"operator","regMethodLabel":"운영진"},
-      {"category":"operator","dept":"ES아카데미팀","email":"youngsoo.lee","name":"이영수","position":"책임","regMethod":"operator","regMethodLabel":"운영진"},
-      {"category":"operator","dept":"ES아카데미팀","email":"jaeuk.oh","name":"오재욱","position":"책임","regMethod":"operator","regMethodLabel":"운영진"},
-      {"category":"operator","dept":"ES아카데미팀","email":"jaewon28.kim","name":"김재원","position":"책임","regMethod":"operator","regMethodLabel":"운영진"},
-      {"category":"operator","dept":"ES아카데미팀","email":"were77.kim","name":"김창환","position":"책임","regMethod":"operator","regMethodLabel":"운영진"},
-      {"category":"operator","dept":"ES아카데미팀","email":"minyoung.ryu","name":"류민영","position":"책임","regMethod":"operator","regMethodLabel":"운영진"},
-      {"category":"operator","dept":"ES아카데미팀","email":"hongkon.ryu","name":"류홍곤","position":"책임","regMethod":"operator","regMethodLabel":"운영진"},
-      {"category":"operator","dept":"ES아카데미팀","email":"george.gong","name":"공성락","position":"책임","regMethod":"operator","regMethodLabel":"운영진"},
-      {"category":"operator","dept":"ES아카데미팀","email":"hobeom.lee","name":"이호범","position":"책임","regMethod":"operator","regMethodLabel":"운영진"},
-      {"category":"operator","dept":"ES아카데미팀","email":"gabae.han","name":"한가배","position":"사원","regMethod":"operator","regMethodLabel":"운영진"},
-      {"category":"operator","dept":"ES아카데미팀","email":"hyukyoon.kwon","name":"권윤호","position":"기정","regMethod":"operator","regMethodLabel":"운영진"},
-      {"category":"operator","dept":"ES아카데미팀","email":"jeongog65.kim","name":"김정옥","position":"기성","regMethod":"operator","regMethodLabel":"운영진"},
-      {"category":"vip","dept":"ES사업본부","email":"jameslee.lee","name":"이재성","position":"본부장","regMethod":"vip","regMethodLabel":"VIP초대"},
-      {"category":"vip","dept":"ES연구소","email":"saikee.oh","name":"오세기","position":"연구소장","regMethod":"vip","regMethodLabel":"VIP초대"},
-      {"category":"vip","dept":"SAC사업부","email":"john.bae","name":"배정현","position":"사업부장","regMethod":"vip","regMethodLabel":"VIP초대"},
-      {"category":"vip","dept":"ES엔지니어링담당","email":"marino.kwon","name":"권민호","position":"담당","regMethod":"vip","regMethodLabel":"VIP초대"},
-      {"category":"vip","dept":"Air Science Task","email":"hh.park","name":"박형호","position":"수석연구위원","regMethod":"vip","regMethodLabel":"VIP초대"},
-      {"category":"vip","dept":"ES응용공조연구1Project","email":"yongcheol.sa","name":"사용철","position":"연구위원","regMethod":"vip","regMethodLabel":"VIP초대"},
-      {"category":"vip","dept":"어플라이드SE실","email":"minho.so","name":"소민호","position":"실장","regMethod":"vip","regMethodLabel":"VIP초대"},
-      {"category":"external","dept":"국민대학교","email":"yschang@kookmin.ac.kr","name":"장영수","position":"교수","regMethod":"external","regMethodLabel":"외부"},
-      {"category":"external","dept":"서울대학교","email":"msyeo@snu.ac.kr","name":"여명석","position":"교수","regMethod":"external","regMethodLabel":"외부"},
-      {"category":"external","dept":"중앙대학교","email":"shlee89@cau.ac.kr","name":"이성혁","position":"교수","regMethod":"external","regMethodLabel":"외부"},
-      {"category":"external","dept":"단국대학교","email":"hongchong@gmail.com","name":"조홍종","position":"교수","regMethod":"external","regMethodLabel":"외부"},
-      {"category":"external","dept":"토지주택연구원","email":"jhyoo@lh.or.kr","name":"유정현","position":"수석","regMethod":"external","regMethodLabel":"외부"},
-      {"category":"external","dept":"특강 연사","email":"---","name":"이정모","position":"관장","regMethod":"external","regMethodLabel":"외부"},
-      {"category":"him","dept":"공조지원파트","email":"hyunseok.kang","name":"강석현","position":"파트장","regMethod":"him","regMethodLabel":"하이엠"},
-      {"category":"him","dept":"공조지원파트","email":"jongchil.noh","name":"노종칠","position":"선임","regMethod":"him","regMethodLabel":"하이엠"}
+      {"category":"operator","dept":"ES아카데미팀","email":"luis.kim","name":"김태호","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+      {"category":"operator","dept":"ES아카데미팀","email":"jungeun.lee","name":"이정은","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+      {"category":"operator","dept":"ES아카데미팀","email":"sangeun.park","name":"박상은","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+      {"category":"operator","dept":"ES아카데미팀","email":"deokjin.lee","name":"이덕진","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+      {"category":"operator","dept":"ES아카데미팀","email":"youngsoo.lee","name":"이영수","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+      {"category":"operator","dept":"ES아카데미팀","email":"jaeuk.oh","name":"오재욱","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+      {"category":"operator","dept":"ES아카데미팀","email":"jaewon28.kim","name":"김재원","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+      {"category":"operator","dept":"ES아카데미팀","email":"were77.kim","name":"김창환","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+      {"category":"operator","dept":"ES아카데미팀","email":"minyoung.ryu","name":"류민영","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+      {"category":"operator","dept":"ES아카데미팀","email":"hongkon.ryu","name":"류홍곤","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+      {"category":"operator","dept":"ES아카데미팀","email":"george.gong","name":"공성락","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+      {"category":"operator","dept":"ES아카데미팀","email":"hobeom.lee","name":"이호범","position":"책임","regMethod":"pre","regMethodLabel":"사전 등록"},
+      {"category":"operator","dept":"ES아카데미팀","email":"gabae.han","name":"한가배","position":"사원","regMethod":"pre","regMethodLabel":"사전 등록"},
+      {"category":"operator","dept":"ES아카데미팀","email":"hyukyoon.kwon","name":"권윤호","position":"기정","regMethod":"pre","regMethodLabel":"사전 등록"},
+      {"category":"operator","dept":"ES아카데미팀","email":"jeongog65.kim","name":"김정옥","position":"기성","regMethod":"pre","regMethodLabel":"사전 등록"},
+      {"category":"vip","dept":"ES사업본부","email":"jameslee.lee","name":"이재성","position":"본부장","regMethod":"pre","regMethodLabel":"사전 등록"},
+      {"category":"vip","dept":"ES연구소","email":"saikee.oh","name":"오세기","position":"연구소장","regMethod":"pre","regMethodLabel":"사전 등록"},
+      {"category":"vip","dept":"SAC사업부","email":"john.bae","name":"배정현","position":"사업부장","regMethod":"pre","regMethodLabel":"사전 등록"},
+      {"category":"vip","dept":"ES엔지니어링담당","email":"marino.kwon","name":"권민호","position":"담당","regMethod":"pre","regMethodLabel":"사전 등록"},
+      {"category":"vip","dept":"Air Science Task","email":"hh.park","name":"박형호","position":"수석연구위원","regMethod":"pre","regMethodLabel":"사전 등록"},
+      {"category":"vip","dept":"ES응용공조연구1Project","email":"yongcheol.sa","name":"사용철","position":"연구위원","regMethod":"pre","regMethodLabel":"사전 등록"},
+      {"category":"vip","dept":"어플라이드SE실","email":"minho.so","name":"소민호","position":"실장","regMethod":"pre","regMethodLabel":"사전 등록"},
+      {"category":"external","dept":"국민대학교","email":"yschang@kookmin.ac.kr","name":"장영수","position":"교수","regMethod":"pre","regMethodLabel":"사전 등록"},
+      {"category":"external","dept":"서울대학교","email":"msyeo@snu.ac.kr","name":"여명석","position":"교수","regMethod":"pre","regMethodLabel":"사전 등록"},
+      {"category":"external","dept":"중앙대학교","email":"shlee89@cau.ac.kr","name":"이성혁","position":"교수","regMethod":"pre","regMethodLabel":"사전 등록"},
+      {"category":"external","dept":"단국대학교","email":"hongchong@gmail.com","name":"조홍종","position":"교수","regMethod":"pre","regMethodLabel":"사전 등록"},
+      {"category":"external","dept":"토지주택연구원","email":"jhyoo@lh.or.kr","name":"유정현","position":"수석","regMethod":"pre","regMethodLabel":"사전 등록"},
+      {"category":"external","dept":"특강 연사","email":"---","name":"이정모","position":"관장","regMethod":"pre","regMethodLabel":"사전 등록"},
+      {"category":"him","dept":"공조지원파트","email":"hyunseok.kang","name":"강석현","position":"파트장","regMethod":"pre","regMethodLabel":"사전 등록"},
+      {"category":"him","dept":"공조지원파트","email":"jongchil.noh","name":"노종칠","position":"선임","regMethod":"pre","regMethodLabel":"사전 등록"}
     ];
 
     function getMasterRoster() {
@@ -3936,7 +3936,7 @@
         currentCheckinMeta = { 
           type: 'operator', 
           category: 'operator', 
-          regMethod: 'operator', 
+          regMethod: matchedRoster ? 'pre' : 'walkin', 
           position: opPos, 
           dept: opDept, 
           empNo: (matchedRoster && matchedRoster.empNo) || '', 
