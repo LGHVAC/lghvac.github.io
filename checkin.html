@@ -24,7 +24,7 @@
   <meta name="theme-color" content="#040906">
 
   <!-- 공통 코어: 테마·링크·공지 배너·배포 설정(site-config.json) 동기화 -->
-  <script src="./assets/hvac-core.js?v=261115_2328"></script>
+  <script src="./assets/hvac-core.js?v=261115_2340"></script>
 
   <style>
     :root {
@@ -5780,10 +5780,16 @@
         if (rawU) uInfo = JSON.parse(rawU);
       } catch (e) {}
       const userName = (uInfo && uInfo.name) || (window.currentUser && window.currentUser.name) || '참가자';
-      const userPos = (uInfo && uInfo.position) || (window.currentUser && window.currentUser.position) || '';
+      const userEmail = (uInfo && uInfo.email) || (window.currentUser && window.currentUser.email) || '';
+      let userPos = (uInfo && (uInfo.position || uInfo.title)) || (window.currentUser && (window.currentUser.position || window.currentUser.title)) || '';
+      if (!userPos && window.HVAC && typeof window.HVAC.findRosterEntry === 'function') {
+        const rMatch = window.HVAC.findRosterEntry(userEmail, userName);
+        if (rMatch && (rMatch.position || rMatch.title)) userPos = rMatch.position || rMatch.title;
+      }
       const userSeq = (uInfo && uInfo.seq) || (window.currentUser && window.currentUser.seq) || null;
-      const seqLabel = userSeq ? `(No.${String(userSeq).padStart(2, '0')})` : '';
-      const displayName = userPos ? `${userName} ${userPos} ${seqLabel}`.trim() : `${userName} ${seqLabel}`.trim();
+      const displayName = (window.HVAC && typeof window.HVAC.formatQnaAuthor === 'function')
+        ? window.HVAC.formatQnaAuthor({ name: userName, email: userEmail, position: userPos, seq: userSeq }, true)
+        : (userPos ? `${userName} ${userPos}` : userName) + (userSeq ? ` (No.${String(userSeq).padStart(2, '0')})` : '');
 
       modalQnaAuthorName.textContent = displayName || document.getElementById('menuUserName').textContent || '참가자';
       modalQnaContent.value = '';
@@ -5816,16 +5822,16 @@
       modalSessionAnonCheck.addEventListener('change', handleSessionAnonNotice);
     }
 
-    // 현재 세션 질문 제출 (qna.html & admin.html 실시간 보드와 100% 호환 연동)
+    // 현재 세션 질문 제출 (qna.html & admin.html & mc-qna.html 실시간 보드와 100% 호환 연동)
     function resolveQnaSessionKey(s, idx) {
       if (!s) return 'all';
       const combined = `${s.sublabel || ''} ${s.title || ''}`;
-      if (combined.includes('Keynote Session 1') || combined.includes('주거난방')) return 'k1';
-      if (combined.includes('Keynote Session 2') || combined.includes('액체냉각')) return 'k2';
-      if (combined.includes('Keynote Session 3') || combined.includes('전력')) return 'k3';
-      if (combined.includes('Insight Session 1') || combined.includes('히트펌프')) return 'i1';
-      if (combined.includes('Insight Session 2') || combined.includes('에너지컨설팅')) return 'i2';
-      if (combined.includes('Special') || combined.includes('인문학') || combined.includes('테라포밍')) return 'sl';
+      if (combined.includes('Keynote Session 1') || combined.includes('Keynote 1') || combined.includes('주거난방')) return 'k1';
+      if (combined.includes('Keynote Session 2') || combined.includes('Keynote 2') || combined.includes('액체냉각')) return 'k2';
+      if (combined.includes('Keynote Session 3') || combined.includes('Keynote 3') || combined.includes('전력')) return 'k3';
+      if (combined.includes('Insight Session 1') || combined.includes('Insight 1') || combined.includes('히트펌프')) return 'i1';
+      if (combined.includes('Insight Session 2') || combined.includes('Insight 2') || combined.includes('에너지')) return 'i2';
+      if (combined.includes('Special') || combined.includes('인문학') || combined.includes('테라포밍') || combined.includes('멸종')) return 'sl';
       return s.id || ('s' + idx);
     }
 
@@ -5837,7 +5843,12 @@
         return;
       }
 
-      const s = sessions[currentIdx];
+      const s = sessions[currentIdx] || {};
+      const qSessionKey = resolveQnaSessionKey(s, currentIdx);
+      const now = new Date();
+      const dateStr = now.toISOString().slice(0, 10);
+      const timeOnlyStr = now.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+      const timeStr = `${dateStr} ${timeOnlyStr}`;
 
       let uInfo = null;
       try {
@@ -5845,62 +5856,57 @@
         if (rawU) uInfo = JSON.parse(rawU);
       } catch (e) {}
       const realName = (uInfo && uInfo.name) ? uInfo.name : ((window.currentUser && window.currentUser.name) ? window.currentUser.name : '참가자');
+      const cEmail = (uInfo && uInfo.email) ? uInfo.email : ((window.currentUser && window.currentUser.email) ? window.currentUser.email : '');
       const cSeq = (uInfo && uInfo.seq) ? uInfo.seq : ((window.currentUser && window.currentUser.seq) ? window.currentUser.seq : null);
       const cId = (uInfo && uInfo.checkinId) ? uInfo.checkinId : (cSeq ? ('HVAC-' + String(cSeq).padStart(3, '0')) : '');
-      const userPos = (uInfo && uInfo.position) || (window.currentUser && window.currentUser.position) || '';
-      const seqLabel = cSeq ? `(No.${String(cSeq).padStart(2, '0')})` : '';
+      let userPos = (uInfo && (uInfo.position || uInfo.title)) || (window.currentUser && (window.currentUser.position || window.currentUser.title)) || '';
+      let cDept = (uInfo && (uInfo.dept || uInfo.org)) ? (uInfo.dept || uInfo.org) : '';
+      if ((!userPos || !cDept) && window.HVAC && typeof window.HVAC.findRosterEntry === 'function') {
+        const rMatch = window.HVAC.findRosterEntry(cEmail, realName);
+        if (rMatch) {
+          if (!userPos && (rMatch.position || rMatch.title)) userPos = rMatch.position || rMatch.title;
+          if (!cDept && rMatch.dept) cDept = rMatch.dept;
+        }
+      }
 
-      const author = userPos ? `${realName} ${userPos} ${seqLabel}`.trim() : `${realName} ${seqLabel}`.trim();
-      const cEmail = (uInfo && uInfo.email) ? uInfo.email : ((window.currentUser && window.currentUser.email) ? window.currentUser.email : '');
-      const cDept = (uInfo && (uInfo.dept || uInfo.org)) ? (uInfo.dept || uInfo.org) : '';
+      const author = (window.HVAC && typeof window.HVAC.formatQnaAuthor === 'function')
+        ? window.HVAC.formatQnaAuthor({ name: realName, email: cEmail, position: userPos, seq: cSeq }, true)
+        : (userPos ? `${realName} ${userPos}` : realName) + (cSeq ? ` (No.${String(cSeq).padStart(2, '0')})` : '');
 
       const newQItem = {
-        id: Date.now(),
+        id: now.getTime(),
         session: qSessionKey,
         sessionName: (s.sublabel || 'Session') + ' · ' + (s.title || '').slice(0, 16),
         author: author,
         userName: realName,
+        authorPosition: userPos,
         checkinSeq: cSeq,
         checkinId: cId,
         authorEmail: cEmail,
         userDept: cDept,
         content: content,
+        date: dateStr,
         time: timeStr,
-        timestamp: Date.now(),
+        timestamp: now.getTime(),
+        createdAt: now.toISOString(),
         likes: 1,
         isLiked: true,
         isStarred: false,
+        isPinned: false,
         isAnswered: false
       };
 
-      try {
-        if (window.HVAC && HVAC.cloud && HVAC.cloud.cloudPath) {
-          fetch(HVAC.cloud.cloudPath('qna/list'), { cache: 'no-store' })
-            .then(r => r.ok ? r.json() : null)
-            .then(remoteQna => {
-              let qList = Array.isArray(remoteQna) ? remoteQna : [];
-              if (!qList.length) {
-                const saved = localStorage.getItem('hvac_qna_list');
-                if (saved) qList = JSON.parse(saved) || [];
-              }
-              qList.unshift(newQItem);
-              localStorage.setItem('hvac_qna_list', JSON.stringify(qList));
-            })
-            .catch(() => {
-              let qList = [];
-              const saved = localStorage.getItem('hvac_qna_list');
-              if (saved) qList = JSON.parse(saved) || [];
-              qList.unshift(newQItem);
-              localStorage.setItem('hvac_qna_list', JSON.stringify(qList));
-            });
-        } else {
+      if (window.HVAC && HVAC.cloud && typeof HVAC.cloud.addQnaQuestion === 'function') {
+        HVAC.cloud.addQnaQuestion(newQItem);
+      } else {
+        try {
           let qList = [];
           const saved = localStorage.getItem('hvac_qna_list');
           if (saved) qList = JSON.parse(saved) || [];
           qList.unshift(newQItem);
           localStorage.setItem('hvac_qna_list', JSON.stringify(qList));
-        }
-      } catch (e) {}
+        } catch (e) {}
+      }
 
       modalSessionQna.classList.remove('show');
       alert(`🎉 질문이 실명(${author})으로 성공적으로 등록되었습니다!\n세션 Q&A 시간에 답변해 드립니다.`);

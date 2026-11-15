@@ -1,5 +1,7 @@
 {
-  "version": "261115_2328",
+  "version": "261115_2340",
   "buildTime": "2026-11-15T23:28:00+09:00",
-  "note": "2026 HVAC Expert Seminar - Prevent duplicate & looping update toast banner"
+  "note": "2026 HVAC Expert Seminar - Prevent duplicate & looping update toast banner",
+  "updatedAt": "2026-11-15T23:40:00+09:00",
+  "description": "Session Q&A real-time sync, author name+title(position) formatting, and per-device CAS like counter fix"
 }

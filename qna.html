@@ -24,7 +24,7 @@
   <meta name="theme-color" content="#040906">
 
   <!-- 공통 코어: 테마·링크·공지 배너·배포 설정(site-config.json) 동기화 -->
-  <script src="./assets/hvac-core.js?v=261115_2328"></script>
+  <script src="./assets/hvac-core.js?v=261115_2340"></script>
 
   <style>
     :root {
@@ -1017,13 +1017,18 @@
     function loadQuestionsFromStorage() {
       try {
         const saved = localStorage.getItem('hvac_qna_list');
-        if (saved) {
-          questions = JSON.parse(saved);
+        if (saved !== null) {
+          const parsed = JSON.parse(saved);
+          questions = Array.isArray(parsed) ? parsed.filter(Boolean).map(q => {
+            return (window.HVAC && typeof window.HVAC.normalizeQnaItemForLocal === 'function')
+              ? window.HVAC.normalizeQnaItemForLocal(q)
+              : q;
+          }) : [];
         } else {
-          questions = [...defaultQuestions];
+          questions = [];
         }
       } catch (e) {
-        questions = [...defaultQuestions];
+        questions = [];
       }
     }
 
@@ -1059,41 +1064,43 @@
       }
     }
 
-    // 체크인된 이름과 직급이 있으면 작성자 필드 자동 채우기 및 실명 잠금 (예: 홍길동 책임)
-    try {
-      const user = localStorage.getItem('hvac_user_checked') || localStorage.getItem('hvac_checkin_user');
-      if (user) {
-        const parsed = JSON.parse(user);
-        if (parsed && parsed.name) {
-          let pos = (parsed.position || parsed.title || '').trim();
-          const invalidKeywords = ['운영진', '사전등록', '사전 등록', '외부', 'vip', '하이엠', 'walkin', 'pre', 'operator', 'him', 'external'];
-          if (!pos || invalidKeywords.includes(pos.toLowerCase())) {
-            try {
-              const cleanEmail = String(parsed.email || '').toLowerCase().replace(/@lge\.com$/i, '').trim();
-              const roster = (window.HVAC && window.HVAC.read && window.HVAC.read('hvac_roster_list'))
-                || JSON.parse(localStorage.getItem('hvac_roster_list') || '[]');
-              const matched = roster.find(r => {
-                const rEmail = String(r.email || '').toLowerCase().replace(/@lge\.com$/i, '').trim();
-                return (cleanEmail && rEmail === cleanEmail) || (r.name && r.name.trim() === parsed.name);
-              });
-              if (matched && matched.position && !invalidKeywords.includes(matched.position.trim().toLowerCase())) {
-                pos = matched.position.trim();
-              }
-            } catch (err) {}
-          }
+    // 체크인된 이름과 직급이 있으면 작성자 필드 자동 채우기 및 실명 잠금 (예: 홍길동 책임 (No.05))
+    function syncCheckedUserAuthorField() {
+      try {
+        const user = localStorage.getItem('hvac_user_checked') || localStorage.getItem('hvac_checkin_user');
+        if (user) {
+          const parsed = JSON.parse(user);
+          if (parsed && parsed.name) {
+            let pos = (parsed.position || parsed.title || '').trim();
+            const invalidKeywords = ['운영진', '사전등록', '사전 등록', '외부', 'vip', '하이엠', 'walkin', 'pre', 'operator', 'him', 'external'];
+            if (!pos || invalidKeywords.includes(pos.toLowerCase())) {
+              try {
+                if (window.HVAC && typeof window.HVAC.findRosterEntry === 'function') {
+                  const matched = window.HVAC.findRosterEntry(parsed.email, parsed.name);
+                  if (matched && matched.position && !invalidKeywords.includes(matched.position.trim().toLowerCase())) {
+                    pos = matched.position.trim();
+                  }
+                }
+              } catch (err) {}
+            }
 
-          const seqStr = parsed.seq ? ` (No.${String(parsed.seq).padStart(2, '0')})` : '';
-          const authorInput = document.getElementById('askAuthor');
-          if (authorInput) {
-            authorInput.value = pos ? `${parsed.name} ${pos}${seqStr}` : `${parsed.name}${seqStr}`;
-            authorInput.readOnly = true;
-            authorInput.style.background = 'rgba(16, 185, 129, 0.1)';
-            authorInput.style.borderColor = 'rgba(34, 197, 94, 0.4)';
-            authorInput.title = '체크인된 실명과 순번으로 자동 등록됩니다.';
+            const formattedAuthor = (window.HVAC && typeof window.HVAC.formatQnaAuthor === 'function')
+              ? window.HVAC.formatQnaAuthor({ name: parsed.name, email: parsed.email, position: pos, seq: parsed.seq }, true)
+              : (pos ? `${parsed.name} ${pos}` : parsed.name) + (parsed.seq ? ` (No.${String(parsed.seq).padStart(2, '0')})` : '');
+
+            const authorInput = document.getElementById('askAuthor');
+            if (authorInput) {
+              authorInput.value = formattedAuthor;
+              authorInput.readOnly = true;
+              authorInput.style.background = 'rgba(16, 185, 129, 0.1)';
+              authorInput.style.borderColor = 'rgba(34, 197, 94, 0.4)';
+              authorInput.title = '체크인된 실명·호칭(직책)·순번으로 자동 등록됩니다.';
+            }
           }
         }
-      }
-    } catch (e) {}
+      } catch (e) {}
+    }
+    syncCheckedUserAuthorField();
 
     const toast = document.getElementById('toast');
     function showToast(msg) {
@@ -1189,11 +1196,19 @@
 
       filtered.forEach(q => {
         const card = document.createElement('div');
-        card.className = 'qna-card' + (q.isStarred ? ' starred-card' : '');
+        const isStarred = !!(q.isStarred || q.isPinned);
+        const isLikedByMe = (window.HVAC && typeof window.HVAC.isQnaLiked === 'function')
+          ? window.HVAC.isQnaLiked(q.id)
+          : !!q.isLiked;
+        const authorDisplay = (window.HVAC && typeof window.HVAC.formatQnaAuthor === 'function')
+          ? window.HVAC.formatQnaAuthor(q, true)
+          : (q.author || '참석자');
+
+        card.className = 'qna-card' + (isStarred ? ' starred-card' : '');
         const fullDateTimeStr = formatQnaDateTime(q);
 
         let statusBadgesHtml = '';
-        if (q.isStarred) {
+        if (isStarred) {
           statusBadgesHtml += '<span class="qna-status-tag starred">⭐ 채택 질문</span>';
         }
         if (q.isAnswered) {
@@ -1207,22 +1222,22 @@
               ${statusBadgesHtml}
             </div>
             <div class="qna-meta">
-              <span>👤 ${escapeHtml(q.author || '참석자')}</span>
+              <span>👤 ${escapeHtml(authorDisplay)}</span>
               <span>📅 ${escapeHtml(fullDateTimeStr)}</span>
             </div>
           </div>
           <div class="qna-body">${escapeHtml(q.content || '')}</div>
           <div class="qna-footer">
             <span style="font-size: 11.5px; opacity: 0.5;">세미나 현장 질문</span>
-            <button class="btn-like ${q.isLiked ? 'liked' : ''}" type="button" data-id="${q.id}">
-              👍 공감 ${q.likes || 0}
+            <button class="btn-like ${isLikedByMe ? 'liked' : ''}" type="button" data-id="${q.id}">
+              👍 공감 ${Number(q.likes) || 0}
             </button>
           </div>
         `;
         feed.appendChild(card);
       });
 
-      // 공감 버튼 이벤트
+      // 공감 버튼 이벤트 (기기별 공감 상태 분리 + 클라우드 ETag 원자적 증감 동기화)
       feed.querySelectorAll('.btn-like').forEach(btn => {
         btn.addEventListener('click', () => {
           if (!hasCheckinAccess()) {
@@ -1231,19 +1246,34 @@
             if (gate) gate.style.display = 'flex';
             return;
           }
-          const id = parseInt(btn.getAttribute('data-id'), 10);
-          const target = questions.find(item => item.id === id);
+          const id = btn.getAttribute('data-id');
+          const target = questions.find(item => String(item.id) === String(id));
           if (target) {
-            if (!target.isLiked) {
-              target.likes = (target.likes || 0) + 1;
-              target.isLiked = true;
-              showToast('👍 질문에 공감했습니다!');
+            const currentlyLiked = (window.HVAC && typeof window.HVAC.isQnaLiked === 'function')
+              ? window.HVAC.isQnaLiked(target.id)
+              : !!target.isLiked;
+            const nextLiked = !currentlyLiked;
+
+            if (window.HVAC && HVAC.cloud && typeof HVAC.cloud.toggleQnaLike === 'function') {
+              showToast(nextLiked ? '👍 질문에 공감했습니다!' : '공감을 취소했습니다.');
+              HVAC.cloud.toggleQnaLike(target.id, nextLiked).then(() => {
+                loadQuestionsFromStorage();
+                renderFeed();
+              });
+              loadQuestionsFromStorage();
+              renderFeed();
             } else {
-              target.likes = Math.max(0, (target.likes || 1) - 1);
-              target.isLiked = false;
+              if (nextLiked) {
+                target.likes = (Number(target.likes) || 0) + 1;
+                target.isLiked = true;
+                showToast('👍 질문에 공감했습니다!');
+              } else {
+                target.likes = Math.max(0, (Number(target.likes) || 1) - 1);
+                target.isLiked = false;
+              }
+              saveQuestions();
+              renderFeed();
             }
-            saveQuestions();
-            renderFeed();
           }
         });
       });
@@ -1391,16 +1421,37 @@
         if (rawU) checkedUser = JSON.parse(rawU);
       } catch (e) {}
 
+      let resolvedPos = (checkedUser && (checkedUser.position || checkedUser.title)) || '';
+      let resolvedDept = (checkedUser && (checkedUser.dept || checkedUser.org)) || '';
+      if ((!resolvedPos || !resolvedDept) && window.HVAC && typeof window.HVAC.findRosterEntry === 'function') {
+        const rMatch = window.HVAC.findRosterEntry(checkedUser && checkedUser.email, (checkedUser && checkedUser.name) || author);
+        if (rMatch) {
+          if (!resolvedPos && (rMatch.position || rMatch.title)) resolvedPos = rMatch.position || rMatch.title;
+          if (!resolvedDept && rMatch.dept) resolvedDept = rMatch.dept;
+        }
+      }
+
+      const formattedAuthor = (window.HVAC && typeof window.HVAC.formatQnaAuthor === 'function')
+        ? window.HVAC.formatQnaAuthor({
+            author: author,
+            name: (checkedUser && checkedUser.name) || '',
+            email: (checkedUser && checkedUser.email) || '',
+            position: resolvedPos,
+            seq: (checkedUser && checkedUser.seq) || null
+          }, true)
+        : author;
+
       const newQ = {
         id: now.getTime(),
         session: sessionKey,
         sessionName: sessionNames[sessionKey] || '강연 질의',
-        author: author,
-        userName: (checkedUser && checkedUser.name) ? checkedUser.name : author,
+        author: formattedAuthor,
+        userName: (checkedUser && checkedUser.name) ? checkedUser.name : formattedAuthor,
+        authorPosition: resolvedPos,
         checkinSeq: (checkedUser && checkedUser.seq) ? checkedUser.seq : null,
         checkinId: (checkedUser && checkedUser.checkinId) ? checkedUser.checkinId : (checkedUser && checkedUser.seq ? ('HVAC-' + String(checkedUser.seq).padStart(3, '0')) : ''),
         authorEmail: (checkedUser && checkedUser.email) ? checkedUser.email : '',
-        userDept: (checkedUser && (checkedUser.dept || checkedUser.org)) ? (checkedUser.dept || checkedUser.org) : '',
+        userDept: resolvedDept,
         content: content,
         date: dateStr,
         time: fullTimeStr,
@@ -1409,11 +1460,20 @@
         likes: 1,
         isLiked: true,
         isStarred: false,
+        isPinned: false,
         isAnswered: false
       };
 
-      questions.unshift(newQ);
-      saveQuestions();
+      if (window.HVAC && HVAC.cloud && typeof HVAC.cloud.addQnaQuestion === 'function') {
+        HVAC.cloud.addQnaQuestion(newQ).then(() => {
+          loadQuestionsFromStorage();
+          renderFeed();
+        });
+        loadQuestionsFromStorage();
+      } else {
+        questions.unshift(newQ);
+        saveQuestions();
+      }
       document.getElementById('askContent').value = '';
       showToast('🎉 질문이 성공적으로 등록되었습니다!');
       renderFeed();
@@ -1429,12 +1489,19 @@
       showToast(isPresenter ? '🖥️ 발표자/전광판 뷰로 전환되었습니다.' : '📱 일반 뷰로 전환되었습니다.');
     });
 
-    // 다른 탭(관리자 페이지, 체크인 화면 등)에서 변경 시 실시간 자동 반영
+    // 다른 탭/클라우드(관리자 페이지, 체크인 화면, 타 참석자 공감 등)에서 변경 시 실시간 자동 반영
     window.addEventListener('storage', (e) => {
       if (e.key === 'hvac_qna_list') {
         loadQuestionsFromStorage();
         renderFeed();
+      } else if (e.key === 'hvac_user_checked') {
+        syncCheckedUserAuthorField();
       }
+    });
+
+    window.addEventListener('hvac:qna-updated', () => {
+      loadQuestionsFromStorage();
+      renderFeed();
     });
 
     // 관리자 세션 변경 또는 배포 설정(site-config.json) 반영 시 세션 목록 갱신

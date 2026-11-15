@@ -9,7 +9,7 @@
   <title>사회자(MC) 세션별 Q&A 진행 화면 | 제10회 2026 HVAC 전문가 세미나</title>
   <link rel="icon" href="./assets/favicon.ico">
   <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
-  <script src="./assets/hvac-core.js?v=261115_2328"></script>
+  <script src="./assets/hvac-core.js?v=261115_2340"></script>
   <style>
     :root {
       --bg: #030805;
@@ -596,7 +596,9 @@
       const list = getQnaList();
       const item = list.find(q => String(q.id) === String(id));
       if (item) {
-        item.isPinned = !item.isPinned;
+        const nextPin = !(item.isPinned || item.isStarred);
+        item.isPinned = nextPin;
+        item.isStarred = nextPin;
         saveQnaList(list);
         loadQnaList();
       }
@@ -613,6 +615,9 @@
     }
 
     function loadQnaList(showFeedback = false) {
+      if (showFeedback && window.HVAC && HVAC.cloud && typeof HVAC.cloud.syncSection === 'function') {
+        HVAC.cloud.syncSection('qna', true).then(() => loadQnaList(false));
+      }
       const allQuestions = getQnaList();
 
       // 1. 각 세션 탭별 질문 카운트 실시간 집계
@@ -634,14 +639,18 @@
 
       // 3. 정렬 (공감순 / 최신순)
       if (currentSortMode === 'like') {
-        list.sort((a, b) => (Number(b.likes) || 0) - (Number(a.likes) || 0));
+        list.sort((a, b) => {
+          const diff = (Number(b.likes) || 0) - (Number(a.likes) || 0);
+          if (diff !== 0) return diff;
+          return (Number(b.timestamp || b.id) || 0) - (Number(a.timestamp || a.id) || 0);
+        });
       } else {
-        list.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+        list.sort((a, b) => (Number(b.timestamp || b.id) || 0) - (Number(a.timestamp || a.id) || 0));
       }
 
       // 4. 사회자 추천 고정 우선 정렬
       if (isPinTop) {
-        list.sort((a, b) => (b.isPinned ? 1 : 0) - (a.isPinned ? 1 : 0));
+        list.sort((a, b) => ((b.isPinned || b.isStarred) ? 1 : 0) - ((a.isPinned || a.isStarred) ? 1 : 0));
       }
 
       document.getElementById('qnaCountText').textContent = `총 ${list.length}건`;
@@ -660,15 +669,17 @@
       }
 
       container.innerHTML = list.map(q => {
-        const isPinned = !!q.isPinned;
+        const isPinned = !!(q.isPinned || q.isStarred);
         const isAnswered = !!q.isAnswered;
         const qNorm = normalizeQnaSessionKey(q);
 
         // 세션 명칭: q.sessionName (예: Special Lecture · 테라포밍...) 또는 매핑 테이블 풀네임 사용
         const badgeTitle = q.sessionName || q.sessionTitle || SESSION_BADGE_LABELS[qNorm] || SESSION_FULL_LABELS[qNorm] || (q.session ? `세션 (${q.session})` : '세션 질문');
 
-        // 작성자 정보: 모바일 체크인 시 저장된 실명+직급+순번(q.author) 최우선 표출
-        let authorText = (q.author || q.authorName || q.userName || '참석자').trim();
+        // 작성자 정보: 이름 + 호칭(직책) + 순번 표준 포맷터 최우선 적용
+        const authorText = (window.HVAC && typeof window.HVAC.formatQnaAuthor === 'function')
+          ? window.HVAC.formatQnaAuthor(q, true)
+          : (q.author || q.authorName || q.userName || '참석자').trim();
         const seqText = (q.checkinSeq || q.authorSeq) ? `#${q.checkinSeq || q.authorSeq}` : '';
         const idText = (q.checkinId || q.authorCheckinId) || '';
 
@@ -679,7 +690,7 @@
           <article class="mc-qna-card ${isPinned ? 'pinned' : ''} ${isAnswered ? 'answered' : ''}">
             <div class="card-top">
               <span class="session-badge">📌 ${escapeHtml(badgeTitle)}</span>
-              <span class="like-badge">👍 ${q.likes || 0}</span>
+              <span class="like-badge">👍 ${Number(q.likes) || 0}</span>
             </div>
 
             <div class="card-question">
@@ -811,6 +822,10 @@
 
     window.addEventListener('storage', (e) => {
       if (e.key === 'hvac_qna_list') loadQnaList();
+    });
+
+    window.addEventListener('hvac:qna-updated', () => {
+      loadQnaList();
     });
   </script>
 </body>

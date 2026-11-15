@@ -1151,9 +1151,148 @@
   }
 
   // -------------------------------------------------------------
+  // Q&A 질문자 정보 (이름 + 호칭/직책 + 순번) 표준 포맷터 및 기기별 공감 상태 관리
+  // -------------------------------------------------------------
+  var INVALID_POS_KEYWORDS = ['운영진', '사전등록', '사전 등록', '외부', '외부 인원', 'vip', 'vip 초대', '하이엠', 'walkin', 'pre', 'operator', 'him', 'external', '현장등록', '현장 추가 등록', '참석자', '참가자'];
+
+  function isValidPositionLabel(pos) {
+    if (!pos) return false;
+    var p = String(pos).trim().toLowerCase();
+    if (!p) return false;
+    return INVALID_POS_KEYWORDS.indexOf(p) === -1;
+  }
+
+  function formatQnaAuthor(qOrUser, includeSeq) {
+    if (!qOrUser) return '참석자';
+    var obj = typeof qOrUser === 'string' ? { author: qOrUser } : qOrUser;
+    var rawAuthor = String(obj.author || obj.userName || obj.authorName || obj.name || '').trim();
+    var seq = obj.checkinSeq || obj.authorSeq || obj.seq || null;
+
+    // rawAuthor 내에 (No.XX) 또는 #XX 가 있으면 추출 후 기본 문자열에서 제거
+    var noMatch = rawAuthor.match(/\(\s*No\.?\s*(\d+)\s*\)/i) || rawAuthor.match(/#\s*(\d+)/);
+    if (!seq && noMatch && noMatch[1]) {
+      seq = parseInt(noMatch[1], 10);
+    }
+    var strippedAuthor = rawAuthor
+      .replace(/\(\s*No\.?\s*\d+\s*\)/gi, '')
+      .replace(/#\s*\d+/g, '')
+      .trim();
+
+    var cleanEmail = String(obj.authorEmail || obj.email || '').toLowerCase().replace(/@lge\.com$/i, '').trim();
+    var explicitName = String(obj.userName || obj.authorName || obj.name || '').trim()
+      .replace(/\(\s*No\.?\s*\d+\s*\)/gi, '')
+      .trim();
+    var baseName = explicitName || (strippedAuthor.split(/\s+/)[0] || '').trim();
+    var pos = String(obj.authorPosition || obj.position || obj.title || '').trim();
+    if (!isValidPositionLabel(pos)) pos = '';
+
+    // rawAuthor에 이미 "홍길동 책임" 형태로 호칭이 포함된 경우 추출
+    if (!pos && strippedAuthor && baseName && strippedAuthor.indexOf(baseName) === 0) {
+      var tail = strippedAuthor.slice(baseName.length).trim();
+      // 괄호 부서명 등 제거 후 첫 토큰 확인
+      var tailClean = tail.replace(/\([^)]*\)/g, '').trim();
+      if (tailClean && isValidPositionLabel(tailClean)) {
+        pos = tailClean;
+      }
+    }
+
+    // 호칭(직책)이나 순번이 비어 있으면 사전 등록 명부(214명) 및 실시간 출석부(hvac_checkin_list)에서 자동 보완
+    if ((!pos || !seq) && (cleanEmail || baseName)) {
+      var rosterEntry = findRosterEntry(cleanEmail, baseName);
+      if (rosterEntry) {
+        if (!pos && isValidPositionLabel(rosterEntry.position || rosterEntry.title)) {
+          pos = String(rosterEntry.position || rosterEntry.title).trim();
+        }
+        if (!baseName && rosterEntry.name) {
+          baseName = String(rosterEntry.name).trim();
+        }
+      }
+      var cList = read('hvac_checkin_list');
+      if (Array.isArray(cList) && cList.length > 0) {
+        var cMatch = cList.find(function (c) {
+          if (!c) return false;
+          var ce = String(c.email || '').toLowerCase().replace(/@lge\.com$/i, '').trim();
+          var cn = String(c.name || '').trim();
+          if (cleanEmail && ce && ce === cleanEmail) return true;
+          if (baseName && cn && cn === baseName) return true;
+          return false;
+        });
+        if (cMatch) {
+          if (!pos && isValidPositionLabel(cMatch.position || cMatch.title)) {
+            pos = String(cMatch.position || cMatch.title).trim();
+          }
+          if (!seq && cMatch.seq) {
+            seq = cMatch.seq;
+          }
+        }
+      }
+    }
+
+    var nameWithPos = baseName || strippedAuthor || '참석자';
+    if (pos && nameWithPos.indexOf(pos) === -1) {
+      nameWithPos = nameWithPos + ' ' + pos;
+    }
+    if (includeSeq !== false && seq) {
+      return nameWithPos + ' (No.' + String(seq).padStart(2, '0') + ')';
+    }
+    return nameWithPos;
+  }
+
+  var QNA_LIKED_STORAGE_KEY = 'hvac_qna_liked_ids';
+
+  function getLikedQnaMap() {
+    var map = read(QNA_LIKED_STORAGE_KEY);
+    if (map && typeof map === 'object' && !Array.isArray(map)) return map;
+    return {};
+  }
+
+  function setQnaLikedState(qId, isLiked) {
+    if (!qId) return;
+    var map = getLikedQnaMap();
+    var k = String(qId);
+    if (isLiked) map[k] = true;
+    else delete map[k];
+    writeLocalSilent(QNA_LIKED_STORAGE_KEY, map);
+  }
+
+  function isQnaLiked(qId) {
+    if (!qId) return false;
+    var map = getLikedQnaMap();
+    return !!map[String(qId)];
+  }
+
+  function normalizeQnaItemForLocal(q, likedMap) {
+    if (!q || typeof q !== 'object') return q;
+    var map = likedMap || getLikedQnaMap();
+    var copy = Object.assign({}, q);
+    var starred = !!(copy.isStarred || copy.isPinned);
+    copy.isStarred = starred;
+    copy.isPinned = starred;
+    copy.likes = Math.max(0, Number(copy.likes) || 0);
+    copy.isLiked = !!(copy.id && map[String(copy.id)]);
+    copy.author = formatQnaAuthor(copy, true);
+    return copy;
+  }
+
+  function sanitizeQnaListForCloud(qList) {
+    if (!Array.isArray(qList)) return [];
+    return qList.filter(Boolean).map(function (q) {
+      var copy = Object.assign({}, q);
+      var starred = !!(copy.isStarred || copy.isPinned);
+      copy.isStarred = starred;
+      copy.isPinned = starred;
+      copy.likes = Math.max(0, Number(copy.likes) || 0);
+      copy.author = formatQnaAuthor(copy, true);
+      // 🚨 기기별 상태인 isLiked는 클라우드 공유 JSON에서 제거하여 타 참석자 화면에서 이미 공감된 것으로 오작동하는 현상 방지!
+      delete copy.isLiked;
+      return copy;
+    });
+  }
+
+  // -------------------------------------------------------------
   // 앱 빌드 버전 검증 및 구버전 로컬 캐시 자동 무효화 / 정합성 갱신
   // -------------------------------------------------------------
-  var HVAC_BUILD_VERSION = '261115_2328';
+  var HVAC_BUILD_VERSION = '261115_2340';
 
   // 캐시 무효화용 일회성 _hv 쿼리 파라미터가 있으면 URL 깔끔하게 정리 (기존 쿼리/해시 보존)
   try {
@@ -1930,14 +2069,17 @@
     }).catch(function () { return false; });
   }
 
-  // Q&A 질문 목록 클라우드 동기화 (1.5초 중복 PUT 방지)
+  // Q&A 질문 목록 클라우드 동기화 (isLiked 제거 후 정규화 및 즉시 전파)
   function pushQnaListToCloud(qList) {
+    var cleanList = sanitizeQnaListForCloud(qList || []);
+    var localList = cleanList.map(function (q) { return normalizeQnaItemForLocal(q); });
+    try { broadcastLocalKeyChange('hvac_qna_list', localList); } catch (e) {}
     var c = getCloudConfig();
     if (!c || !window.fetch) return Promise.resolve(false);
-    var bodyStr = JSON.stringify(qList || []);
+    var bodyStr = JSON.stringify(cleanList);
     var now = Date.now();
     var prev = lastPushedSectionMap['qna'];
-    if (prev && prev.body === bodyStr && (now - prev.ts < 2000)) {
+    if (prev && prev.body === bodyStr && (now - prev.ts < 800)) {
       return Promise.resolve(true);
     }
     lastPushedSectionMap['qna'] = { body: bodyStr, ts: now };
@@ -1950,6 +2092,147 @@
       if (r.ok) return touchCloudMeta('qna').then(function () { return true; });
       return false;
     }).catch(function () { return false; });
+  }
+
+  // Q&A 신규 질문 원자적 클라우드 병합 등록 (동시 질문 유실 방지 + ETag CAS 재시도)
+  function addQnaQuestionToCloud(newQ) {
+    if (!newQ || !newQ.id) return Promise.resolve(false);
+    setQnaLikedState(newQ.id, true);
+    var cleanNewQ = sanitizeQnaListForCloud([newQ])[0];
+
+    // 1) 로컬 즉시 반영 및 동일 브라우저 탭 브로드캐스트
+    var curLocal = read('hvac_qna_list') || [];
+    if (!Array.isArray(curLocal)) curLocal = [];
+    var existsLocally = curLocal.some(function (q) { return q && String(q.id) === String(cleanNewQ.id); });
+    if (!existsLocally) curLocal.unshift(cleanNewQ);
+    var normalizedLocal = curLocal.map(function (q) { return normalizeQnaItemForLocal(q); });
+    withCloudSyncLock(function () {
+      writeLocalSilent('hvac_qna_list', normalizedLocal);
+      try { broadcastLocalKeyChange('hvac_qna_list', normalizedLocal); } catch (e) {}
+      try { window.dispatchEvent(new CustomEvent('hvac:qna-updated', { detail: { list: normalizedLocal } })); } catch (e) {}
+      try { window.dispatchEvent(new StorageEvent('storage', { key: 'hvac_qna_list' })); } catch (e) {}
+    });
+
+    var c = getCloudConfig();
+    if (!c || !window.fetch) return Promise.resolve(true);
+
+    var url = cloudPath('qna/list');
+    function attemptAdd(tryCount) {
+      return fetch(url, { headers: { 'X-Firebase-ETag': 'true' }, cache: 'no-store' })
+        .then(function (res) {
+          var etag = res.headers.get('ETag');
+          return res.json().then(function (remoteList) {
+            var list = Array.isArray(remoteList) ? remoteList.filter(Boolean) : [];
+            var alreadyInRemote = list.some(function (q) { return q && String(q.id) === String(cleanNewQ.id); });
+            if (!alreadyInRemote) {
+              list.unshift(cleanNewQ);
+            }
+            var cleanRemote = sanitizeQnaListForCloud(list);
+            var headers = { 'Content-Type': 'application/json' };
+            if (etag) headers['If-Match'] = etag;
+            return fetch(url, {
+              method: 'PUT',
+              headers: headers,
+              body: JSON.stringify(cleanRemote)
+            }).then(function (putRes) {
+              if (putRes.status === 412 && tryCount < 4) {
+                return attemptAdd(tryCount + 1);
+              }
+              var mergedLocal = cleanRemote.map(function (q) { return normalizeQnaItemForLocal(q); });
+              withCloudSyncLock(function () {
+                writeLocalSilent('hvac_qna_list', mergedLocal);
+                try { broadcastLocalKeyChange('hvac_qna_list', mergedLocal); } catch (e) {}
+                try { window.dispatchEvent(new CustomEvent('hvac:qna-updated', { detail: { list: mergedLocal } })); } catch (e) {}
+                try { window.dispatchEvent(new StorageEvent('storage', { key: 'hvac_qna_list' })); } catch (e) {}
+              });
+              return touchCloudMeta('qna').then(function () { return true; });
+            });
+          });
+        })
+        .catch(function () {
+          return pushQnaListToCloud(normalizedLocal);
+        });
+    }
+    return attemptAdd(0);
+  }
+
+  // Q&A 공감(좋아요) 원자적 증감 클라우드 동기화 (다중 참석자 동시 클릭 시 카운트 누락/역전 완벽 방지)
+  function toggleQnaLikeInCloud(qId, forceLikeState) {
+    if (!qId) return Promise.resolve(null);
+    var idStr = String(qId);
+    var currentlyLiked = isQnaLiked(idStr);
+    var nextLiked = (typeof forceLikeState === 'boolean') ? forceLikeState : !currentlyLiked;
+    var delta = nextLiked ? 1 : -1;
+    setQnaLikedState(idStr, nextLiked);
+
+    // 1) 로컬 즉시 낙관적 업데이트 (UI 딜레이 0ms)
+    var curLocal = read('hvac_qna_list') || [];
+    if (!Array.isArray(curLocal)) curLocal = [];
+    var targetLocal = curLocal.find(function (q) { return q && String(q.id) === idStr; });
+    if (targetLocal) {
+      targetLocal.likes = Math.max(0, (Number(targetLocal.likes) || 0) + delta);
+      targetLocal.isLiked = nextLiked;
+    }
+    var normalizedLocal = curLocal.map(function (q) { return normalizeQnaItemForLocal(q); });
+    withCloudSyncLock(function () {
+      writeLocalSilent('hvac_qna_list', normalizedLocal);
+      try { broadcastLocalKeyChange('hvac_qna_list', normalizedLocal); } catch (e) {}
+      try { window.dispatchEvent(new CustomEvent('hvac:qna-updated', { detail: { list: normalizedLocal } })); } catch (e) {}
+      try { window.dispatchEvent(new StorageEvent('storage', { key: 'hvac_qna_list' })); } catch (e) {}
+    });
+
+    var c = getCloudConfig();
+    if (!c || !window.fetch) return Promise.resolve({ liked: nextLiked, likes: targetLocal ? targetLocal.likes : 0 });
+
+    var url = cloudPath('qna/list');
+    function attemptToggle(tryCount) {
+      return fetch(url, { headers: { 'X-Firebase-ETag': 'true' }, cache: 'no-store' })
+        .then(function (res) {
+          var etag = res.headers.get('ETag');
+          return res.json().then(function (remoteList) {
+            var list = Array.isArray(remoteList) ? remoteList.filter(Boolean) : sanitizeQnaListForCloud(curLocal);
+            var targetRemote = list.find(function (q) { return q && String(q.id) === idStr; });
+            var updatedLikes = 0;
+            if (targetRemote) {
+              // 만약 원격에서 방금 로드한 경우 delta 반영 (tryCount === 0일 때는 원격 기준 + delta)
+              targetRemote.likes = Math.max(0, (Number(targetRemote.likes) || 0) + delta);
+              updatedLikes = targetRemote.likes;
+            } else if (targetLocal) {
+              var copyLocal = sanitizeQnaListForCloud([targetLocal])[0];
+              list.unshift(copyLocal);
+              updatedLikes = copyLocal.likes;
+            }
+            var cleanRemote = sanitizeQnaListForCloud(list);
+            var headers = { 'Content-Type': 'application/json' };
+            if (etag) headers['If-Match'] = etag;
+            return fetch(url, {
+              method: 'PUT',
+              headers: headers,
+              body: JSON.stringify(cleanRemote)
+            }).then(function (putRes) {
+              if (putRes.status === 412 && tryCount < 4) {
+                return attemptToggle(tryCount + 1);
+              }
+              var mergedLocal = cleanRemote.map(function (q) { return normalizeQnaItemForLocal(q); });
+              withCloudSyncLock(function () {
+                writeLocalSilent('hvac_qna_list', mergedLocal);
+                try { broadcastLocalKeyChange('hvac_qna_list', mergedLocal); } catch (e) {}
+                try { window.dispatchEvent(new CustomEvent('hvac:qna-updated', { detail: { list: mergedLocal } })); } catch (e) {}
+                try { window.dispatchEvent(new StorageEvent('storage', { key: 'hvac_qna_list' })); } catch (e) {}
+              });
+              return touchCloudMeta('qna').then(function () {
+                return { liked: nextLiked, likes: updatedLikes };
+              });
+            });
+          });
+        })
+        .catch(function () {
+          return pushQnaListToCloud(normalizedLocal).then(function () {
+            return { liked: nextLiked, likes: targetLocal ? targetLocal.likes : 0 };
+          });
+        });
+    }
+    return attemptToggle(0);
   }
 
   // 퀴즈 점수 클라우드 전송 (다중 기기 동시 제출 잠금 & 최초 제출자 First-Write-Wins 보장)
@@ -2305,27 +2588,21 @@
         }
       }
     } else if (secName === 'qna') {
-      if (pId === 'qna' || (pId === 'admin' && (forceAdminSync || isAdminSectionNeeded('qna')))) {
+      if (forceAdminSync || pId === 'qna' || (pId === 'admin' && isAdminSectionNeeded('qna'))) {
         return fetch(cloudPath('qna/list'), { cache: 'no-store' })
-          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (r) { return r.ok ? r.json() : undefined; })
           .then(function (remoteQna) {
-            if (!Array.isArray(remoteQna)) return false;
-            var localQna = read('hvac_qna_list') || [];
-            var likedMap = {};
-            var remoteIds = {};
-            remoteQna.forEach(function (q) { if (q && q.id) remoteIds[q.id] = true; });
-            localQna.forEach(function (q) { if (q && q.isLiked) likedMap[q.id] = true; });
-            remoteQna.forEach(function (q) { if (q && likedMap[q.id]) q.isLiked = true; });
-            var nowTs = Date.now();
-            localQna.forEach(function (lq) {
-              if (lq && lq.id && !remoteIds[lq.id] && (nowTs - lq.id < 30000)) {
-                remoteQna.unshift(lq);
-              }
+            if (remoteQna === undefined) return false;
+            // Firebase에서 빈 배열이 null로 반환되는 경우 빈 배열([])로 정상 처리 (전체 삭제/초기화 즉시 반영)
+            var remoteList = Array.isArray(remoteQna) ? remoteQna.filter(Boolean) : [];
+            var likedMap = getLikedQnaMap();
+            var normalizedList = remoteList.map(function (q) {
+              return normalizeQnaItemForLocal(q, likedMap);
             });
             withCloudSyncLock(function () {
-              writeLocalSilent('hvac_qna_list', remoteQna);
-              window.dispatchEvent(new CustomEvent('hvac:qna-updated', { detail: { list: remoteQna } }));
-              window.dispatchEvent(new StorageEvent('storage', { key: 'hvac_qna_list' }));
+              writeLocalSilent('hvac_qna_list', normalizedList);
+              try { window.dispatchEvent(new CustomEvent('hvac:qna-updated', { detail: { list: normalizedList } })); } catch (e) {}
+              try { window.dispatchEvent(new StorageEvent('storage', { key: 'hvac_qna_list' })); } catch (e) {}
             });
             return true;
           }).catch(function () { return false; });
@@ -2816,20 +3093,25 @@
       syncSingleConfigKey('hvac_luckydraw_state');
     }
 
+    // Q&A 피드(qna.html) 및 사회자 세션별 Q&A(mc-qna.html)는 진입 즉시 최신 클라우드 Q&A 목록 강제 동기화
+    if (pId === 'qna' || pId === 'admin') {
+      syncSpecificSection('qna', true);
+    }
+
     // 1. 200명 전원 실시간 SSE 소켓 스트림 연결 (초기 put 이벤트로 변경된 섹션만 차등 동기화)
     initCloudStream();
 
     // 2. SSE 소켓이 2.5초 내 연결되지 않은 경우에만 초기 백업 폴링 1회 수행 (중복 다운로드 방지)
     setTimeout(function () {
-      if (!streamConnected || pId === 'admin' || pId === 'luckydraw-stage') {
+      if (!streamConnected || pId === 'admin' || pId === 'luckydraw-stage' || pId === 'qna') {
         pollCloudChanges(false);
       }
     }, 2500);
 
     // 3. 주기적 안전 백업 폴링
     // - 일반 참석자 페이지: SSE 정상 연결 중에는 폴링 생략 (트래픽 0B)
-    // - 관리자(admin) 및 사회자 럭키드로우(luckydraw-stage): 경품이 걸린 크리티컬 화면이므로 4초 주기로 초경량 meta 폴링 병행 (SSE 사일런트 드롭 완벽 방어)
-    var isCriticalStagePage = (pId === 'admin' || pId === 'luckydraw-stage');
+    // - 관리자(admin), 사회자 럭키드로우(luckydraw-stage), 실시간 Q&A/사회자 세션별 Q&A(qna): 4초 주기로 초경량 meta 폴링 병행 (SSE 사일런트 드롭 완벽 방어)
+    var isCriticalStagePage = (pId === 'admin' || pId === 'luckydraw-stage' || pId === 'qna');
     var fastPages = ['admin', 'qna', 'attendance-dashboard', 'quiz-winners', 'game-leaderboard', 'lunch-screen', 'luckydraw-stage'];
     var intervalMs = isCriticalStagePage ? 4000 : (fastPages.indexOf(pId) >= 0 ? 15000 : 30000);
     pollTimer = setInterval(function () {
@@ -2848,10 +3130,14 @@
     if (now - lastResumeCheckAt < 2000) return;
     lastResumeCheckAt = now;
     if (!getCloudConfig()) return;
-    // 관리자 및 럭키드로우 무대 화면은 탭 포커스 복귀 시 즉시 최신 상태 확인
-    if (pId === 'admin' || pId === 'luckydraw-stage') {
+    // 관리자, 럭키드로우 무대, 실시간/세션별 Q&A 화면은 탭 포커스 복귀 시 즉시 최신 상태 확인
+    if (pId === 'admin' || pId === 'luckydraw-stage' || pId === 'qna') {
       pollCloudChanges(false);
-      syncSingleConfigKey('hvac_luckydraw_state');
+      if (pId === 'admin' || pId === 'luckydraw-stage') {
+        syncSingleConfigKey('hvac_luckydraw_state');
+      } else if (pId === 'qna') {
+        syncSpecificSection('qna', true);
+      }
       if (!cloudEventSource || cloudEventSource.readyState === 2) {
         initCloudStream();
       }
@@ -3227,6 +3513,11 @@
     getRosterList: getRosterList,
     findRosterEntry: findRosterEntry,
     isLuckyDrawEligibleAttendee: isLuckyDrawEligibleAttendee,
+    formatQnaAuthor: formatQnaAuthor,
+    getLikedQnaMap: getLikedQnaMap,
+    setQnaLikedState: setQnaLikedState,
+    isQnaLiked: isQnaLiked,
+    normalizeQnaItemForLocal: normalizeQnaItemForLocal,
     getSurveyConfig: getSurveyConfig,
     saveSurveyConfig: saveSurveyConfig,
     DEFAULT_SURVEY_CONFIG: DEFAULT_SURVEY_CONFIG,
@@ -3290,6 +3581,8 @@
       },
       pushCheckinList: pushCheckinListToCloud,
       pushQnaList: pushQnaListToCloud,
+      addQnaQuestion: addQnaQuestionToCloud,
+      toggleQnaLike: toggleQnaLikeInCloud,
       checkin: cloudCheckin,
       verifyAndClaimGift: cloudVerifyAndClaimGift,
       getGiftStatus: cloudGetGiftStatus,
