@@ -1,7 +1,7 @@
 {
-  "version": "261116_0540",
-  "publishedAt": "2026-11-15T23:28:00+09:00",
-  "metaConfigTs": 1794752880000,
+  "version": "261116_0630",
+  "publishedAt": "2026-11-15T21:29:51.421Z",
+  "metaConfigTs": 1794778191421,
   "note": "2026 HVAC Expert Seminar - Prevent duplicate & looping update toast banner",
   "data": {
     "hvac_cloud_config": {
@@ -25,7 +25,7 @@
         {
           "bullets": [
             "운영 데스크 근처에 준비된 음료와 다과를 드시면서 잠시 기다려주세요.",
-            "카카오톡 오픈채팅방 입장 및 회의장에 8시 55분까지 입실 부탁드립니다.",
+            "카카오톡 오픈채팅방 입장 및 회의장에 입실 8시 50분까지 완료 부탁드립니다.",
             "오프닝 세션은 오전 9시에 정시 시작합니다!"
           ],
           "id": "s1",

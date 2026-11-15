@@ -503,7 +503,6 @@
   }
 
   var STATIC_PUBLISHED_KEYS = [
-    'hvac_schedule_settings',
     'hvac_theme_settings',
     'hvac_site_links',
     'hvac_site_content',
@@ -1394,7 +1393,7 @@
   // -------------------------------------------------------------
   // 앱 빌드 버전 검증 및 구버전 로컬 캐시 자동 무효화 / 정합성 갱신
   // -------------------------------------------------------------
-  var HVAC_BUILD_VERSION = '261116_0540';
+  var HVAC_BUILD_VERSION = '261116_0630';
 
   // 캐시 무효화용 일회성 _hv 쿼리 파라미터가 있으면 URL 깔끔하게 정리 (기존 쿼리/해시 보존)
   try {
@@ -2964,7 +2963,7 @@
     // 2) 이미 정적 스케줄/퀴즈/설문 설정(site-config.json)이 로컬에 캐시된 경우 (관리자 포함)
     // 무거운 정적 데이터(11.5KB)를 다시 받지 않고 동적 제어 키만 핀포인트 조회
     if (!forceAll && hasLocalSectionCache('config') && configKeyHint !== 'all') {
-      var dynamicKeys = ['hvac_quiz_unlocked_sessions', 'hvac_quiz_scoring_policy', 'hvac_notice_banner', 'hvac_game_config', 'hvac_checkin_passcode', 'hvac_luckydraw_config', 'hvac_luckydraw_state', 'hvac_milestone_events'];
+      var dynamicKeys = ['hvac_schedule_settings', 'hvac_quiz_unlocked_sessions', 'hvac_quiz_scoring_policy', 'hvac_notice_banner', 'hvac_game_config', 'hvac_checkin_passcode', 'hvac_luckydraw_config', 'hvac_luckydraw_state', 'hvac_milestone_events'];
       var needed = dynamicKeys.filter(function (k) { return isConfigKeyNeededOnPage(k, pId); });
       return Promise.all(needed.map(syncSingleConfigKey)).then(function () { return true; });
     }

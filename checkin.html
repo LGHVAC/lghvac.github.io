@@ -24,7 +24,7 @@
   <meta name="theme-color" content="#040906">
 
   <!-- 공통 코어: 테마·링크·공지 배너·배포 설정(site-config.json) 동기화 -->
-  <script src="./assets/hvac-core.js?v=261116_0540"></script>
+  <script src="./assets/hvac-core.js?v=261116_0630"></script>
 
   <style>
     :root {
@@ -2354,7 +2354,7 @@
 
           <ul class="session-bullets" id="sBullets">
             <li>운영 데스크 근처에 준비된 음료와 다과를 드시면서 잠시 기다려주세요.</li>
-            <li>카카오톡 오픈채팅방 안내 및 회의장에 8시 55분까지 입실 부탁드립니다.</li>
+            <li>카카오톡 오픈채팅방 입장 및 회의장에 입실 8시 50분까지 완료 부탁드립니다.</li>
             <li>오프닝 세션은 오전 9시에 정시 시작합니다!</li>
           </ul>
         </div>
@@ -3085,7 +3085,7 @@
         note: "본부관 별관 1F 학술회의장",
         bullets: [
           "운영 데스크 근처에 준비된 음료와 다과를 드시면서 잠시 기다려주세요.",
-          "카카오톡 오픈채팅방 안내 및 회의장에 8시 55분까지 입실 부탁드립니다.",
+          "카카오톡 오픈채팅방 입장 및 회의장에 입실 8시 50분까지 완료 부탁드립니다.",
           "오프닝 세션은 오전 9시에 정시 시작합니다!"
         ]
       },
@@ -3353,9 +3353,9 @@
                       migrated = true;
                       b = b.replace('등록 데스크', '운영 데스크').replace('등록데스크', '운영데스크');
                     }
-                    if (b.includes('오픈 채팅방') || b.includes('오픈채팅방')) {
+                    if (b.includes('공식 채널') || b.includes('8시 55분') || (b.includes('오픈채팅방') && (b.includes('안내 및') || b.includes('입실 부탁드립니다')))) {
                       migrated = true;
-                      b = b.replace('오픈 채팅방', '공식 채널').replace('오픈채팅방', '공식 채널');
+                      b = '카카오톡 오픈채팅방 입장 및 회의장에 입실 8시 50분까지 완료 부탁드립니다.';
                     }
                     return b;
                   });
