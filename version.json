@@ -1,5 +1,5 @@
 {
-  "version": "261115_1800",
-  "buildTime": "2026-11-15T09:05:13.530Z",
-  "note": "2026 HVAC Expert Seminar - Lucky Draw Realtime Cloud Sync & Full Reset Null-Handling Fix"
+  "version": "261115_2328",
+  "buildTime": "2026-11-15T23:28:00+09:00",
+  "note": "2026 HVAC Expert Seminar - Prevent duplicate & looping update toast banner"
 }

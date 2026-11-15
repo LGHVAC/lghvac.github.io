@@ -1153,7 +1153,20 @@
   // -------------------------------------------------------------
   // 앱 빌드 버전 검증 및 구버전 로컬 캐시 자동 무효화 / 정합성 갱신
   // -------------------------------------------------------------
-  var HVAC_BUILD_VERSION = '261115_1850';
+  var HVAC_BUILD_VERSION = '261115_2328';
+
+  // 캐시 무효화용 일회성 _hv 쿼리 파라미터가 있으면 URL 깔끔하게 정리 (기존 쿼리/해시 보존)
+  try {
+    if (typeof URLSearchParams !== 'undefined' && window.history && window.history.replaceState && window.location.search.indexOf('_hv=') >= 0) {
+      var _urlSp = new URLSearchParams(window.location.search);
+      if (_urlSp.has('_hv')) {
+        _urlSp.delete('_hv');
+        var _qs = _urlSp.toString();
+        var _cleanHref = window.location.pathname + (_qs ? ('?' + _qs) : '') + (window.location.hash || '');
+        window.history.replaceState(null, '', _cleanHref);
+      }
+    }
+  } catch (e) {}
 
   (function checkBuildVersion() {
     try {
@@ -2861,30 +2874,147 @@
   });
 
   var lastVersionCheckAt = 0;
+  var versionCheckInFlight = false;
+
+  function parseBuildVerNum(v) {
+    var digits = String(v || '').replace(/\D/g, '');
+    return digits ? Number(digits) : 0;
+  }
+
+  function isNewerRemoteVersion(remoteVer, localVer) {
+    var rNum = parseBuildVerNum(remoteVer);
+    var lNum = parseBuildVerNum(localVer);
+    if (rNum > 0 && lNum > 0) return rNum > lNum;
+    return !!(remoteVer && localVer && String(remoteVer).trim() !== String(localVer).trim());
+  }
+
   function checkRemoteAppVersion() {
     if (location.protocol === 'file:' || !window.fetch) return;
+    if (versionCheckInFlight) return;
     var now = Date.now();
     if (now - lastVersionCheckAt < 15000) return;
     lastVersionCheckAt = now;
+    versionCheckInFlight = true;
 
     fetch(BASE + 'version.json?v=' + now, { cache: 'no-store' })
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (info) {
-        if (info && info.version && info.version !== HVAC_BUILD_VERSION) {
+        if (!info || !info.version) return;
+        if (isNewerRemoteVersion(info.version, HVAC_BUILD_VERSION)) {
           showVersionUpdateToast(info.version);
+        } else {
+          // 이미 최신 버전이 반영되었으면 기존 배너/재시도 플래그 정리
+          try {
+            if (window.sessionStorage) {
+              window.sessionStorage.removeItem('hvac_update_reloaded_ver');
+              window.sessionStorage.removeItem('hvac_update_reloaded_ts');
+            }
+          } catch (e) {}
+          var staleBanner = document.getElementById('hvac-version-update-banner');
+          if (staleBanner && staleBanner.parentNode) staleBanner.parentNode.removeChild(staleBanner);
         }
       })
-      .catch(function () {});
+      .catch(function () {})
+      .finally(function () {
+        versionCheckInFlight = false;
+      });
+  }
+
+  function buildCacheBustedUrl(targetVer) {
+    try {
+      var u = new URL(window.location.href);
+      u.searchParams.set('_hv', String(targetVer || Date.now()));
+      return u.toString();
+    } catch (e) {
+      var baseHref = window.location.href.split('#')[0];
+      var hashPart = window.location.hash || '';
+      var sep = baseHref.indexOf('?') >= 0 ? '&' : '?';
+      return baseHref + sep + '_hv=' + encodeURIComponent(String(targetVer || Date.now())) + hashPart;
+    }
   }
 
   function showVersionUpdateToast(newVer) {
-    if (document.getElementById('hvac-version-update-banner')) return;
+    var verStr = String(newVer || '').trim();
+    if (!verStr) return;
+
+    // 1. 이미 사용자가 같은 버전에 대해 닫았거나 방금 새로고침을 눌렀다면 중복 표시 차단 (2분 쿨다운)
+    try {
+      if (window.sessionStorage) {
+        if (window.sessionStorage.getItem('hvac_update_dismissed_ver') === verStr) return;
+        var reloadedVer = window.sessionStorage.getItem('hvac_update_reloaded_ver');
+        var reloadedTs = Number(window.sessionStorage.getItem('hvac_update_reloaded_ts') || 0);
+        if (reloadedVer === verStr && (Date.now() - reloadedTs < 120000)) return;
+      }
+    } catch (e) {}
+
+    // 2. DOM ready 보장 & 중복 배너 원천 차단 (싱글턴)
+    if (!document.body) {
+      if (!window.__hvacPendingUpdateVer) {
+        window.__hvacPendingUpdateVer = verStr;
+        document.addEventListener('DOMContentLoaded', function () {
+          var v = window.__hvacPendingUpdateVer;
+          window.__hvacPendingUpdateVer = null;
+          if (v) showVersionUpdateToast(v);
+        }, { once: true });
+      }
+      return;
+    }
+
+    if (document.getElementById('hvac-version-update-banner') || window.__hvacUpdateToastShownVer === verStr) return;
+    window.__hvacUpdateToastShownVer = verStr;
+
+    var existingBanners = document.querySelectorAll('[data-hvac-update-banner="true"]');
+    for (var i = 0; i < existingBanners.length; i++) {
+      if (existingBanners[i] && existingBanners[i].parentNode) {
+        existingBanners[i].parentNode.removeChild(existingBanners[i]);
+      }
+    }
+
     var banner = document.createElement('div');
     banner.id = 'hvac-version-update-banner';
-    banner.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:2147483647;background:linear-gradient(135deg,#059669,#10b981);color:#ffffff;padding:12px 22px;border-radius:99px;font-family:Pretendard,-apple-system,sans-serif;font-size:13.5px;font-weight:750;box-shadow:0 8px 30px rgba(0,0,0,0.5),0 0 20px rgba(16,185,129,0.4);display:flex;align-items:center;gap:12px;cursor:pointer;';
-    banner.innerHTML = '<span>✨ 웹사이트 최신 업데이트가 적용되었습니다.</span><span style="background:rgba(0,0,0,0.25);padding:4px 10px;border-radius:20px;font-size:12px;font-weight:800;">새로고침 ↻</span>';
+    banner.setAttribute('data-hvac-update-banner', 'true');
+    banner.setAttribute('data-target-ver', verStr);
+    banner.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:2147483647;background:linear-gradient(135deg,#059669,#10b981);color:#ffffff;padding:10px 14px 10px 20px;border-radius:99px;font-family:Pretendard,-apple-system,sans-serif;font-size:13.5px;font-weight:750;box-shadow:0 8px 30px rgba(0,0,0,0.5),0 0 20px rgba(16,185,129,0.4);display:flex;align-items:center;gap:10px;cursor:pointer;max-width:92vw;white-space:nowrap;';
+
+    var msgSpan = document.createElement('span');
+    msgSpan.textContent = '✨ 웹사이트 최신 업데이트가 적용되었습니다.';
+
+    var reloadBtn = document.createElement('span');
+    reloadBtn.style.cssText = 'background:rgba(0,0,0,0.25);padding:4px 10px;border-radius:20px;font-size:12px;font-weight:800;';
+    reloadBtn.textContent = '새로고침 ↻';
+
+    var closeBtn = document.createElement('button');
+    closeBtn.type = 'button';
+    closeBtn.setAttribute('aria-label', '업데이트 알림 닫기');
+    closeBtn.style.cssText = 'background:rgba(255,255,255,0.18);border:none;color:#ffffff;width:24px;height:24px;border-radius:50%;font-size:12px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0;line-height:1;';
+    closeBtn.textContent = '✕';
+    closeBtn.addEventListener('click', function (ev) {
+      ev.stopPropagation();
+      try {
+        if (window.sessionStorage) window.sessionStorage.setItem('hvac_update_dismissed_ver', verStr);
+      } catch (e) {}
+      if (banner.parentNode) banner.parentNode.removeChild(banner);
+    });
+
+    banner.appendChild(msgSpan);
+    banner.appendChild(reloadBtn);
+    banner.appendChild(closeBtn);
+
     banner.addEventListener('click', function () {
-      window.location.reload(true);
+      try {
+        if (window.sessionStorage) {
+          window.sessionStorage.setItem('hvac_update_reloaded_ver', verStr);
+          window.sessionStorage.setItem('hvac_update_reloaded_ts', String(Date.now()));
+        }
+      } catch (e) {}
+      var nextUrl = buildCacheBustedUrl(verStr);
+      try {
+        fetch(window.location.href.split('#')[0], { cache: 'reload' })
+          .catch(function () {})
+          .finally(function () { window.location.replace(nextUrl); });
+      } catch (e) {
+        window.location.replace(nextUrl);
+      }
     });
     document.body.appendChild(banner);
   }
