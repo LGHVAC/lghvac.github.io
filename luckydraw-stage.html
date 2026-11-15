@@ -9,7 +9,7 @@
   <title>럭키드로우 | 제10회 2026 HVAC 전문가 세미나</title>
   <link rel="icon" href="./assets/favicon.ico">
   <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
-  <script src="./assets/hvac-core.js?v=261116_0740"></script>
+  <script src="./assets/hvac-core.js?v=261116_0810"></script>
   <style>
     :root {
       --bg: #030805;
@@ -1250,18 +1250,9 @@
     ];
 
     const DEFAULT_MILESTONES = [
-      { seq: 1, prize: '스타벅스 커피 쿠폰 (사전 1호 체크인)' },
-      { seq: 7, prize: '스타벅스 커피 쿠폰 (사전 럭키 7)' },
-      { seq: 10, prize: '스타벅스 커피 쿠폰 (사전 10번째 체크인)' },
-      { seq: 77, prize: '스타벅스 커피 쿠폰 (행운의 77번째)' },
-      { seq: 100, prize: '스타벅스 커피 쿠폰 (센추리 100번째)' },
-      { seq: 201, prize: '스타벅스 커피 쿠폰 (현장 1호 등록)' },
-      { seq: 207, prize: '스타벅스 커피 쿠폰 (현장 럭키 7)' },
-      { seq: 210, prize: '스타벅스 커피 쿠폰 (현장 10번째 등록)' },
-      { seq: 701, prize: '스타벅스 커피 쿠폰 (VIP 1호 체크인)' },
-      { seq: 707, prize: '스타벅스 커피 쿠폰 (VIP 럭키 7)' },
-      { seq: 901, prize: '스타벅스 커피 쿠폰 (하이엠 1호 체크인)' },
-      { seq: 907, prize: '스타벅스 커피 쿠폰 (하이엠 럭키 7)' }
+      { seq: 1, prize: '커피 쿠폰 증정' },
+      { seq: 10, prize: '커피 쿠폰 증정' },
+      { seq: 100, prize: '커피 쿠폰 증정' }
     ];
 
     let drawConfig = {
@@ -1592,8 +1583,14 @@
       // 5. 순번 이벤트 로드
       try {
         const sMile = localStorage.getItem('hvac_milestone_events');
-        milestoneList = sMile ? JSON.parse(sMile) : DEFAULT_MILESTONES;
-        if (!Array.isArray(milestoneList)) milestoneList = DEFAULT_MILESTONES;
+        let parsed = sMile ? JSON.parse(sMile) : DEFAULT_MILESTONES;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const allowed = [1, 10, 100];
+          const clean = parsed.filter(m => allowed.includes(Number(m.seq)));
+          milestoneList = clean.length > 0 ? clean : DEFAULT_MILESTONES;
+        } else {
+          milestoneList = DEFAULT_MILESTONES;
+        }
       } catch (e) { milestoneList = DEFAULT_MILESTONES; }
 
       // 6. 설문 응답 로드

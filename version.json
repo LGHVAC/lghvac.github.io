@@ -1,7 +1,7 @@
 {
-  "version": "261116_0740",
-  "buildTime": "2026-11-16T07:40:00+09:00",
-  "note": "2026 HVAC Expert Seminar - Fix hvac-core.js syntax error and restore realtime cloud badge sync",
-  "updatedAt": "2026-11-15T22:40:00.000Z",
-  "description": "Resolve hvac-core.js syntax error to ensure window.HVAC loads properly and cloud realtime sync works seamlessly"
+  "version": "261116_0810",
+  "buildTime": "2026-11-16T08:10:00+09:00",
+  "note": "2026 HVAC Expert Seminar - Filter 1, 10, 100 milestone winners and sort recent checkin feed by latest checkin time",
+  "updatedAt": "2026-11-15T23:10:00.000Z",
+  "description": "Enforce 1, 10, 100 milestone events and sort attendance feed by checkedAt timestamp so general attendees appear in realtime"
 }

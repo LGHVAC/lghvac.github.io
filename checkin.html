@@ -24,7 +24,7 @@
   <meta name="theme-color" content="#040906">
 
   <!-- 공통 코어: 테마·링크·공지 배너·배포 설정(site-config.json) 동기화 -->
-  <script src="./assets/hvac-core.js?v=261116_0740"></script>
+  <script src="./assets/hvac-core.js?v=261116_0810"></script>
 
   <style>
     :root {
@@ -4766,7 +4766,11 @@
           const mSaved = localStorage.getItem('hvac_milestone_events');
           if (mSaved !== null && mSaved !== undefined && mSaved !== 'null' && mSaved !== 'undefined') {
             const parsed = JSON.parse(mSaved);
-            if (Array.isArray(parsed)) milestones = parsed;
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              const allowed = [1, 10, 100];
+              const clean = parsed.filter(m => allowed.includes(Number(m.seq)));
+              milestones = clean.length > 0 ? clean : defaultMilestones;
+            }
           }
         } catch (e) {}
 

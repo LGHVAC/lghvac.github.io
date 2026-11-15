@@ -9,7 +9,7 @@
   <title>실시간 출석 현황 대시보드 | 제10회 2026 HVAC 전문가 세미나</title>
   <link rel="icon" href="./assets/favicon.ico">
   <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
-  <script src="./assets/hvac-core.js?v=261116_0740"></script>
+  <script src="./assets/hvac-core.js?v=261116_0810"></script>
   <style>
     :root {
       --bg: #07130b;
@@ -584,7 +584,13 @@
     function getMilestones() {
       try {
         const saved = localStorage.getItem('hvac_milestone_events');
-        return saved ? JSON.parse(saved) : DEFAULT_MILESTONES;
+        let arr = saved ? JSON.parse(saved) : DEFAULT_MILESTONES;
+        if (!Array.isArray(arr) || arr.length === 0) arr = DEFAULT_MILESTONES;
+        // 1, 10, 100호 순번만 정확히 필터링 및 오름차순 정렬 (과거 7, 77호 잔여 캐시 배제)
+        const allowedSeqs = [1, 10, 100];
+        const filtered = arr.filter(m => allowedSeqs.includes(Number(m.seq)));
+        const finalArr = filtered.length > 0 ? filtered : DEFAULT_MILESTONES;
+        return finalArr.sort((a, b) => (Number(a.seq) || 0) - (Number(b.seq) || 0));
       } catch (e) {
         return DEFAULT_MILESTONES;
       }
@@ -782,9 +788,36 @@
         `;
       }).join('');
 
-      // 4. 최신 체크인 피드 (최근 12명)
+      // 4. 최신 체크인 피드 (가장 최근에 체크인한 참가자 최신순 정렬)
       const recentGrid = document.getElementById('recentAttendeesGrid');
-      const recentList = list.slice(0, 12);
+      
+      // 체크인 시각(checkedAt 또는 checkinTime) 기준 최신순 내림차순 정렬
+      const sortedByRecent = [...list].sort((a, b) => {
+        const tsA = Number(a.checkedAt) || 0;
+        const tsB = Number(b.checkedAt) || 0;
+        if (tsA && tsB && tsA !== tsB) return tsB - tsA;
+        if (tsA && !tsB) return -1;
+        if (!tsA && tsB) return 1;
+
+        // 타임스탬프가 동일하거나 없을 경우 checkinTime 문자열 파싱
+        const parseTimeStr = (tStr) => {
+          if (!tStr) return 0;
+          const match = String(tStr).match(/(\d{1,2}):(\d{2})/);
+          if (!match) return 0;
+          let h = parseInt(match[1], 10);
+          const m = parseInt(match[2], 10);
+          if (tStr.includes('오후') && h < 12) h += 12;
+          if (tStr.includes('오전') && h === 12) h = 0;
+          return h * 60 + m;
+        };
+        const minA = parseTimeStr(a.checkinTime);
+        const minB = parseTimeStr(b.checkinTime);
+        if (minA !== minB) return minB - minA;
+
+        return (Number(b.seq) || 0) - (Number(a.seq) || 0);
+      });
+
+      const recentList = sortedByRecent.slice(0, 16);
       if (recentList.length === 0) {
         recentGrid.innerHTML = '<div style="color: rgba(255,255,255,0.4); padding: 20px 0; text-align: center; width: 100%;">등록된 출석자가 없습니다.</div>';
       } else {
@@ -798,11 +831,14 @@
           const typeBadge = isOp ? '<span style="color:#c084fc;font-size:10.5px;font-weight:800;">🟣 운영진</span>'
             : (isPre ? '<span class="tag-pre">🟢 사전</span>' : '<span class="tag-walkin">🟡 현장</span>');
 
+          const posStr = att.position || att.title || (rosterMatch ? (rosterMatch.position || rosterMatch.title) : '');
+          const posDisplay = posStr ? `<span style="color: rgba(255,255,255,0.7); font-weight: 500; font-size: 12px; margin-left: 4px;">${escapeHtml(posStr)}</span>` : '';
+
           return `
             <div class="attendee-mini-card">
               <div>
                 <div style="display: flex; align-items: center; gap: 6px;">
-                  <strong style="color: #fff; font-size: 13.5px;">${escapeHtml(att.name)}</strong>
+                  <strong style="color: #fff; font-size: 13.5px;">${escapeHtml(att.name)}</strong>${posDisplay}
                   ${typeBadge}
                 </div>
                 <div style="font-size: 11.5px; color: rgba(255,255,255,0.55); margin-top: 2px;">
@@ -833,18 +869,26 @@
       }
     }
 
-    // 초기 실행 및 5초 주기 자동 갱신
+    // 초기 실행 및 3초 주기 자동 갱신
     window.addEventListener('DOMContentLoaded', () => {
       refreshDashboard();
-      // 3초 주기 자동 갱신 (새로고침 버튼 없이도 실시간 3초 내 자동 반영)
       setInterval(refreshDashboard, 3000);
     });
 
     window.addEventListener('storage', (e) => {
-      if (e.key === 'hvac_checkin_list' || e.key === 'hvac_gift_registry') {
+      if (e.key === 'hvac_checkin_list' || e.key === 'hvac_gift_registry' || e.key === 'hvac_milestone_events') {
         refreshDashboard();
       }
     });
+
+    window.addEventListener('hvac:checkin-updated', () => refreshDashboard());
+    if (window.HVAC && typeof window.HVAC.onConfigUpdated === 'function') {
+      window.HVAC.onConfigUpdated((keys) => {
+        if (Array.isArray(keys) ? keys.includes('hvac_milestone_events') : keys === 'hvac_milestone_events') {
+          refreshDashboard();
+        }
+      });
+    }
   </script>
 </body>
 </html>
