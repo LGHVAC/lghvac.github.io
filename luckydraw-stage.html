@@ -470,6 +470,301 @@
       color: rgba(255, 255, 255, 0.4);
       border-color: rgba(255, 255, 255, 0.12);
     }
+
+    /* ========================================================= */
+    /* 우측 구석 히든 추가 추첨 버튼 & 모달 스타일 */
+    /* ========================================================= */
+
+    /* 우측 구석 히든 추가 추첨 버튼 (평소 거의 투명, 마우스 오버 시 선명하게 표출) */
+    .btn-hidden-extra-draw {
+      position: fixed;
+      bottom: 18px;
+      right: 20px;
+      z-index: 999;
+      opacity: 0.12; /* 평소에는 거의 눈에 띄지 않음 */
+      background: rgba(15, 23, 18, 0.75);
+      border: 1px solid rgba(243, 196, 72, 0.3);
+      color: #fde047;
+      padding: 8px 16px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 800;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      backdrop-filter: blur(6px);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      user-select: none;
+    }
+
+    .btn-hidden-extra-draw:hover,
+    .btn-hidden-extra-draw:focus {
+      opacity: 1; /* 마우스 오버 시 선명하게 표출 */
+      background: linear-gradient(135deg, rgba(20, 38, 26, 0.96), rgba(12, 22, 16, 0.98));
+      border-color: #fde047;
+      color: #fff;
+      transform: translateY(-2px) scale(1.04);
+      box-shadow: 0 8px 25px rgba(243, 196, 72, 0.45), 0 0 15px rgba(243, 196, 72, 0.25);
+    }
+
+    .btn-hidden-extra-draw .btn-extra-icon {
+      font-size: 15px;
+      filter: drop-shadow(0 0 4px rgba(243, 196, 72, 0.6));
+    }
+
+    /* 추가 추첨 모달 다이얼로그 */
+    .extra-modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.78);
+      backdrop-filter: blur(8px);
+      z-index: 10000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      animation: modalFadeIn 0.22s ease-out;
+    }
+
+    @keyframes modalFadeIn {
+      from { opacity: 0; transform: scale(0.96); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    .extra-modal-card {
+      background: linear-gradient(145deg, #101c14 0%, #08110b 100%);
+      border: 1.5px solid rgba(243, 196, 72, 0.45);
+      border-radius: 22px;
+      width: 100%;
+      max-width: 530px;
+      box-shadow: 0 25px 70px rgba(0, 0, 0, 0.85);
+      overflow: hidden;
+      color: #fff;
+    }
+
+    .extra-modal-header {
+      padding: 22px 26px 18px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .extra-modal-title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .extra-modal-title-text {
+      font-size: 19px;
+      font-weight: 900;
+      color: #fde047;
+      letter-spacing: -0.02em;
+    }
+
+    .extra-modal-subtitle {
+      font-size: 12.5px;
+      color: rgba(255, 255, 255, 0.65);
+      font-weight: 500;
+      margin-top: 3px;
+    }
+
+    .extra-modal-close {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: rgba(255, 255, 255, 0.7);
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+
+    .extra-modal-close:hover {
+      background: rgba(239, 68, 68, 0.2);
+      border-color: #ef4444;
+      color: #fff;
+    }
+
+    .extra-modal-body {
+      padding: 22px 26px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .extra-field-group {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+
+    .extra-field-label {
+      font-size: 13px;
+      font-weight: 800;
+      color: rgba(255, 255, 255, 0.9);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .preset-chips-wrapper {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 3px;
+    }
+
+    .preset-chip {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      color: rgba(255, 255, 255, 0.78);
+      padding: 5px 11px;
+      border-radius: 7px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .preset-chip:hover,
+    .preset-chip.active {
+      background: rgba(243, 196, 72, 0.22);
+      border-color: #fde047;
+      color: #fde047;
+      font-weight: 850;
+    }
+
+    .extra-text-input {
+      background: rgba(0, 0, 0, 0.45);
+      border: 1.5px solid rgba(255, 255, 255, 0.2);
+      color: #fff;
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-size: 14.5px;
+      font-weight: 700;
+      width: 100%;
+      outline: none;
+      transition: all 0.2s;
+    }
+
+    .extra-text-input:focus {
+      border-color: #fde047;
+      box-shadow: 0 0 12px rgba(243, 196, 72, 0.35);
+    }
+
+    .extra-counter-box {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-counter {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      color: #fff;
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      font-size: 19px;
+      font-weight: 900;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+
+    .btn-counter:hover {
+      background: rgba(243, 196, 72, 0.25);
+      border-color: #fde047;
+      color: #fde047;
+    }
+
+    .extra-count-display {
+      width: 55px;
+      height: 36px;
+      background: rgba(0, 0, 0, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #fde047;
+      font-size: 18px;
+      font-weight: 900;
+      text-align: center;
+      border-radius: 8px;
+      outline: none;
+    }
+
+    .extra-checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      font-size: 13.5px;
+      font-weight: 750;
+      color: rgba(255, 255, 255, 0.9);
+      user-select: none;
+    }
+
+    .extra-checkbox-label input[type="checkbox"] {
+      width: 17px;
+      height: 17px;
+      accent-color: #10b981;
+      cursor: pointer;
+    }
+
+    .extra-modal-footer {
+      padding: 16px 26px 22px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+
+    .btn-modal-cancel {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: rgba(255, 255, 255, 0.8);
+      padding: 11px 20px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 750;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-modal-cancel:hover {
+      background: rgba(255, 255, 255, 0.16);
+      color: #fff;
+    }
+
+    .btn-modal-confirm {
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+      color: #000;
+      border: none;
+      padding: 11px 24px;
+      border-radius: 10px;
+      font-size: 14.5px;
+      font-weight: 900;
+      cursor: pointer;
+      box-shadow: 0 4px 18px rgba(245, 158, 11, 0.4);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .btn-modal-confirm:hover {
+      background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 22px rgba(245, 158, 11, 0.55);
+    }
   </style>
 </head>
 <body>
@@ -493,6 +788,7 @@
         <button class="btn-stage" id="btnPrevStage" onclick="prevTierStage()">◀ 이전 등수</button>
         <button class="btn-stage" id="btnNextStage" onclick="nextTierStage()">다음 등수 ▶</button>
         <button class="btn-stage" id="btnRollbackStage" onclick="rollbackCurrentTierConfirm()" style="display: none; background: rgba(239,68,68,0.18); border-color: rgba(239,68,68,0.45); color: #fca5a5;">↩️ 등수 롤백</button>
+        <button class="btn-stage" id="btnDeleteExtraStage" onclick="deleteCurrentExtraTier()" style="display: none; background: rgba(239,68,68,0.22); border-color: rgba(239,68,68,0.5); color: #fca5a5;">🗑️ 추가 추첨 삭제</button>
         <button class="btn-stage" id="btnResetConfirm" onclick="resetDrawStatePrompt()" style="background: rgba(239,68,68,0.15); border-color: rgba(239,68,68,0.35); color: #fca5a5;">🧹 전체 초기화</button>
         <button class="btn-stage gold" id="btnFullscreen" onclick="toggleFullscreen()">⛶ 전체화면 전광판</button>
         <a class="btn-stage" href="./admin.html" target="_blank" style="border-color: rgba(255,255,255,0.35);">⚙️ 관리자 콘솔 ↗</a>
@@ -537,6 +833,82 @@
         <button class="btn-stage gold" id="btnStepOrNext" onclick="goToNextStepOrComplete()">다음 등수 발표하기 ➔</button>
       </div>
     </footer>
+  </div>
+
+  <!-- 우측 구석 히든 추가 추첨 버튼 (평소 거의 투명, 마우스 오버 시 선명하게 표출) -->
+  <button id="btnHiddenExtraDraw" class="btn-hidden-extra-draw" onclick="openExtraDrawModal()" title="사회자 현장 추가 추첨">
+    <span class="btn-extra-icon">🎁</span>
+    <span class="btn-extra-label">현장 추가 추첨</span>
+  </button>
+
+  <!-- 현장 추가 추첨 모달 다이얼로그 -->
+  <div id="extraDrawModal" class="extra-modal-overlay" style="display: none;" onclick="handleExtraModalBackdrop(event)">
+    <div class="extra-modal-card" onclick="event.stopPropagation()">
+      <div class="extra-modal-header">
+        <div class="extra-modal-title">
+          <span style="font-size: 26px;">🎁</span>
+          <div>
+            <div class="extra-modal-title-text">현장 깜짝/특별 추가 추첨</div>
+            <div class="extra-modal-subtitle">사회자 재량으로 즉석에서 새로운 경품을 추가하여 추첨을 진행합니다.</div>
+          </div>
+        </div>
+        <button class="extra-modal-close" onclick="closeExtraDrawModal()" title="닫기">✕</button>
+      </div>
+
+      <div class="extra-modal-body">
+        <!-- 1. 타이틀 -->
+        <div class="extra-field-group">
+          <label class="extra-field-label">🏷️ 추가 추첨 타이틀</label>
+          <div class="preset-chips-wrapper">
+            <button type="button" class="preset-chip active" onclick="setExtraTitlePreset('특별상 (추가 추첨)')">특별상 (추가 추첨)</button>
+            <button type="button" class="preset-chip" onclick="setExtraTitlePreset('사회자 특별상')">사회자 특별상</button>
+            <button type="button" class="preset-chip" onclick="setExtraTitlePreset('깜짝 행운상')">깜짝 행운상</button>
+            <button type="button" class="preset-chip" onclick="setExtraTitlePreset('협찬사 특별상')">협찬사 특별상</button>
+            <button type="button" class="preset-chip" onclick="setExtraTitlePreset('피날레 앵콜 추첨')">피날레 앵콜 추첨</button>
+          </div>
+          <input type="text" id="extraTierTitleInput" class="extra-text-input" value="특별상 (추가 추첨)" placeholder="타이틀을 입력하세요">
+        </div>
+
+        <!-- 2. 경품명 -->
+        <div class="extra-field-group">
+          <label class="extra-field-label">🎁 경품명</label>
+          <input type="text" id="extraTierPrizeInput" class="extra-text-input" value="현장 특별 선물" placeholder="예: 신세계 상품권 5만원권, 특별 선물세트">
+        </div>
+
+        <!-- 3. 추첨 인원 -->
+        <div class="extra-field-group">
+          <label class="extra-field-label">👥 당첨 인원 수</label>
+          <div class="extra-counter-box">
+            <button type="button" class="btn-counter" onclick="adjustExtraCount(-1)">−</button>
+            <input type="number" id="extraTierCountInput" class="extra-count-display" value="1" min="1" max="20" readonly>
+            <button type="button" class="btn-counter" onclick="adjustExtraCount(1)">+</button>
+            <span style="font-size: 14px; color: #fde047; font-weight: 850; margin-left: 6px;">명 추첨</span>
+          </div>
+        </div>
+
+        <!-- 4. 대상자 필터 -->
+        <div class="extra-field-group" style="margin-top: 4px; padding: 12px 14px; background: rgba(0,0,0,0.3); border-radius: 12px; border: 1px solid rgba(255,255,255,0.08);">
+          <label class="extra-checkbox-label">
+            <input type="checkbox" id="extraExcludeWonCheck" checked onchange="updateExtraModalCandidatesCount()">
+            <span>기존 럭키드로우 당첨자 제외 (중복 당첨 방지)</span>
+          </label>
+          <div id="extraCandidatesCountInfo" style="font-size: 12.5px; color: #38bdf8; margin-top: 6px; padding-left: 25px; font-weight: 750;">
+            🟢 현재 추첨 가능 대상: 계산 중...
+          </div>
+        </div>
+
+        <!-- 5. 기존 추가 추첨 단계 목록 (있을 때만 노출) -->
+        <div id="extraExistingListGroup" style="display: none; padding-top: 4px;">
+          <label class="extra-field-label" style="font-size: 12px; color: rgba(255,255,255,0.6);">📌 진행 중인 추가 추첨 단계 바로가기</label>
+          <div id="extraExistingChips" style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px;"></div>
+        </div>
+      </div>
+
+      <div class="extra-modal-footer">
+        <button type="button" class="btn-modal-cancel" onclick="closeExtraDrawModal()">취소</button>
+        <button type="button" class="btn-modal-confirm" onclick="confirmCreateExtraTier()">🎲 추가 추첨 무대 등록 및 이동</button>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -765,6 +1137,192 @@
       }
     }
 
+
+    // ---------------------------------------------------------
+    // 사회자 현장 깜짝/특별 추가 추첨 (히든 기능)
+    // ---------------------------------------------------------
+    function openExtraDrawModal() {
+      if (isDrawRolling) return;
+      const modal = document.getElementById('extraDrawModal');
+      if (!modal) return;
+
+      const titleInput = document.getElementById('extraTierTitleInput');
+      const prizeInput = document.getElementById('extraTierPrizeInput');
+      const countInput = document.getElementById('extraTierCountInput');
+      const excludeCheck = document.getElementById('extraExcludeWonCheck');
+
+      if (titleInput) titleInput.value = '특별상 (추가 추첨)';
+      if (prizeInput) prizeInput.value = '현장 특별 선물';
+      if (countInput) countInput.value = '1';
+      if (excludeCheck) excludeCheck.checked = true;
+
+      // 칩 기본 활성화
+      document.querySelectorAll('.preset-chip').forEach((chip, i) => {
+        chip.classList.toggle('active', i === 0);
+      });
+
+      // 기존 생성된 추가 추첨 목록 렌더링
+      const existingExtra = (drawConfig && drawConfig.tiers) ? drawConfig.tiers.filter(t => t.isExtra) : [];
+      const groupEl = document.getElementById('extraExistingListGroup');
+      const chipsEl = document.getElementById('extraExistingChips');
+      if (groupEl && chipsEl) {
+        if (existingExtra.length > 0) {
+          groupEl.style.display = 'block';
+          chipsEl.innerHTML = existingExtra.map(t => {
+            const isDrawn = !!(drawState && drawState.drawnTiers && drawState.drawnTiers[t.id]);
+            return `<button type="button" class="preset-chip" style="font-size:11.5px; border-color:rgba(236,72,153,0.45); color:#f472b6;" onclick="jumpToExtraTier('${t.id}')">
+              ${escapeHtml(t.title)} (${t.count}명) ${isDrawn ? '✅ 완료' : '⏳ 대기'}
+            </button>`;
+          }).join('');
+        } else {
+          groupEl.style.display = 'none';
+        }
+      }
+
+      updateExtraModalCandidatesCount();
+      modal.style.display = 'flex';
+    }
+
+    function closeExtraDrawModal() {
+      const modal = document.getElementById('extraDrawModal');
+      if (modal) modal.style.display = 'none';
+    }
+
+    function handleExtraModalBackdrop(e) {
+      if (e.target && e.target.id === 'extraDrawModal') {
+        closeExtraDrawModal();
+      }
+    }
+
+    function setExtraTitlePreset(val) {
+      const input = document.getElementById('extraTierTitleInput');
+      if (input) input.value = val;
+      document.querySelectorAll('.preset-chip').forEach(chip => {
+        chip.classList.toggle('active', chip.textContent.trim() === val);
+      });
+    }
+
+    function adjustExtraCount(delta) {
+      const input = document.getElementById('extraTierCountInput');
+      if (!input) return;
+      let val = parseInt(input.value, 10) || 1;
+      val = Math.max(1, Math.min(20, val + delta));
+      input.value = val;
+    }
+
+    function updateExtraModalCandidatesCount() {
+      const infoEl = document.getElementById('extraCandidatesCountInfo');
+      if (!infoEl) return;
+      const excludeWon = document.getElementById('extraExcludeWonCheck') ? document.getElementById('extraExcludeWonCheck').checked : true;
+      const candidates = getEligibleCandidates(null, excludeWon);
+      infoEl.innerHTML = `🟢 현재 추첨 가능 대상: <strong>${candidates.length}명</strong> <span style="font-size:11.5px; opacity:0.8;">(전체 출석자 ${checkinList.length}명)</span>`;
+    }
+
+    function confirmCreateExtraTier() {
+      if (isDrawRolling) return;
+      const titleInput = document.getElementById('extraTierTitleInput');
+      const prizeInput = document.getElementById('extraTierPrizeInput');
+      const countInput = document.getElementById('extraTierCountInput');
+      const excludeCheck = document.getElementById('extraExcludeWonCheck');
+
+      const title = (titleInput && titleInput.value.trim()) ? titleInput.value.trim() : '특별상 (추가 추첨)';
+      const prize = (prizeInput && prizeInput.value.trim()) ? prizeInput.value.trim() : '현장 특별 선물';
+      const count = countInput ? (parseInt(countInput.value, 10) || 1) : 1;
+      const excludeWon = excludeCheck ? excludeCheck.checked : true;
+
+      // 가용 후보자 수 확인
+      const available = getEligibleCandidates(null, excludeWon);
+      if (available.length === 0) {
+        alert('추첨 가능한 출석 대상자가 없습니다. 출석자 명부를 확인해 주세요.');
+        return;
+      }
+
+      // 새 추가 티어 ID 및 정렬 순서 계산 (1등이 rank 1이므로, 0, -1, -2 로 마지막에 배치)
+      const extraTierId = 'tier_extra_' + Date.now();
+      let minRank = 1;
+      (drawConfig.tiers || []).forEach(t => {
+        const r = Number(t.rank);
+        if (!isNaN(r) && r < minRank) minRank = r;
+      });
+      const newRank = minRank <= 1 ? (minRank - 1) : 0;
+
+      const newTier = {
+        id: extraTierId,
+        rank: newRank,
+        title: title,
+        prize: prize,
+        count: count,
+        isExtra: true,
+        excludeWon: excludeWon,
+        createdAt: Date.now()
+      };
+
+      if (!drawConfig.tiers) drawConfig.tiers = JSON.parse(JSON.stringify(DEFAULT_TIERS));
+      drawConfig.tiers.push(newTier);
+      persistDrawConfig();
+
+      closeExtraDrawModal();
+
+      // 생성된 추가 티어로 무대 전환
+      const sortedTiers = getSortedStageTiers();
+      const newIdx = sortedTiers.findIndex(t => t.id === extraTierId);
+      stageTierIdx = (newIdx !== -1) ? newIdx : (sortedTiers.length - 1);
+
+      renderStageView();
+
+      if (typeof StageSound !== 'undefined') {
+        StageSound.playTick(750, 0.1);
+      }
+    }
+
+    function jumpToExtraTier(tierId) {
+      closeExtraDrawModal();
+      const sortedTiers = getSortedStageTiers();
+      const targetIdx = sortedTiers.findIndex(t => t.id === tierId);
+      if (targetIdx !== -1) {
+        stageTierIdx = targetIdx;
+        renderStageView();
+      }
+    }
+
+    function deleteCurrentExtraTier() {
+      if (isDrawRolling) return;
+      const sortedTiers = getSortedStageTiers();
+      const currentTier = sortedTiers[stageTierIdx];
+      if (!currentTier || !currentTier.isExtra) return;
+
+      if (!confirm(`🗑️ 현장 추가 추첨 [${currentTier.title}] 단계를 완전히 삭제하시겠습니까?\n진행된 추첨 결과도 함께 정리됩니다.`)) return;
+
+      const tierId = currentTier.id;
+      if (drawState && drawState.drawnTiers) delete drawState.drawnTiers[tierId];
+      if (drawState && drawState.confirmedTiers) delete drawState.confirmedTiers[tierId];
+      persistDrawState();
+
+      if (drawConfig && drawConfig.tiers) {
+        drawConfig.tiers = drawConfig.tiers.filter(t => t.id !== tierId);
+        persistDrawConfig();
+      }
+
+      const updatedSorted = getSortedStageTiers();
+      if (stageTierIdx >= updatedSorted.length) {
+        stageTierIdx = Math.max(0, updatedSorted.length - 1);
+      }
+      renderStageView();
+    }
+
+    // ESC 키 입력 시 모달 닫기
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        const modal = document.getElementById('extraDrawModal');
+        if (modal && modal.style.display !== 'none') {
+          closeExtraDrawModal();
+        }
+      }
+    });
+
+    // ---------------------------------------------------------
+    // 기존 시스템 로드 및 초기화
+    // ---------------------------------------------------------
     // 초기화 및 동기화
     function initStageSystem() {
       if (isDrawRolling) return;
@@ -840,21 +1398,28 @@
     }
 
     // 상위 등수 추첨 시 이전(하위) 등수 당첨자 제외 및 설정 필터 반영
-    function getEligibleCandidates(tierId) {
+    function getEligibleCandidates(tierId, forceExcludeWon = null) {
       const drawnTiers = (drawState && drawState.drawnTiers) ? drawState.drawnTiers : {};
       const blocked = blockedUsers || [];
+
+      const currentTier = (drawConfig && drawConfig.tiers) ? drawConfig.tiers.find(t => t.id === tierId) : null;
+      const shouldExcludeWon = (forceExcludeWon !== null) 
+        ? !!forceExcludeWon 
+        : (currentTier ? (currentTier.excludeWon !== false) : true);
 
       const alreadyWonEmails = new Set();
       const alreadyWonIds = new Set();
       const alreadyWonSeqs = new Set();
 
-      for (const tId in drawnTiers) {
-        if (tId !== tierId && Array.isArray(drawnTiers[tId])) {
-          drawnTiers[tId].forEach(w => {
-            if (w.email) alreadyWonEmails.add(w.email.toLowerCase().trim().replace('@lge.com', ''));
-            if (w.checkinId) alreadyWonIds.add(String(w.checkinId).toUpperCase().trim());
-            if (w.seq) alreadyWonSeqs.add(String(w.seq));
-          });
+      if (shouldExcludeWon) {
+        for (const tId in drawnTiers) {
+          if (tId !== tierId && Array.isArray(drawnTiers[tId])) {
+            drawnTiers[tId].forEach(w => {
+              if (w.email) alreadyWonEmails.add(w.email.toLowerCase().trim().replace('@lge.com', ''));
+              if (w.checkinId) alreadyWonIds.add(String(w.checkinId).toUpperCase().trim());
+              if (w.seq) alreadyWonSeqs.add(String(w.seq));
+            });
+          }
         }
       }
 
@@ -910,7 +1475,11 @@
       const tierId = currentTier.id;
 
       // 헤더 라벨 갱신
-      document.getElementById('stageRankPill').innerHTML = `<span>단계 ${stageTierIdx + 1} / ${sortedTiers.length}</span> · <strong id="stageCurrentRankLabel">${escapeHtml(currentTier.title)}</strong>`;
+      if (currentTier.isExtra) {
+        document.getElementById('stageRankPill').innerHTML = `<span style="background:rgba(236,72,153,0.22); color:#f472b6; border:1px solid rgba(236,72,153,0.45); padding:2px 8px; border-radius:6px; font-weight:850; font-size:12px; margin-right:6px;">✨ 현장 특별 추첨</span> · <strong id="stageCurrentRankLabel">${escapeHtml(currentTier.title)}</strong>`;
+      } else {
+        document.getElementById('stageRankPill').innerHTML = `<span>단계 ${stageTierIdx + 1} / ${sortedTiers.length}</span> · <strong id="stageCurrentRankLabel">${escapeHtml(currentTier.title)}</strong>`;
+      }
       
       const rankTitleEl = document.getElementById('stageRankTitle');
       rankTitleEl.textContent = currentTier.title;
@@ -950,9 +1519,15 @@
       const isLastStep = (stageTierIdx === sortedTiers.length - 1);
       document.getElementById('btnPrevStage').disabled = (stageTierIdx === 0);
       document.getElementById('btnNextStage').disabled = isLastStep;
+      const btnDeleteExtra = document.getElementById('btnDeleteExtraStage');
+      if (btnDeleteExtra) {
+        btnDeleteExtra.style.display = currentTier.isExtra ? 'inline-flex' : 'none';
+      }
       const stepBtn = document.getElementById('btnStepOrNext');
       if (stepBtn) {
-        stepBtn.textContent = isLastStep ? '🏆 마지막(1등) 발표 단계' : '다음 등수 발표하기 ➔';
+        stepBtn.textContent = isLastStep 
+          ? (currentTier.isExtra ? '🏆 추가 추첨 완료' : '🏆 마지막(1등) 발표 단계') 
+          : '다음 등수 발표하기 ➔';
       }
 
       // 슬롯 카드 및 액션 박스 렌더링
