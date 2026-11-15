@@ -1,7 +1,7 @@
 {
-  "version": "261116_0835",
-  "buildTime": "2026-11-16T08:35:00+09:00",
-  "note": "2026 HVAC Expert Seminar - Correct attendee name typo from 강석현 to 강현석 without affecting checkin data",
-  "updatedAt": "2026-11-15T23:35:00.000Z",
-  "description": "Safely update attendee name to 강현석 in roster and live checkin DB while preserving all checkin and gift records"
+  "version": "261116_0850",
+  "buildTime": "2026-11-16T08:50:00+09:00",
+  "note": "2026 HVAC Expert Seminar - Restore and safeguard operator, VIP, HIM and external categories in roster",
+  "updatedAt": "2026-11-15T23:50:00.000Z",
+  "description": "Restore all category classifications in roster and checkins and prevent accidental category overwrite"
 }
