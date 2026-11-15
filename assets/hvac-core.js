@@ -841,7 +841,7 @@
       withCloudSyncLock(function () {
         writeLocalSilent(key, payloadVal);
       });
-    } else if (key === 'hvac_luckydraw_config' && payloadVal && typeof payloadVal === 'object') {
+    } else if ((key === 'hvac_luckydraw_config' || key === 'hvac_schedule_settings') && payloadVal && typeof payloadVal === 'object') {
       payloadVal = Object.assign({}, payloadVal, { updatedAt: Date.now() });
       withCloudSyncLock(function () {
         writeLocalSilent(key, payloadVal);
@@ -849,7 +849,7 @@
     }
     var bodyStr = JSON.stringify(payloadVal);
     var now = Date.now();
-    var isCriticalRealtimeKey = (key === 'hvac_luckydraw_state' || key === 'hvac_luckydraw_config' || key === 'hvac_milestone_events');
+    var isCriticalRealtimeKey = (key === 'hvac_luckydraw_state' || key === 'hvac_luckydraw_config' || key === 'hvac_milestone_events' || key === 'hvac_schedule_settings');
     var prev = lastPushedConfigMap[key];
     if (!isCriticalRealtimeKey && prev && prev.body === bodyStr && (now - prev.ts < 1500)) {
       return Promise.resolve(true);

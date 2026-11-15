@@ -1,7 +1,7 @@
 {
-  "version": "261116_0630",
-  "publishedAt": "2026-11-15T21:29:51.421Z",
-  "metaConfigTs": 1794778191421,
+  "version": "261116_0655",
+  "publishedAt": "2026-11-15T21:50:42.298Z",
+  "metaConfigTs": 1794779442298,
   "note": "2026 HVAC Expert Seminar - Prevent duplicate & looping update toast banner",
   "data": {
     "hvac_cloud_config": {
@@ -321,7 +321,8 @@
           "title": "Wrap up 및 클로징 럭키드로우",
           "type": "general"
         }
-      ]
+      ],
+      "updatedAt": 1794779442298
     },
     "hvac_quiz_config": [
       {
