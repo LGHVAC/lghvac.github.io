@@ -9,7 +9,7 @@
   <title>실시간 출석 현황 대시보드 | 제10회 2026 HVAC 전문가 세미나</title>
   <link rel="icon" href="./assets/favicon.ico">
   <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
-  <script src="./assets/hvac-core.js?v=261116_0013"></script>
+  <script src="./assets/hvac-core.js?v=261116_0540"></script>
   <style>
     :root {
       --bg: #07130b;
@@ -485,7 +485,7 @@
           <span class="kpi-icon">🎯</span>
         </div>
         <div class="kpi-val" id="kpiMilestoneCount" style="color: var(--gold-light);">0명</div>
-        <div class="kpi-sub">1·7·10·77·100번째 깜짝 당첨</div>
+        <div class="kpi-sub">1·10·100번째 깜짝 당첨</div>
       </div>
 
       <!-- 8) 출석 선물 수령 완료 -->
@@ -520,7 +520,7 @@
           <h2 class="panel-title">
             <span>🎁 순번 깜짝 이벤트 당첨자 명단</span>
           </h2>
-          <span style="font-size: 12px; color: var(--gold-light);">지정 순번: 1, 7, 10, 77, 100호</span>
+          <span style="font-size: 12px; color: var(--gold-light);">지정 순번: 1, 10, 100호</span>
         </div>
         <div style="overflow-x: auto;">
           <table class="winners-table">
@@ -560,11 +560,9 @@
     // 출석 현황 대시보드 로직
     // =========================================================
     const DEFAULT_MILESTONES = [
-      { seq: 1, prize: '스타벅스 커피 쿠폰 (1호 체크인)' },
-      { seq: 7, prize: '스타벅스 커피 쿠폰 (럭키 7)' },
-      { seq: 10, prize: '스타벅스 커피 쿠폰 (10번째 체크인)' },
-      { seq: 77, prize: '스타벅스 커피 쿠폰 (행운의 77번째)' },
-      { seq: 100, prize: '스타벅스 커피 쿠폰 (센추리 100번째)' }
+      { seq: 1, prize: '커피 쿠폰 증정' },
+      { seq: 10, prize: '커피 쿠폰 증정' },
+      { seq: 100, prize: '커피 쿠폰 증정' }
     ];
 
     function getCheckinList() {

@@ -1,7 +1,7 @@
 {
-  "version": "261116_0013",
+  "version": "261116_0540",
   "buildTime": "2026-11-15T23:28:00+09:00",
   "note": "2026 HVAC Expert Seminar - Prevent duplicate & looping update toast banner",
-  "updatedAt": "2026-11-16T00:13:00+09:00",
+  "updatedAt": "2026-11-15T20:55:50.311Z",
   "description": "Update milestone events to 1st, 10th, 100th coffee coupon, fix milestone deletion and eliminate hardcoded targets"
 }

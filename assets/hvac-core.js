@@ -57,15 +57,29 @@
   var scriptEl = document.currentScript;
   var BASE = scriptEl && scriptEl.src ? scriptEl.src.replace(/assets\/hvac-core\.js.*$/, '') : './';
 
-  var origSetItem = typeof Storage !== 'undefined' ? Storage.prototype.setItem : null;
-  var cloudSyncLockCount = 0;
+  if (typeof window !== 'undefined' && typeof Storage !== 'undefined' && !window.__hvacOrigSetItem) {
+    window.__hvacOrigSetItem = Storage.prototype.setItem;
+  }
+  var origSetItem = (typeof window !== 'undefined' && window.__hvacOrigSetItem)
+    ? window.__hvacOrigSetItem
+    : (typeof Storage !== 'undefined' ? Storage.prototype.setItem : null);
+
+  function getCloudSyncLockCount() {
+    return (typeof window !== 'undefined' && typeof window.__hvacCloudSyncLockCount === 'number')
+      ? window.__hvacCloudSyncLockCount
+      : 0;
+  }
 
   function withCloudSyncLock(fn) {
-    cloudSyncLockCount++;
+    if (typeof window !== 'undefined') {
+      window.__hvacCloudSyncLockCount = getCloudSyncLockCount() + 1;
+    }
     try {
       return fn();
     } finally {
-      cloudSyncLockCount = Math.max(0, cloudSyncLockCount - 1);
+      if (typeof window !== 'undefined') {
+        window.__hvacCloudSyncLockCount = Math.max(0, getCloudSyncLockCount() - 1);
+      }
     }
   }
 
@@ -488,17 +502,25 @@
     renderBanner();
   }
 
+  var STATIC_PUBLISHED_KEYS = [
+    'hvac_schedule_settings',
+    'hvac_theme_settings',
+    'hvac_site_links',
+    'hvac_site_content',
+    'hvac_quiz_config',
+    'hvac_survey_config'
+  ];
+
   function applyPublishedConfig(cfg) {
     if (!cfg || !cfg.publishedAt || !cfg.data || typeof cfg.data !== 'object') return false;
     if (cfg.metaConfigTs && (!lastSeenMeta.config || lastSeenMeta.config < cfg.metaConfigTs)) {
       lastSeenMeta.config = cfg.metaConfigTs;
-      saveLastSeenMeta();
     }
-    // site-config.json에 포함된 설정 키는 metaConfigTs 시점까지 최신으로 간주 (불필요한 재다운로드 방지)
+    // site-config.json에 포함된 정적 설정 키는 metaConfigTs 시점까지 최신으로 간주 (불필요한 재다운로드 방지)
     if (cfg.metaConfigTs) {
       var seenChanged = false;
       Object.keys(cfg.data).forEach(function (k) {
-        if (CONFIG_KEYS.indexOf(k) < 0) return;
+        if (STATIC_PUBLISHED_KEYS.indexOf(k) < 0) return;
         if ((Number(lastSeenCfgKeys[k]) || 0) < cfg.metaConfigTs) {
           lastSeenCfgKeys[k] = cfg.metaConfigTs;
           seenChanged = true;
@@ -574,37 +596,121 @@
     return c.dbUrl + '/' + c.roomKey + '/' + subpath.replace(/^\/+/, '') + '.json';
   }
 
+  // 핵심: 실시간 데이터 섹션(checkins, qna, quiz, surveys, games)의 확인 시각은
+  // 페이지 진입/새로고침마다 인메모리(0)로 시작하여 타 페이지(checkin.html 등) 방문으로 인한
+  // localStorage 메타 오염 때문에 새로고침 시 업데이트가 누락되는 현상을 원천 차단!
+  // 단, 강제 로그아웃(session_reset_at) 및 퀴즈 리셋(quiz_reset_at) 시그널만 localStorage에 영속화.
   var LAST_META_KEY = 'hvac_last_seen_meta';
   var savedMeta = read(LAST_META_KEY);
-  var lastSeenMeta = (savedMeta && typeof savedMeta === 'object')
-    ? Object.assign({ config: 0, checkins: 0, qna: 0, quiz: 0, surveys: 0, games: 0, session_reset_at: 0 }, savedMeta)
-    : { config: 0, checkins: 0, qna: 0, quiz: 0, surveys: 0, games: 0, session_reset_at: 0 };
-  var latestRemoteMeta = Object.assign({}, lastSeenMeta);
+  var lastSeenMeta = {
+    config: 0,
+    checkins_full: 0,
+    checkins_self: 0,
+    qna: 0,
+    quiz_full: 0,
+    quiz_self: 0,
+    surveys: 0,
+    games_full: 0,
+    games_top3: 0,
+    session_reset_at: (savedMeta && Number(savedMeta.session_reset_at)) || 0,
+    quiz_reset_at: (savedMeta && Number(savedMeta.quiz_reset_at)) || 0
+  };
+  var latestRemoteMeta = {
+    config: 0,
+    checkins: 0,
+    qna: 0,
+    quiz: 0,
+    surveys: 0,
+    games: 0,
+    session_reset_at: lastSeenMeta.session_reset_at,
+    quiz_reset_at: lastSeenMeta.quiz_reset_at
+  };
   var isSyncingCloud = false;
+  var inFlightSectionPromises = {};
 
-  // 설정 키별 최종 수정 시각 (meta/config_keys/{key}) 추적
-  // - 기존에는 meta.config_key(마지막 변경 키 1개)만 보고 동기화하여,
-  //   접속이 끊겨 있던 사이 일정표 → 럭키드로우 순으로 변경되면 일정표 변경을 영영 놓치는 문제가 있었음
+  // 정적 배포 설정 키(11.5KB)는 localStorage에, 동적 실시간 제어 키는 페이지 세션 인메모리에 추적
   var CFG_KEYS_SEEN = 'hvac_last_seen_cfgkeys';
   var savedCfgSeen = read(CFG_KEYS_SEEN);
   var lastSeenCfgKeys = (savedCfgSeen && typeof savedCfgSeen === 'object') ? savedCfgSeen : {};
+  var sessionSeenCfgKeys = {};
+
+  function getCfgKeySeenTs(k) {
+    if (STATIC_PUBLISHED_KEYS.indexOf(k) >= 0) {
+      return Number(lastSeenCfgKeys[k]) || 0;
+    }
+    return Number(sessionSeenCfgKeys[k]) || 0;
+  }
+
+  function setCfgKeySeenTs(k, ts) {
+    var numTs = Number(ts) || 0;
+    if (STATIC_PUBLISHED_KEYS.indexOf(k) >= 0) {
+      lastSeenCfgKeys[k] = numTs;
+    } else {
+      sessionSeenCfgKeys[k] = numTs;
+    }
+  }
 
   function saveSeenCfgKeys() {
     writeLocalSilent(CFG_KEYS_SEEN, lastSeenCfgKeys);
   }
 
   function saveLastSeenMeta() {
-    writeLocalSilent(LAST_META_KEY, lastSeenMeta);
+    writeLocalSilent(LAST_META_KEY, {
+      session_reset_at: lastSeenMeta.session_reset_at || 0,
+      quiz_reset_at: lastSeenMeta.quiz_reset_at || 0
+    });
+  }
+
+  function getSectionSeenKey(sec, pId) {
+    var curPid = pId || pageId();
+    if (sec === 'checkins') {
+      var fullCheckinPages = ['admin', 'attendance-dashboard', 'luckydraw-stage', 'quiz-winners'];
+      return fullCheckinPages.indexOf(curPid) >= 0 ? 'checkins_full' : 'checkins_self';
+    }
+    if (sec === 'quiz') {
+      return (curPid === 'admin' || curPid === 'quiz-winners') ? 'quiz_full' : 'quiz_self';
+    }
+    if (sec === 'games') {
+      return (curPid === 'lunch-screen' || curPid === 'game-leaderboard') ? 'games_top3' : 'games_full';
+    }
+    return sec;
+  }
+
+  function doesPageUseSection(sec, pId) {
+    var curPid = pId || pageId();
+    if (curPid === 'index') return false;
+    if (sec === 'config') return true;
+    // 관리자 콘솔(admin)은 상단 배지(Q&A, 출석부, 퀴즈 등)와 탭 전환 시 100% 정확한 실시간 현황 유지를 위해 모든 섹션 변경 감지 활성화
+    if (curPid === 'admin') return true;
+    if (sec === 'checkins') {
+      var fullCheckinPages = ['attendance-dashboard', 'luckydraw-stage', 'quiz-winners'];
+      if (fullCheckinPages.indexOf(curPid) >= 0) return true;
+      var myUser = read('hvac_user_checked');
+      return !!(myUser && myUser.email);
+    }
+    if (sec === 'qna') {
+      return curPid === 'qna';
+    }
+    if (sec === 'quiz') {
+      if (curPid === 'quiz-winners') return true;
+      if (curPid === 'quiz') {
+        // quiz.html은 페이지 진입/새로고침 시 1회만 본인 제출 데이터(250B) 검증 (이후 리셋은 quiz_reset_at 시그널로 0B 즉시 감지)
+        if (lastSeenMeta.quiz_self !== 0) return false;
+        var myQuizUser = read('hvac_user_checked');
+        return !!(myQuizUser && myQuizUser.email);
+      }
+      return false;
+    }
+    if (sec === 'games') {
+      return curPid === 'lunch-screen' || curPid === 'game-leaderboard';
+    }
+    if (sec === 'surveys') {
+      return curPid === 'luckydraw-stage';
+    }
+    return false;
   }
 
   function isAdminSectionNeeded(sec) {
-    var tab = (typeof window !== 'undefined' && window._hvacAdminActiveTab) || 'tabQna';
-    if (sec === 'config') return true;
-    if (sec === 'qna') return tab === 'tabQna' || tab === 'tabMc';
-    if (sec === 'checkins') return tab === 'tabCheckin' || tab === 'tabDraw';
-    if (sec === 'quiz') return tab === 'tabQuiz';
-    if (sec === 'surveys') return tab === 'tabSurvey';
-    if (sec === 'games') return tab === 'tabGames';
     return true;
   }
 
@@ -614,28 +720,25 @@
       return read('hvac_schedule_settings') !== null;
     }
     if (sec === 'checkins') {
-      if (pId === 'admin') return !isAdminSectionNeeded('checkins') || read('hvac_checkin_list') !== null;
-      var fullCheckinPages = ['attendance-dashboard', 'luckydraw-stage', 'quiz-winners'];
+      var fullCheckinPages = ['admin', 'attendance-dashboard', 'luckydraw-stage', 'quiz-winners'];
       if (fullCheckinPages.indexOf(pId) >= 0) return read('hvac_checkin_list') !== null;
       return true;
     }
     if (sec === 'qna') {
-      if (pId === 'admin') return !isAdminSectionNeeded('qna') || read('hvac_qna_list') !== null;
-      if (pId === 'qna') return read('hvac_qna_list') !== null;
+      if (pId === 'admin' || pId === 'qna') return read('hvac_qna_list') !== null;
       return true;
     }
     if (sec === 'quiz') {
-      if (pId === 'quiz-winners') return read('hvac_quiz_submissions') !== null;
-      if (pId === 'admin' && isAdminSectionNeeded('quiz')) return read('hvac_quiz_submissions') !== null;
+      if (pId === 'admin' || pId === 'quiz-winners') return read('hvac_quiz_submissions') !== null;
       return true;
     }
     if (sec === 'games') {
       if (pId === 'lunch-screen' || pId === 'game-leaderboard') return read('hvac_game_top3') !== null;
-      if (pId === 'admin' && isAdminSectionNeeded('games')) return read('hvac_game_submissions') !== null;
+      if (pId === 'admin') return read('hvac_game_submissions') !== null;
       return true;
     }
     if (sec === 'surveys') {
-      if (pId === 'admin' && isAdminSectionNeeded('surveys')) return read('hvac_survey_responses') !== null;
+      if (pId === 'admin' || pId === 'luckydraw-stage') return read('hvac_survey_responses') !== null;
       return true;
     }
     return true;
@@ -1291,7 +1394,7 @@
   // -------------------------------------------------------------
   // 앱 빌드 버전 검증 및 구버전 로컬 캐시 자동 무효화 / 정합성 갱신
   // -------------------------------------------------------------
-  var HVAC_BUILD_VERSION = '261116_0013';
+  var HVAC_BUILD_VERSION = '261116_0540';
 
   // 캐시 무효화용 일회성 _hv 쿼리 파라미터가 있으면 URL 깔끔하게 정리 (기존 쿼리/해시 보존)
   try {
@@ -2004,56 +2107,124 @@
       .catch(function () { return null; });
   }
 
-  // 출석 목록 전체 클라우드 동기화 (관리자 수정/초기화 시, 1.5초 중복 PUT 방지)
+  var knownCheckinKeys = {};
+  var hasSyncedCheckinKeysOnce = false;
+
+  // 출석 목록 전체 클라우드 동기화 (관리자 수정/초기화 시, 동시 체크인 보존 병합 및 1.5초 중복 PUT 방지)
   function pushCheckinListToCloud(list, blocked) {
     // 동일 브라우저 내 열려 있는 다른 탭(사회자 럭키드로우 화면 등)에도 즉시 브로드캐스트!
     try { broadcastLocalKeyChange('hvac_checkin_list', list || []); } catch (e) {}
     var c = getCloudConfig();
     if (!c || !window.fetch) return Promise.resolve(false);
+    var localArr = Array.isArray(list) ? list : [];
+
+    function buildCheckinsPayload(mapObj, blockedArr) {
+      var maxPre = 0;
+      var maxWalkin = 200;
+      var maxOp = 300;
+      var maxExt = 500;
+      var maxVip = 700;
+      var maxHim = 900;
+      Object.keys(mapObj).forEach(function (k) {
+        var item = mapObj[k];
+        if (!item) return;
+        var s = Number(item.seq) || 0;
+        if (s >= 900 && s < 1000 && s > maxHim) maxHim = s;
+        else if (s >= 700 && s < 900 && s > maxVip) maxVip = s;
+        else if (s >= 500 && s < 700 && s > maxExt) maxExt = s;
+        else if (s >= 300 && s < 500 && s > maxOp) maxOp = s;
+        else if (s >= 200 && s < 300 && s > maxWalkin) maxWalkin = s;
+        else if (s > 0 && s < 200 && s > maxPre) maxPre = s;
+      });
+      var pBody = {
+        items: mapObj,
+        seqCounter: maxPre,
+        seqCounter_walkin: maxWalkin,
+        seqCounter_operator: maxOp,
+        seqCounter_external: maxExt,
+        seqCounter_vip: maxVip,
+        seqCounter_him: maxHim
+      };
+      if (Array.isArray(blockedArr)) pBody.blocked = blockedArr;
+      return pBody;
+    }
+
     var itemsMap = {};
-    var maxPre = 0;
-    var maxWalkin = 200;
-    var maxOp = 300;
-    var maxExt = 500;
-    var maxVip = 700;
-    var maxHim = 900;
-    (list || []).forEach(function (item) {
+    localArr.forEach(function (item) {
+      if (!item) return;
       var k = String(item.email || ('u_' + item.seq)).toLowerCase().replace('@lge.com', '').replace(/[.#$\[\]\/]/g, '_');
       itemsMap[k] = item;
-      var s = Number(item.seq) || 0;
-      if (s >= 900 && s < 1000 && s > maxHim) maxHim = s;
-      else if (s >= 700 && s < 900 && s > maxVip) maxVip = s;
-      else if (s >= 500 && s < 700 && s > maxExt) maxExt = s;
-      else if (s >= 300 && s < 500 && s > maxOp) maxOp = s;
-      else if (s >= 200 && s < 300 && s > maxWalkin) maxWalkin = s;
-      else if (s > 0 && s < 200 && s > maxPre) maxPre = s;
     });
-    var body = {
-      items: itemsMap,
-      seqCounter: maxPre,
-      seqCounter_walkin: maxWalkin,
-      seqCounter_operator: maxOp,
-      seqCounter_external: maxExt,
-      seqCounter_vip: maxVip,
-      seqCounter_him: maxHim
-    };
-    if (Array.isArray(blocked)) body.blocked = blocked;
-    var bodyStr = JSON.stringify(body);
-    var now = Date.now();
-    var prev = lastPushedSectionMap['checkins'];
-    if (prev && prev.body === bodyStr && (now - prev.ts < 2000)) {
-      return Promise.resolve(true);
-    }
-    lastPushedSectionMap['checkins'] = { body: bodyStr, ts: now };
 
-    return fetch(cloudPath('checkins'), {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: bodyStr
-    }).then(function (r) {
-      if (r.ok) return touchCloudMeta('checkins').then(function () { return true; });
-      return false;
-    }).catch(function () { return false; });
+    // 전체 초기화(list가 빈 배열)인 경우 즉시 빈 상태로 PUT
+    if (localArr.length === 0) {
+      knownCheckinKeys = {};
+      var emptyBody = buildCheckinsPayload({}, blocked);
+      var emptyStr = JSON.stringify(emptyBody);
+      lastPushedSectionMap['checkins'] = { body: emptyStr, ts: Date.now() };
+      return fetch(cloudPath('checkins'), {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: emptyStr
+      }).then(function (r) {
+        if (r.ok) return touchCloudMeta('checkins').then(function () { return true; });
+        return false;
+      }).catch(function () { return false; });
+    }
+
+    // 개별 참석자 수정/추가/삭제 시: 서버 최신 /checkins.json을 먼저 읽어
+    // 다른 기기에서 방금 새로 체크인했거나 로컬이 아직 동기화받지 못한 참석자가 덮어쓰기로 유실되지 않도록 병합 보호!
+    return fetch(cloudPath('checkins'), { cache: 'no-store' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .catch(function () { return null; })
+      .then(function (remoteChk) {
+        var mergedAdded = false;
+        if (remoteChk && typeof remoteChk === 'object' && remoteChk.items && typeof remoteChk.items === 'object') {
+          Object.keys(remoteChk.items).forEach(function (rk) {
+            if (!itemsMap[rk] && remoteChk.items[rk]) {
+              // 이전에 로컬에서 인지했던 참석자(knownCheckinKeys[rk])가 현재 list에 없다면 관리자가 의도적으로 삭제/강퇴한 것임
+              var wasExplicitlyDeleted = hasSyncedCheckinKeysOnce && !!knownCheckinKeys[rk];
+              if (!wasExplicitlyDeleted) {
+                itemsMap[rk] = remoteChk.items[rk];
+                mergedAdded = true;
+              }
+            }
+          });
+        }
+        var nextKnown = {};
+        Object.keys(itemsMap).forEach(function (k) { nextKnown[k] = true; });
+        knownCheckinKeys = nextKnown;
+        hasSyncedCheckinKeysOnce = true;
+
+        if (mergedAdded) {
+          var mergedArr = Object.values(itemsMap).filter(Boolean);
+          mergedArr.sort(function (a, b) { return (b.seq || 0) - (a.seq || 0); });
+          withCloudSyncLock(function () {
+            writeLocalSilent('hvac_checkin_list', mergedArr);
+            try { window.dispatchEvent(new CustomEvent('hvac:checkin-updated', { detail: { list: mergedArr } })); } catch (e) {}
+            try { window.dispatchEvent(new StorageEvent('storage', { key: 'hvac_checkin_list' })); } catch (e) {}
+          });
+        }
+
+        var finalBlocked = Array.isArray(blocked) ? blocked : (remoteChk && Array.isArray(remoteChk.blocked) ? remoteChk.blocked : []);
+        var body = buildCheckinsPayload(itemsMap, finalBlocked);
+        var bodyStr = JSON.stringify(body);
+        var now = Date.now();
+        var prev = lastPushedSectionMap['checkins'];
+        if (prev && prev.body === bodyStr && (now - prev.ts < 2000)) {
+          return true;
+        }
+        lastPushedSectionMap['checkins'] = { body: bodyStr, ts: now };
+
+        return fetch(cloudPath('checkins'), {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: bodyStr
+        }).then(function (r) {
+          if (r.ok) return touchCloudMeta('checkins').then(function () { return true; });
+          return false;
+        });
+      }).catch(function () { return false; });
   }
 
   // Q&A 질문 목록 클라우드 동기화 (isLiked 제거 후 정규화 및 즉시 전파)
@@ -2222,6 +2393,8 @@
     return attemptToggle(0);
   }
 
+  var isPushingQuizScore = false;
+
   // 퀴즈 점수 클라우드 전송 (다중 기기 동시 제출 잠금 & 최초 제출자 First-Write-Wins 보장)
   function pushQuizScoreToCloud(scoreObj) {
     var c = getCloudConfig();
@@ -2229,6 +2402,7 @@
     var user = read('hvac_user_checked') || {};
     var key = String(user.email || scoreObj.deviceId || 'anon_' + Date.now()).toLowerCase().replace('@lge.com', '').replace(/[.#$\[\]\/]/g, '_');
     var subUrl = cloudPath('quiz/submissions/' + key);
+    isPushingQuizScore = true;
 
     return fetch(subUrl, { cache: 'no-store' })
       .then(function (r) { return r.ok ? r.json() : null; })
@@ -2268,7 +2442,8 @@
           return { success: false };
         });
       })
-      .catch(function () { return { success: false }; });
+      .catch(function () { return { success: false }; })
+      .finally(function () { isPushingQuizScore = false; });
   }
 
   // 미니게임 초경량 Top 3 요약 데이터(~450B) 생성 헬퍼
@@ -2498,51 +2673,94 @@
   function syncSpecificSection(secName, forceAdminSync) {
     var pId = pageId();
     if (secName === 'quiz') {
-      if (pId === 'quiz-winners' || (pId === 'admin' && (forceAdminSync || isAdminSectionNeeded('quiz')))) {
+      if (pId === 'quiz-winners' || pId === 'admin') {
         return fetch(cloudPath('quiz/submissions'), { cache: 'no-store' })
-          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (r) { return r.ok ? r.json() : undefined; })
           .then(function (subMap) {
+            if (subMap === undefined) return false;
             var list = [];
             if (subMap && typeof subMap === 'object') {
               list = Object.values(subMap).filter(Boolean);
             }
             withCloudSyncLock(function () {
               writeLocalSilent('hvac_quiz_submissions', list);
-              window.dispatchEvent(new CustomEvent('hvac:quiz-submissions-updated', { detail: { submissions: list } }));
-              window.dispatchEvent(new StorageEvent('storage', { key: 'hvac_quiz_submissions' }));
+              try { window.dispatchEvent(new CustomEvent('hvac:quiz-submissions-updated', { detail: { submissions: list } })); } catch (e) {}
+              try { window.dispatchEvent(new StorageEvent('storage', { key: 'hvac_quiz_submissions' })); } catch (e) {}
             });
             return true;
           }).catch(function () { return false; });
+      } else if (pId === 'quiz') {
+        var myQuizUser = read('hvac_user_checked');
+        if (myQuizUser && myQuizUser.email) {
+          var myQKey = String(myQuizUser.email).toLowerCase().replace('@lge.com', '').replace(/[.#$\[\]\/]/g, '_');
+          return fetch(cloudPath('quiz/submissions/' + myQKey), { cache: 'no-store' })
+            .then(function (r) { return r.ok ? r.json() : undefined; })
+            .then(function (mySub) {
+              if (mySub === undefined) return false;
+              withCloudSyncLock(function () {
+                if (mySub === null) {
+                  if (!isPushingQuizScore) {
+                    var localAns = read('hvac_quiz_answers');
+                    if (localAns && typeof localAns === 'object' && Object.keys(localAns).length > 0) {
+                      try { localStorage.removeItem('hvac_quiz_answers'); } catch (e) {}
+                      writeLocalSilent('hvac_quiz_score', '0');
+                      try { window.dispatchEvent(new CustomEvent('hvac:quiz-reset', { detail: { resetAt: Date.now() } })); } catch (e) {}
+                    }
+                  }
+                } else if (mySub && typeof mySub === 'object' && mySub.answers && typeof mySub.answers === 'object') {
+                  var localAnsCur = read('hvac_quiz_answers') || {};
+                  var remoteKeys = Object.keys(mySub.answers);
+                  var localKeys = Object.keys(localAnsCur);
+                  if (remoteKeys.length > localKeys.length) {
+                    writeLocalSilent('hvac_quiz_answers', mySub.answers);
+                    writeLocalSilent('hvac_quiz_score', String(mySub.score || 0));
+                    try { window.dispatchEvent(new CustomEvent('hvac:quiz-my-submission-updated', { detail: { submission: mySub } })); } catch (e) {}
+                  }
+                }
+              });
+              return true;
+            }).catch(function () { return false; });
+        }
+        return Promise.resolve(true);
       }
     } else if (secName === 'checkins') {
       var fullCheckinPages = ['admin', 'attendance-dashboard', 'luckydraw-stage', 'quiz-winners'];
       if (fullCheckinPages.indexOf(pId) >= 0) {
-        if (pId === 'admin' && !forceAdminSync && !isAdminSectionNeeded('checkins')) {
-          return Promise.resolve(false);
-        }
         return fetch(cloudPath('checkins'), { cache: 'no-store' })
-          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (r) { return r.ok ? r.json() : undefined; })
           .then(function (chkData) {
+            if (chkData === undefined) return false;
             var arr = [];
+            var nextKnown = {};
             if (chkData && typeof chkData === 'object' && chkData.items && typeof chkData.items === 'object') {
+              Object.keys(chkData.items).forEach(function (k) {
+                if (chkData.items[k]) nextKnown[k] = true;
+              });
               arr = Object.values(chkData.items).filter(Boolean);
               arr.sort(function (a, b) { return (b.seq || 0) - (a.seq || 0); });
             }
+            knownCheckinKeys = nextKnown;
+            hasSyncedCheckinKeysOnce = true;
+
             var prevArrRaw = null;
             try { prevArrRaw = localStorage.getItem('hvac_checkin_list'); } catch (e) {}
             var nextArrRaw = JSON.stringify(arr);
             var isCheckinChanged = (prevArrRaw !== nextArrRaw);
 
+            var nextBlocked = (chkData && Array.isArray(chkData.blocked)) ? chkData.blocked : [];
+            var prevBlockedRaw = null;
+            try { prevBlockedRaw = localStorage.getItem('hvac_blocked_users'); } catch (e) {}
+            var isBlockedChanged = (prevBlockedRaw !== JSON.stringify(nextBlocked));
+
             withCloudSyncLock(function () {
-              if (isCheckinChanged) {
-                writeLocalSilent('hvac_checkin_list', arr);
-              }
-              if (chkData && Array.isArray(chkData.blocked)) {
-                writeLocalSilent('hvac_blocked_users', chkData.blocked);
-              }
-              if (isCheckinChanged) {
+              writeLocalSilent('hvac_checkin_list', arr);
+              writeLocalSilent('hvac_blocked_users', nextBlocked);
+              if (isCheckinChanged || isBlockedChanged || forceAdminSync) {
                 try { window.dispatchEvent(new CustomEvent('hvac:checkin-updated', { detail: { list: arr } })); } catch (e) {}
                 try { window.dispatchEvent(new StorageEvent('storage', { key: 'hvac_checkin_list' })); } catch (e) {}
+              }
+              if (isBlockedChanged) {
+                try { window.dispatchEvent(new StorageEvent('storage', { key: 'hvac_blocked_users' })); } catch (e) {}
               }
             });
             return true;
@@ -2552,9 +2770,10 @@
         var myUser = read('hvac_user_checked');
         if (myUser && myUser.email) {
           var myClean = String(myUser.email).toLowerCase().replace('@lge.com', '').replace(/[.#$\[\]\/]/g, '_');
-          fetch(cloudPath('checkins/items/' + myClean), { cache: 'no-store' })
-            .then(function (r) { return r.ok ? r.json() : null; })
+          return fetch(cloudPath('checkins/items/' + myClean), { cache: 'no-store' })
+            .then(function (r) { return r.ok ? r.json() : undefined; })
             .then(function (serverUser) {
+              if (serverUser === undefined) return false;
               withCloudSyncLock(function () {
                 if (!serverUser || typeof serverUser !== 'object') {
                   writeLocalSilent('hvac_user_checked', null);
@@ -2580,11 +2799,13 @@
                   window.dispatchEvent(new StorageEvent('storage', { key: 'hvac_user_checked' }));
                 }
               });
-            }).catch(function () {});
+              return true;
+            }).catch(function () { return false; });
         }
+        return Promise.resolve(true);
       }
     } else if (secName === 'qna') {
-      if (forceAdminSync || pId === 'qna' || (pId === 'admin' && isAdminSectionNeeded('qna'))) {
+      if (forceAdminSync || pId === 'qna' || pId === 'admin') {
         return fetch(cloudPath('qna/list'), { cache: 'no-store' })
           .then(function (r) { return r.ok ? r.json() : undefined; })
           .then(function (remoteQna) {
@@ -2614,12 +2835,12 @@
           });
           return true;
         }).catch(function () { return false; });
-      } else if (pId === 'admin' && (forceAdminSync || isAdminSectionNeeded('games'))) {
+      } else if (pId === 'admin' || forceAdminSync) {
         return fetch(cloudPath('games/submissions'), { cache: 'no-store' })
-          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (r) { return r.ok ? r.json() : undefined; })
           .then(function (subMap) {
-            if (!subMap || typeof subMap !== 'object') return false;
-            var list = Object.values(subMap).filter(Boolean);
+            if (subMap === undefined) return false;
+            var list = (subMap && typeof subMap === 'object') ? Object.values(subMap).filter(Boolean) : [];
             var summary = buildGameTop3SummaryFromList(list);
             withCloudSyncLock(function () {
               writeLocalSilent('hvac_game_submissions', list);
@@ -2631,12 +2852,12 @@
           }).catch(function () { return false; });
       }
     } else if (secName === 'surveys') {
-      if (pId === 'admin' && (forceAdminSync || isAdminSectionNeeded('surveys'))) {
+      if (pId === 'admin' || pId === 'luckydraw-stage' || forceAdminSync) {
         return fetch(cloudPath('surveys'), { cache: 'no-store' })
-          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (r) { return r.ok ? r.json() : undefined; })
           .then(function (survMap) {
-            if (!survMap || typeof survMap !== 'object') return false;
-            var list = Object.values(survMap).filter(Boolean);
+            if (survMap === undefined) return false;
+            var list = (survMap && typeof survMap === 'object') ? Object.values(survMap).filter(Boolean) : [];
             withCloudSyncLock(function () {
               writeLocalSilent('hvac_survey_responses', list);
               window.dispatchEvent(new StorageEvent('storage', { key: 'hvac_survey_responses' }));
@@ -2648,6 +2869,29 @@
       return syncConfigSmart(null, false);
     }
     return Promise.resolve(false);
+  }
+
+  // 진행 중인 섹션 네트워크 요청 중복 차단 및 성공 시점에 lastSeenMeta 확정
+  function requestSectionSync(sec, remoteTsVal, forceAdminSync) {
+    var curPid = pageId();
+    if (!forceAdminSync && !doesPageUseSection(sec, curPid)) return Promise.resolve(false);
+    var seenKey = getSectionSeenKey(sec, curPid);
+    var targetTs = Number(remoteTsVal) || -1;
+    if (inFlightSectionPromises[seenKey]) {
+      return inFlightSectionPromises[seenKey];
+    }
+    var p = syncSpecificSection(sec, !!forceAdminSync)
+      .then(function (ok) {
+        if (ok) {
+          lastSeenMeta[seenKey] = targetTs;
+        }
+        return ok;
+      })
+      .finally(function () {
+        delete inFlightSectionPromises[seenKey];
+      });
+    inFlightSectionPromises[seenKey] = p;
+    return p;
   }
 
   function isConfigKeyNeededOnPage(key, pId) {
@@ -2720,7 +2964,7 @@
     // 2) 이미 정적 스케줄/퀴즈/설문 설정(site-config.json)이 로컬에 캐시된 경우 (관리자 포함)
     // 무거운 정적 데이터(11.5KB)를 다시 받지 않고 동적 제어 키만 핀포인트 조회
     if (!forceAll && hasLocalSectionCache('config') && configKeyHint !== 'all') {
-      var dynamicKeys = ['hvac_quiz_unlocked_sessions', 'hvac_notice_banner', 'hvac_game_config', 'hvac_checkin_passcode', 'hvac_luckydraw_config', 'hvac_luckydraw_state', 'hvac_milestone_events'];
+      var dynamicKeys = ['hvac_quiz_unlocked_sessions', 'hvac_quiz_scoring_policy', 'hvac_notice_banner', 'hvac_game_config', 'hvac_checkin_passcode', 'hvac_luckydraw_config', 'hvac_luckydraw_state', 'hvac_milestone_events'];
       var needed = dynamicKeys.filter(function (k) { return isConfigKeyNeededOnPage(k, pId); });
       return Promise.all(needed.map(syncSingleConfigKey)).then(function () { return true; });
     }
@@ -2769,8 +3013,6 @@
     return map;
   }
 
-  var STATIC_PUBLISHED_KEYS = ['hvac_schedule_settings', 'hvac_theme_settings', 'hvac_site_links', 'hvac_site_content', 'hvac_quiz_config', 'hvac_survey_config'];
-
   // 설정 키별 타임스탬프 비교 후 실제로 변경된(그리고 현재 페이지에 필요한) 키만 다운로드
   function syncConfigFromMeta(d, forceAll) {
     var pId = pageId();
@@ -2780,7 +3022,7 @@
     if (forceAll || !hasLocalSectionCache('config')) {
       mapKeys.forEach(function (k) {
         var ts = Number(cfgMap[k]) || 0;
-        if (ts > 0) lastSeenCfgKeys[k] = ts;
+        if (ts > 0) setCfgKeySeenTs(k, ts);
       });
       saveSeenCfgKeys();
       return syncConfigSmart(null, !!forceAll);
@@ -2789,31 +3031,34 @@
     if (mapKeys.length > 0) {
       var allTs = Number(cfgMap.all) || 0;
       if (allTs > 0 && allTs !== (Number(lastSeenCfgKeys.all) || 0)) {
+        lastSeenCfgKeys.all = allTs;
         mapKeys.forEach(function (k) {
           var ts = Number(cfgMap[k]) || 0;
-          if (ts > 0) lastSeenCfgKeys[k] = ts;
+          if (ts > 0) setCfgKeySeenTs(k, ts);
         });
         saveSeenCfgKeys();
         return syncConfigSmart(null, true);
       }
       var targets = [];
+      var staticChanged = false;
       mapKeys.forEach(function (k) {
         if (k === 'all' || CONFIG_KEYS.indexOf(k) < 0) return;
         var ts = Number(cfgMap[k]) || 0;
         if (ts <= 0) return;
-        var seenTs = Number(lastSeenCfgKeys[k]) || 0;
+        if (!isConfigKeyNeededOnPage(k, pId)) return;
+        var seenTs = getCfgKeySeenTs(k);
         // 정적 배포 키는 site-config.json의 metaConfigTs보다 클 때만 동기화하고,
-        // 럭키드로우 등 동적 실시간 키는 PC 간 시계 오차(Clock Skew)가 있어도 타임스탬프가 다르면(ts !== seenTs) 즉시 동기화!
+        // 동적 실시간 키는 세션 인메모리 seenTs와 다르면(페이지 로드 시 0이므로 1회 검증 포함) 즉시 동기화!
         if (STATIC_PUBLISHED_KEYS.indexOf(k) >= 0) {
           if (ts <= seenTs) return;
+          staticChanged = true;
         } else {
           if (ts === seenTs) return;
         }
-        if (!isConfigKeyNeededOnPage(k, pId)) return; // 다른 페이지용 키는 '미확인'으로 남겨둠
-        lastSeenCfgKeys[k] = ts;
+        setCfgKeySeenTs(k, ts);
         targets.push(k);
       });
-      if (targets.length) saveSeenCfgKeys();
+      if (staticChanged) saveSeenCfgKeys();
       return Promise.all(targets.map(syncSingleConfigKey)).then(function () { return true; });
     }
 
@@ -2828,11 +3073,52 @@
   var cloudEventSource = null;
   var streamConnected = false;
 
+  function checkSessionResetSignal(resetEpochVal) {
+    var resetEpoch = Number(resetEpochVal) || 0;
+    if (resetEpoch <= 0) return;
+    var myUser = read('hvac_user_checked');
+    if (myUser && myUser.email) {
+      var userCheckedEpoch = Math.max(Number(myUser.checkedAt) || 0, Number(myUser.lastActiveAt) || 0, Number(myUser.checkinTimeMs) || 0);
+      if (userCheckedEpoch < resetEpoch) {
+        withCloudSyncLock(function () {
+          writeLocalSilent('hvac_user_checked', null);
+          try { localStorage.removeItem('hvac_user_checked'); } catch (e) {}
+          try { localStorage.removeItem('hvac_checkin_user'); } catch (e) {}
+          window.dispatchEvent(new CustomEvent('hvac:session-terminated', {
+            detail: { deviceType: '관리자 전체 세션 강제 체크아웃', terminatedAt: resetEpoch }
+          }));
+        });
+      }
+    }
+  }
+
+  function checkQuizResetSignal(resetEpochVal) {
+    var resetEpoch = Number(resetEpochVal) || 0;
+    if (resetEpoch <= 0) return;
+    var prevReset = Number(lastSeenMeta.quiz_reset_at) || 0;
+    if (resetEpoch > prevReset) {
+      lastSeenMeta.quiz_reset_at = resetEpoch;
+      saveLastSeenMeta();
+      withCloudSyncLock(function () {
+        writeLocalSilent('hvac_quiz_submissions', []);
+        try { localStorage.removeItem('hvac_quiz_answers'); } catch (e) {}
+        writeLocalSilent('hvac_quiz_score', '0');
+        try { window.dispatchEvent(new CustomEvent('hvac:quiz-reset', { detail: { resetAt: resetEpoch } })); } catch (e) {}
+        try { window.dispatchEvent(new CustomEvent('hvac:quiz-submissions-updated', { detail: { submissions: [] } })); } catch (e) {}
+        try { window.dispatchEvent(new StorageEvent('storage', { key: 'hvac_quiz_submissions' })); } catch (e) {}
+      });
+    }
+  }
+
   function initCloudStream() {
     if (typeof window === 'undefined' || !window.EventSource) return;
     var c = getCloudConfig();
     if (!c || !c.enabled || !c.dbUrl) return;
 
+    if (window.__hvacCloudEventSource) {
+      try { window.__hvacCloudEventSource.close(); } catch (e) {}
+      window.__hvacCloudEventSource = null;
+    }
     if (cloudEventSource) {
       try { cloudEventSource.close(); } catch (e) {}
       cloudEventSource = null;
@@ -2841,30 +3127,13 @@
     var streamUrl = cloudPath('meta');
     try {
       cloudEventSource = new EventSource(streamUrl);
-
-      function checkSessionResetSignal(resetEpochVal) {
-        var resetEpoch = Number(resetEpochVal) || 0;
-        if (resetEpoch <= 0) return;
-        var myUser = read('hvac_user_checked');
-        if (myUser && myUser.email) {
-          var userCheckedEpoch = Math.max(Number(myUser.checkedAt) || 0, Number(myUser.lastActiveAt) || 0, Number(myUser.checkinTimeMs) || 0);
-          if (userCheckedEpoch < resetEpoch) {
-            withCloudSyncLock(function () {
-              writeLocalSilent('hvac_user_checked', null);
-              try { localStorage.removeItem('hvac_user_checked'); } catch (e) {}
-              try { localStorage.removeItem('hvac_checkin_user'); } catch (e) {}
-              window.dispatchEvent(new CustomEvent('hvac:session-terminated', {
-                detail: { deviceType: '관리자 전체 세션 강제 체크아웃', terminatedAt: resetEpoch }
-              }));
-            });
-          }
-        }
-      }
+      window.__hvacCloudEventSource = cloudEventSource;
 
       function handleStreamPayload(payload) {
         if (!payload || typeof payload !== 'object') return;
         var p = payload.path || '';
         var d = payload.data;
+        var curPid = pageId();
 
         if (p === '/' || p === '') {
           if (d && typeof d === 'object') {
@@ -2874,13 +3143,16 @@
               metaChanged = true;
               checkSessionResetSignal(d.session_reset_at);
             }
+            if (d.quiz_reset_at && d.quiz_reset_at !== lastSeenMeta.quiz_reset_at) {
+              checkQuizResetSignal(d.quiz_reset_at);
+            }
             var streamCfgMap = extractCfgKeysMap(d);
             var streamHasChangedCfg = false;
             var streamKeys = Object.keys(streamCfgMap);
             for (var si = 0; si < streamKeys.length; si++) {
               var sk = streamKeys[si];
               var sts = Number(streamCfgMap[sk]) || 0;
-              if (sts > 0 && sts !== (Number(lastSeenCfgKeys[sk]) || 0) && isConfigKeyNeededOnPage(sk, pageId())) {
+              if (sts > 0 && sts !== getCfgKeySeenTs(sk) && isConfigKeyNeededOnPage(sk, curPid)) {
                 streamHasChangedCfg = true;
                 break;
               }
@@ -2888,19 +3160,18 @@
 
             ['quiz', 'checkins', 'qna', 'games', 'surveys', 'config'].forEach(function (sec) {
               if (d[sec]) latestRemoteMeta[sec] = d[sec];
-              if (pageId() === 'admin' && !isAdminSectionNeeded(sec)) return;
+              if (!doesPageUseSection(sec, curPid)) return;
               if (sec === 'config') {
                 if (streamHasChangedCfg || (d.config && d.config !== lastSeenMeta.config) || !hasLocalSectionCache('config')) {
                   if (d.config) lastSeenMeta.config = d.config;
-                  metaChanged = true;
                   syncConfigFromMeta(d, false);
                 }
                 return;
               }
-              if ((d[sec] && d[sec] !== lastSeenMeta[sec]) || !hasLocalSectionCache(sec)) {
-                if (d[sec]) lastSeenMeta[sec] = d[sec];
-                metaChanged = true;
-                syncSpecificSection(sec, false);
+              var seenKey = getSectionSeenKey(sec, curPid);
+              var rTs = Number(d[sec]) || -1;
+              if (rTs !== lastSeenMeta[seenKey] || !hasLocalSectionCache(sec)) {
+                requestSectionSync(sec, rTs, false);
               }
             });
             if (metaChanged) saveLastSeenMeta();
@@ -2922,15 +3193,21 @@
               saveLastSeenMeta();
               checkSessionResetSignal(d);
             }
+          } else if (cleanSec === 'quiz_reset_at') {
+            if (d && d !== lastSeenMeta.quiz_reset_at) {
+              checkQuizResetSignal(d);
+            }
           } else if (cleanSec === 'config') {
             // config 타임스탬프 단독 변경은 config_keys 이벤트에서 처리 (중복 다운로드 방지)
-            if (d) { lastSeenMeta.config = d; latestRemoteMeta.config = d; saveLastSeenMeta(); }
-          } else if (cleanSec && d !== lastSeenMeta[cleanSec]) {
-            latestRemoteMeta[cleanSec] = d || Date.now();
-            if (pageId() === 'admin' && !isAdminSectionNeeded(cleanSec)) return;
-            lastSeenMeta[cleanSec] = d || Date.now();
-            saveLastSeenMeta();
-            syncSpecificSection(cleanSec, false);
+            if (d) { lastSeenMeta.config = d; latestRemoteMeta.config = d; }
+          } else if (cleanSec) {
+            var patchTs = Number(d) || Date.now();
+            latestRemoteMeta[cleanSec] = patchTs;
+            if (!doesPageUseSection(cleanSec, curPid)) return;
+            var patchSeenKey = getSectionSeenKey(cleanSec, curPid);
+            if (patchTs !== lastSeenMeta[patchSeenKey]) {
+              requestSectionSync(cleanSec, patchTs, false);
+            }
           }
         }
       }
@@ -2962,7 +3239,7 @@
   // 클라우드 -> 로컬 변경사항 폴링 (meta 타임스탬프 비교 후 변경된 섹션만 다운로드)
   function pollCloudChanges(forceAll) {
     var c = getCloudConfig();
-    if (!c || !window.fetch || isSyncingCloud || document.hidden) return Promise.resolve(false);
+    if (!c || !window.fetch || (isSyncingCloud && !forceAll) || document.hidden) return Promise.resolve(false);
     isSyncingCloud = true;
 
     return fetch(cloudPath('meta'), { cache: 'no-store' })
@@ -2979,6 +3256,15 @@
           if (meta[sec]) latestRemoteMeta[sec] = meta[sec];
         });
 
+        if (meta.session_reset_at && meta.session_reset_at !== lastSeenMeta.session_reset_at) {
+          lastSeenMeta.session_reset_at = meta.session_reset_at;
+          saveLastSeenMeta();
+          checkSessionResetSignal(meta.session_reset_at);
+        }
+        if (meta.quiz_reset_at && meta.quiz_reset_at !== lastSeenMeta.quiz_reset_at) {
+          checkQuizResetSignal(meta.quiz_reset_at);
+        }
+
         // 1) 설정(config) 변경 감지 (설정 키별 타임스탬프 비교 → 실제로 변경된 키가 있을 때만 동기화)
         var cfgKeysMap = extractCfgKeysMap(meta);
         var hasChangedCfgKey = false;
@@ -2986,7 +3272,7 @@
         for (var i = 0; i < mapKeys.length; i++) {
           var k = mapKeys[i];
           var ts = Number(cfgKeysMap[k]) || 0;
-          if (ts > 0 && ts !== (Number(lastSeenCfgKeys[k]) || 0) && isConfigKeyNeededOnPage(k, pId)) {
+          if (ts > 0 && ts !== getCfgKeySeenTs(k) && isConfigKeyNeededOnPage(k, pId)) {
             hasChangedCfgKey = true;
             break;
           }
@@ -2997,63 +3283,15 @@
           tasks.push(syncConfigFromMeta(meta, !!forceAll));
         }
 
-        // 2) Q&A 변경 감지 (qna, admin 활성 탭에서만 동기화)
-        if ((pId === 'qna' || (pId === 'admin' && (forceAll || isAdminSectionNeeded('qna')))) && (forceAll || !hasLocalSectionCache('qna') || (meta.qna && meta.qna !== lastSeenMeta.qna))) {
-          lastSeenMeta.qna = meta.qna || Date.now();
-          tasks.push(syncSpecificSection('qna', !!forceAll));
-        }
-
-        // 3-A) 출석 명부 전체 동기화 (admin 활성 탭, attendance-dashboard, luckydraw-stage, quiz-winners)
-        var fullCheckinPages = ['admin', 'attendance-dashboard', 'luckydraw-stage', 'quiz-winners'];
-        if (fullCheckinPages.indexOf(pId) >= 0 && (pId !== 'admin' || forceAll || isAdminSectionNeeded('checkins')) && (forceAll || !hasLocalSectionCache('checkins') || (meta.checkins && meta.checkins !== lastSeenMeta.checkins))) {
-          lastSeenMeta.checkins = meta.checkins || Date.now();
-          tasks.push(syncSpecificSection('checkins', !!forceAll));
-        }
-
-        // 3-B) 일반 참석자 초경량 단일 계정 상태 검증
-        if (fullCheckinPages.indexOf(pId) < 0 && (forceAll || (meta.checkins && meta.checkins !== lastSeenMeta.checkins) || (meta.session_reset_at && meta.session_reset_at !== lastSeenMeta.session_reset_at))) {
-          lastSeenMeta.checkins = meta.checkins || Date.now();
-          if (meta.session_reset_at) lastSeenMeta.session_reset_at = meta.session_reset_at;
-          var myUser = read('hvac_user_checked');
-          if (myUser && myUser.email) {
-            var resetEpoch = Number(meta.session_reset_at) || 0;
-            var userCheckedEpoch = Math.max(Number(myUser.checkedAt) || 0, Number(myUser.lastActiveAt) || 0, Number(myUser.checkinTimeMs) || 0);
-            if (resetEpoch > 0 && userCheckedEpoch < resetEpoch) {
-              withCloudSyncLock(function () {
-                writeLocalSilent('hvac_user_checked', null);
-                try { localStorage.removeItem('hvac_user_checked'); } catch (e) {}
-                try { localStorage.removeItem('hvac_checkin_user'); } catch (e) {}
-                window.dispatchEvent(new CustomEvent('hvac:session-terminated', {
-                  detail: { deviceType: '관리자 전체 세션 강제 체크아웃', terminatedAt: resetEpoch }
-                }));
-              });
-              saveLastSeenMeta();
-              isSyncingCloud = false;
-              return false;
-            }
-            tasks.push(syncSpecificSection('checkins', false));
+        // 2) 페이지별 필요 섹션(checkins, qna, quiz, surveys, games) 차등 동기화
+        ['checkins', 'qna', 'quiz', 'surveys', 'games'].forEach(function (sec) {
+          if (!doesPageUseSection(sec, pId)) return;
+          var seenKey = getSectionSeenKey(sec, pId);
+          var rTs = Number(meta[sec]) || -1;
+          if (forceAll || !hasLocalSectionCache(sec) || rTs !== lastSeenMeta[seenKey]) {
+            tasks.push(requestSectionSync(sec, rTs, !!forceAll));
           }
-        }
-
-        // 4) 퀴즈 제출 현황 변경 감지 (admin 활성 탭 및 quiz-winners 사회자 화면 동기화)
-        if ((pId === 'quiz-winners' || (pId === 'admin' && (forceAll || isAdminSectionNeeded('quiz')))) && (forceAll || !hasLocalSectionCache('quiz') || (meta.quiz && meta.quiz !== lastSeenMeta.quiz))) {
-          lastSeenMeta.quiz = meta.quiz || Date.now();
-          tasks.push(syncSpecificSection('quiz', !!forceAll));
-        }
-
-        // 5) 만족도 설문(survey) 응답 변경 감지 (admin 서베이 탭 활성 시)
-        if (pId === 'admin' && (forceAll || isAdminSectionNeeded('surveys')) && (forceAll || !hasLocalSectionCache('surveys') || (meta.surveys && meta.surveys !== lastSeenMeta.surveys))) {
-          lastSeenMeta.surveys = meta.surveys || Date.now();
-          tasks.push(syncSpecificSection('surveys', !!forceAll));
-        }
-
-        // 6) 점심 미니게임 변경 감지 (전광판은 450B Top3만, admin은 미니게임 탭 활성 시에만)
-        if ((pId === 'lunch-screen' || pId === 'game-leaderboard' || (pId === 'admin' && (forceAll || isAdminSectionNeeded('games')))) && (forceAll || !hasLocalSectionCache('games') || (meta.games && meta.games !== lastSeenMeta.games))) {
-          lastSeenMeta.games = meta.games || Date.now();
-          tasks.push(syncSpecificSection('games', !!forceAll));
-        }
-
-        saveLastSeenMeta();
+        });
 
         return Promise.all(tasks).then(function () {
           isSyncingCloud = false;
@@ -3073,8 +3311,8 @@
       try { prevRaw = window.localStorage.getItem(key); } catch (e) {}
     }
     origSetItem.call(this, key, value);
-    // 주의: isSyncingCloud(폴링 네트워크 대기 중)일 때 사용자가 버튼을 눌러 setItem한 변경이 무시되지 않도록 cloudSyncLockCount > 0 만 체크!
-    if (this !== window.localStorage || cloudSyncLockCount > 0) return;
+    // 주의: isSyncingCloud(폴링 네트워크 대기 중)일 때 사용자가 버튼을 눌러 setItem한 변경이 무시되지 않도록 getCloudSyncLockCount() > 0 만 체크!
+    if (this !== window.localStorage || getCloudSyncLockCount() > 0) return;
     var isLuckyKey = (key === 'hvac_luckydraw_state' || key === 'hvac_luckydraw_config');
     if (prevRaw === value && !isLuckyKey) return; // 기존 로컬 값과 100% 동일하면 클라우드 PUT / meta 갱신 발생 안 함 (단, 럭키드로우는 강제 동기화 허용)
     var c = getCloudConfig();
@@ -3096,7 +3334,14 @@
   // 주기적 스마트 폴링 및 SSE 소켓 스트림 가동
   var pollTimer = null;
   function startCloudLoop() {
-    if (pollTimer) clearInterval(pollTimer);
+    if (window.__hvacPollTimer) {
+      clearInterval(window.__hvacPollTimer);
+      window.__hvacPollTimer = null;
+    }
+    if (pollTimer) {
+      clearInterval(pollTimer);
+      pollTimer = null;
+    }
     if (!getCloudConfig()) return;
     var pId = pageId();
     // index.html 랜딩 페이지는 정적 스케줄/안내 페이지(site-config.json 연동)이므로 실시간 Firebase 소켓/폴링 제외 (트래픽 0B)
@@ -3112,31 +3357,23 @@
       syncSingleConfigKey('hvac_luckydraw_state');
     }
 
-    // Q&A 피드(qna.html) 및 사회자 세션별 Q&A(mc-qna.html)는 진입 즉시 최신 클라우드 Q&A 목록 강제 동기화
-    if (pId === 'qna' || pId === 'admin') {
-      syncSpecificSection('qna', true);
-    }
-
     // 1. 200명 전원 실시간 SSE 소켓 스트림 연결 (초기 put 이벤트로 변경된 섹션만 차등 동기화)
     initCloudStream();
 
-    // 2. SSE 소켓이 2.5초 내 연결되지 않은 경우에만 초기 백업 폴링 1회 수행 (중복 다운로드 방지)
-    setTimeout(function () {
-      if (!streamConnected || pId === 'admin' || pId === 'luckydraw-stage' || pId === 'qna') {
-        pollCloudChanges(false);
-      }
-    }, 2500);
+    // 2. 페이지 진입/새로고침 즉시 초기 차등 동기화 1회 실행 (inFlightSectionPromises로 SSE와 중복 요청 0건 보장!)
+    pollCloudChanges(false);
 
     // 3. 주기적 안전 백업 폴링
     // - 일반 참석자 페이지: SSE 정상 연결 중에는 폴링 생략 (트래픽 0B)
-    // - 관리자(admin), 사회자 럭키드로우(luckydraw-stage), 실시간 Q&A/사회자 세션별 Q&A(qna): 4초 주기로 초경량 meta 폴링 병행 (SSE 사일런트 드롭 완벽 방어)
-    var isCriticalStagePage = (pId === 'admin' || pId === 'luckydraw-stage' || pId === 'qna');
+    // - 관리자(admin), 사회자 럭키드로우(luckydraw-stage), 실시간 Q&A/사회자 세션별 Q&A(qna), 출석현황/퀴즈당첨자: 4초 주기로 초경량 meta 폴링 병행 (SSE 사일런트 드롭 완벽 방어)
+    var isCriticalStagePage = (pId === 'admin' || pId === 'luckydraw-stage' || pId === 'qna' || pId === 'attendance-dashboard' || pId === 'quiz-winners');
     var fastPages = ['admin', 'qna', 'attendance-dashboard', 'quiz-winners', 'game-leaderboard', 'lunch-screen', 'luckydraw-stage'];
     var intervalMs = isCriticalStagePage ? 4000 : (fastPages.indexOf(pId) >= 0 ? 15000 : 30000);
     pollTimer = setInterval(function () {
       if (!isCriticalStagePage && streamConnected && cloudEventSource && cloudEventSource.readyState === 1) return;
       pollCloudChanges(false);
     }, intervalMs);
+    window.__hvacPollTimer = pollTimer;
   }
 
   // 모바일 화면 꺼짐 복귀 / 백그라운드 탭 전환 시 스트림 및 데이터 재연결
@@ -3149,13 +3386,11 @@
     if (now - lastResumeCheckAt < 2000) return;
     lastResumeCheckAt = now;
     if (!getCloudConfig()) return;
-    // 관리자, 럭키드로우 무대, 실시간/세션별 Q&A 화면은 탭 포커스 복귀 시 즉시 최신 상태 확인
-    if (pId === 'admin' || pId === 'luckydraw-stage' || pId === 'qna') {
+    // 주요 실시간 화면은 탭 포커스 복귀 시 즉시 최신 meta 확인
+    if (pId === 'admin' || pId === 'luckydraw-stage' || pId === 'qna' || pId === 'attendance-dashboard' || pId === 'quiz-winners') {
       pollCloudChanges(false);
       if (pId === 'admin' || pId === 'luckydraw-stage') {
         syncSingleConfigKey('hvac_luckydraw_state');
-      } else if (pId === 'qna') {
-        syncSpecificSection('qna', true);
       }
       if (!cloudEventSource || cloudEventSource.readyState === 2) {
         initCloudStream();
@@ -3343,15 +3578,24 @@
   // ---------------------------------------------------------
   applyTheme();
 
+  var onReadyExecuted = false;
   function onReady() {
+    if (onReadyExecuted) return;
+    onReadyExecuted = true;
     applyLinks();
     renderBanner();
     syncPublished().then(function () {
       startCloudLoop();
     });
   }
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', onReady);
-  else onReady();
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', onReady);
+    window.addEventListener('load', onReady);
+    // document.open()/write()/close() 마운트 환경에서 DOMContentLoaded 미발생 방어 폴백
+    setTimeout(onReady, 80);
+  } else {
+    onReady();
+  }
 
   window.addEventListener('storage', function (e) {
     if (!e.key) return;
@@ -3572,12 +3816,12 @@
           surveys: 'hvac_survey_responses',
           games: 'hvac_game_submissions'
         };
+        var seenKey = getSectionSeenKey(sec, 'admin');
         var hasCache = read(cacheKeyMap[sec]) !== null;
-        var needSync = !hasCache || !lastSeenMeta[sec] || (latestRemoteMeta[sec] && latestRemoteMeta[sec] !== lastSeenMeta[sec]);
+        var rTs = Number(latestRemoteMeta[sec]) || 0;
+        var needSync = !hasCache || !lastSeenMeta[seenKey] || (rTs && rTs !== lastSeenMeta[seenKey]);
         if (!needSync) return Promise.resolve(false);
-        lastSeenMeta[sec] = latestRemoteMeta[sec] || Date.now();
-        saveLastSeenMeta();
-        return syncSpecificSection(sec, true);
+        return requestSectionSync(sec, rTs || Date.now(), true);
       },
       isActive: function () { var c = getCloudConfig(); return !!(c && c.enabled && c.dbUrl); },
       isStreamConnected: function () { return !!streamConnected; },

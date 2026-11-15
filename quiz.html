@@ -24,7 +24,7 @@
   <meta name="theme-color" content="#040906">
 
   <!-- 공통 코어: 테마·링크·공지 배너·배포 설정(site-config.json) 동기화 -->
-  <script src="./assets/hvac-core.js?v=261116_0013"></script>
+  <script src="./assets/hvac-core.js?v=261116_0540"></script>
 
   <style>
     :root {
@@ -1804,7 +1804,7 @@
       }
 
       userAnswers[quizId] = state;
-      applyCardState(card, state, false);
+      applyCardState(card, state, false); updateQuizSummary(!!state.isDone);
       updateQuizSummary();
 
       // 세션 0(오프닝 몸풀기 연습 퀴즈) 문항 풀이 완료 시 안내 팝업 표출
@@ -1820,7 +1820,7 @@
       }
     }
 
-    function updateQuizSummary() {
+    function updateQuizSummary(shouldPushCloud = false) {
       let currentScore = 0;
       let answeredCount = 0;
       let firstTryCount = 0;
@@ -1899,7 +1899,7 @@
         localStorage.setItem('hvac_quiz_submissions', JSON.stringify(subList));
 
         // 클라우드 연동 전송 (중복 제출 / 타 기기 동시 제출 잠금 검증)
-        if (window.HVAC && HVAC.cloud && answeredCount > 0) {
+        if (shouldPushCloud && window.HVAC && HVAC.cloud && answeredCount > 0) {
           HVAC.cloud.pushQuizScore({
             score: currentScore,
             answeredCount: answeredCount,
@@ -2413,7 +2413,7 @@
     }
 
     // 다른 기기 로그인 감지 시 세션 종료 안내
-    window.addEventListener('hvac:session-terminated', function () {
+    window.addEventListener('hvac:quiz-reset', function () { userAnswers = {}; if (!renderQuizCardsFromConfig()) { location.reload(); return; } initQuizCards(); bindAntiCopyGuards(); applySessionFilter(currentFilterSession); }); window.addEventListener('hvac:quiz-my-submission-updated', function () { try { const saved = JSON.parse(localStorage.getItem('hvac_quiz_answers') || '{}'); if (saved && typeof saved === 'object') { userAnswers = saved; if (renderQuizCardsFromConfig()) { initQuizCards(); bindAntiCopyGuards(); } applySessionFilter(currentFilterSession); } } catch (err) {} }); window.addEventListener('hvac:session-terminated', function () {
       alert('🔒 다른 기기에서 동일 계정으로 새로 로그인되어\n1인 1기기 보안 정책에 따라 현재 기기의 연결이 종료되었습니다.');
       window.location.href = './checkin.html';
     });
