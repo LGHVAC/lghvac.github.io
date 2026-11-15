@@ -3669,8 +3669,21 @@
       const subEl = document.getElementById('modalConfirmSub');
       const btnConfirmEl = document.getElementById('btnModalConfirm');
 
+      const rosterPos = (matchedRoster && (matchedRoster.position || matchedRoster.title)) || (existRecord && existRecord.position) || '';
+      const rosterDept = (matchedRoster && matchedRoster.dept) || (existRecord && existRecord.dept) || '';
+
       if (isOp || (matchedRoster && (matchedRoster.category === 'operator' || matchedRoster.regMethod === 'operator'))) {
-        currentCheckinMeta = { type: 'operator', category: 'operator', regMethod: 'operator', position: '운영진', dept: '운영팀', empNo: '', isOperator: true };
+        const opPos = rosterPos || (cleanEmail === 'youngsoo.lee' ? '운영총괄' : '운영진');
+        const opDept = rosterDept || 'ES엔지니어링담당';
+        currentCheckinMeta = { 
+          type: 'operator', 
+          category: 'operator', 
+          regMethod: 'operator', 
+          position: opPos, 
+          dept: opDept, 
+          empNo: (matchedRoster && matchedRoster.empNo) || '', 
+          isOperator: true 
+        };
         if (badgeEl) {
           badgeEl.style.background = 'rgba(168, 85, 247, 0.2)';
           badgeEl.style.color = '#c084fc';
@@ -3680,10 +3693,10 @@
         if (titleEl) titleEl.textContent = '운영진 출석 체크';
         if (subEl) subEl.textContent = '세미나 운영 스태프로 확인되었습니다. 출석 체크인을 완료합니다.';
         if (btnConfirmEl) btnConfirmEl.textContent = '운영진 체크인 완료';
-        modalValName.textContent = `${rawName} (운영팀)`;
+        modalValName.textContent = opPos ? `${rawName} ${opPos}` : rawName;
       } else if (matchedRoster) {
-        const pos = matchedRoster.position || matchedRoster.title || '';
-        const dept = matchedRoster.dept || '';
+        const pos = rosterPos || '';
+        const dept = rosterDept || '';
         const empNo = matchedRoster.empNo || '';
         const cat = matchedRoster.category || matchedRoster.regMethod || (
           String(dept + ' ' + pos).includes('하이엠') ? 'him' :
@@ -4068,9 +4081,36 @@
     function formatUserNameWithTitle(user) {
       if (!user) return '참석자 님';
       const name = (user.name || '참석자').trim();
-      const pos = (user.position || user.title || '').trim();
-      if (pos) {
+      let pos = (user.position || user.title || '').trim();
+
+      // 만약 position에 등록방식(운영진, 사전등록, 사전 등록, 외부, VIP, 하이엠 등)이 잘못 들어가 있거나 비어있는 경우
+      // 사전 등록 Roster 명부에서 실제 직급을 역조회하여 정밀 보정
+      const invalidPosKeywords = ['운영진', '사전등록', '사전 등록', '외부', 'vip', '하이엠', 'walkin', 'pre', 'operator', 'him', 'external'];
+      if (!pos || invalidPosKeywords.includes(pos.toLowerCase())) {
+        try {
+          const cleanEmail = String(user.email || '').toLowerCase().replace(/@lge\.com$/i, '').trim();
+          if (cleanEmail === 'youngsoo.lee') {
+            pos = '운영총괄';
+          } else {
+            const roster = (window.HVAC && window.HVAC.read && window.HVAC.read('hvac_roster_list'))
+              || JSON.parse(localStorage.getItem('hvac_roster_list') || '[]');
+            const matched = roster.find(r => String(r.email || '').toLowerCase().replace(/@lge\.com$/i, '').trim() === cleanEmail);
+            if (matched && matched.position) {
+              pos = matched.position.trim();
+            }
+          }
+          if (pos && !invalidPosKeywords.includes(pos.toLowerCase())) {
+            user.position = pos;
+            try { localStorage.setItem('hvac_user_checked', JSON.stringify(user)); } catch (e) {}
+          }
+        } catch (e) {}
+      }
+
+      if (pos && !invalidPosKeywords.includes(pos.toLowerCase())) {
         return `${name} ${pos}`;
+      }
+      if (user.isOperator || String(user.email || '').toLowerCase().includes('youngsoo.lee')) {
+        return `${name} 운영총괄`;
       }
       return `${name} 님`;
     }
@@ -4541,6 +4581,15 @@
       const initialIdx = findCurrentOrUpcomingSessionIndex(sessions);
       renderSession(initialIdx);
 
+      // 일회성 ?session=lunch 등의 쿼리 파라미터가 남아있어 이후 새로고침 시 점심시간으로 고정되는 현상 방지
+      try {
+        const curUrl = new URL(window.location.href);
+        if (curUrl.searchParams.has('session')) {
+          curUrl.searchParams.delete('session');
+          window.history.replaceState({}, document.title, curUrl.pathname + (curUrl.search ? curUrl.search : ''));
+        }
+      } catch (e) {}
+
       // redirect 지원: 퀴즈 또는 Q&A 등 원래 요청했던 페이지로 즉시 자동 복귀
       try {
         const urlParams = new URLSearchParams(window.location.search);
@@ -4732,7 +4781,23 @@
         }
       }
 
-      // 2-1순위: 관리자 수동 운영 중(종료 처리된 세션 존재)이면 '종료'가 아닌 첫 세션을 다음 세션으로 포커스
+      // 3순위: 행사 전 기간(isPreEventPeriod())인 경우
+      // 관리자가 명시적으로 '진행 중' 세션을 가동하지 않은 이상, 무조건 첫 번째 세션(인덱스 0) 포커스!
+      // (관리자 리허설/테스트로 오전 세션을 '종료'로 설정해 두었더라도 행사 시작 전에는 점심시간 등으로 점프하지 않음)
+      if (isPreEventPeriod()) {
+        return 0;
+      }
+
+      // 4순위: 모든 세션이 '예정'인 경우 (행사 당일 아침 시작 전): 첫 번째 세션(인덱스 0) 포커스
+      const isAllUpcoming = sessList.every(s => {
+        const st = (s.status || '').trim();
+        return !st || st === '예정' || st === 'upcoming';
+      });
+      if (isAllUpcoming) {
+        return 0;
+      }
+
+      // 5순위: 행사 당일 관리자 수동 운영 중(종료 처리된 세션 존재)이면 '종료'가 아닌 첫 세션을 다음 세션으로 포커스
       if (isManualScheduleMode()) {
         const nextIdx = sessList.findIndex(x => {
           const st = (x && x.status || '').trim();
@@ -4741,18 +4806,9 @@
         return nextIdx !== -1 ? nextIdx : sessList.length - 1;
       }
 
-      // 3순위: 행사 전 기간(isPreEventPeriod())이거나 모든 세션이 '예정'인 경우: 첫 번째 세션(인덱스 0) 포커스
-      const isAllUpcoming = sessList.every(s => {
-        const st = (s.status || '').trim();
-        return !st || st === '예정' || st === 'upcoming';
-      });
-      if (isPreEventPeriod() || isAllUpcoming) {
-        return 0;
-      }
-
       const nowMinutes = getNowTimeMinutes();
 
-      // 4순위: 현재 시각 기준 진행 중인 세션 (start <= now < end)
+      // 6순위: 행사 당일 현재 시각 기준 진행 중인 세션 (start <= now < end)
       for (let i = 0; i < sessList.length; i++) {
         const range = parseSessionTimeRange(sessList[i].time);
         if (range && nowMinutes >= range.start && nowMinutes < range.end) {
@@ -4760,7 +4816,7 @@
         }
       }
 
-      // 5순위: 바로 다음에 예정된 세션 (now < start 중 가장 첫 번째)
+      // 7순위: 바로 다음에 예정된 세션 (now < start 중 가장 첫 번째)
       for (let i = 0; i < sessList.length; i++) {
         const range = parseSessionTimeRange(sessList[i].time);
         if (range && nowMinutes < range.start) {
@@ -4768,7 +4824,7 @@
         }
       }
 
-      // 6순위: 행사 당일 전체 세미나 종료 후 시각인 경우 마지막 세션(클로징/럭키드로우)
+      // 8순위: 행사 당일 전체 세미나 종료 후 시각인 경우 마지막 세션(클로징/럭키드로우)
       return sessList.length - 1;
     }
 
@@ -5425,7 +5481,19 @@
       }
       modalQnaBadge.textContent = s.sublabel;
       modalQnaTitle.textContent = s.title;
-      modalQnaAuthorName.textContent = document.getElementById('menuUserName').textContent || '참가자';
+
+      let uInfo = null;
+      try {
+        const rawU = localStorage.getItem('hvac_user_checked');
+        if (rawU) uInfo = JSON.parse(rawU);
+      } catch (e) {}
+      const userName = (uInfo && uInfo.name) || (window.currentUser && window.currentUser.name) || '참가자';
+      const userPos = (uInfo && uInfo.position) || (window.currentUser && window.currentUser.position) || '';
+      const userSeq = (uInfo && uInfo.seq) || (window.currentUser && window.currentUser.seq) || null;
+      const seqLabel = userSeq ? `(No.${String(userSeq).padStart(2, '0')})` : '';
+      const displayName = userPos ? `${userName} ${userPos} ${seqLabel}`.trim() : `${userName} ${seqLabel}`.trim();
+
+      modalQnaAuthorName.textContent = displayName || document.getElementById('menuUserName').textContent || '참가자';
       modalQnaContent.value = '';
       modalSessionQna.classList.add('show');
       setTimeout(() => modalQnaContent.focus(), 250);
@@ -5478,26 +5546,19 @@
       }
 
       const s = sessions[currentIdx];
-      const author = (modalQnaAuthorName.textContent && modalQnaAuthorName.textContent.trim() !== '참가자')
-        ? modalQnaAuthorName.textContent.trim()
-        : ((window.currentUser && window.currentUser.name) ? window.currentUser.name : (document.getElementById('menuUserName')?.textContent || '참가자'));
-
-      if (!author || author === '익명' || author.includes('익명')) {
-        alert('📢 이번 강연의 Q&A는 실명으로 진행됩니다.\n체크인된 성명으로 질문을 등록해 주세요.');
-        return;
-      }
-      const now = new Date();
-      const timeStr = now.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
-      const qSessionKey = resolveQnaSessionKey(s, currentIdx);
 
       let uInfo = null;
       try {
         const rawU = localStorage.getItem('hvac_user_checked');
         if (rawU) uInfo = JSON.parse(rawU);
       } catch (e) {}
-      const realName = (uInfo && uInfo.name) ? uInfo.name : ((window.currentUser && window.currentUser.name) ? window.currentUser.name : author);
+      const realName = (uInfo && uInfo.name) ? uInfo.name : ((window.currentUser && window.currentUser.name) ? window.currentUser.name : '참가자');
       const cSeq = (uInfo && uInfo.seq) ? uInfo.seq : ((window.currentUser && window.currentUser.seq) ? window.currentUser.seq : null);
       const cId = (uInfo && uInfo.checkinId) ? uInfo.checkinId : (cSeq ? ('HVAC-' + String(cSeq).padStart(3, '0')) : '');
+      const userPos = (uInfo && uInfo.position) || (window.currentUser && window.currentUser.position) || '';
+      const seqLabel = cSeq ? `(No.${String(cSeq).padStart(2, '0')})` : '';
+
+      const author = userPos ? `${realName} ${userPos} ${seqLabel}`.trim() : `${realName} ${seqLabel}`.trim();
       const cEmail = (uInfo && uInfo.email) ? uInfo.email : ((window.currentUser && window.currentUser.email) ? window.currentUser.email : '');
       const cDept = (uInfo && (uInfo.dept || uInfo.org)) ? (uInfo.dept || uInfo.org) : '';
 
@@ -5683,6 +5744,15 @@
             syncDashboardGiftBadge();
             const targetIdx = findCurrentOrUpcomingSessionIndex(sessions);
             renderSession(targetIdx);
+
+            // 대시보드 진입 후 일회성 ?session=lunch 등의 쿼리 파라미터 정리
+            try {
+              const curUrl = new URL(window.location.href);
+              if (curUrl.searchParams.has('session')) {
+                curUrl.searchParams.delete('session');
+                window.history.replaceState({}, document.title, curUrl.pathname + (curUrl.search ? curUrl.search : ''));
+              }
+            } catch (e) {}
 
             // 이미 체크인된 사용자가 redirect 파라미터와 함께 방문한 경우 자동 리디렉트
             try {

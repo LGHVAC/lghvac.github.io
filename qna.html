@@ -1062,14 +1062,31 @@
       if (user) {
         const parsed = JSON.parse(user);
         if (parsed && parsed.name) {
-          const pos = (parsed.position || parsed.title || '').trim();
+          let pos = (parsed.position || parsed.title || '').trim();
+          const invalidKeywords = ['운영진', '사전등록', '사전 등록', '외부', 'vip', '하이엠', 'walkin', 'pre', 'operator'];
+          if (!pos || invalidKeywords.includes(pos.toLowerCase())) {
+            try {
+              const cleanEmail = String(parsed.email || '').toLowerCase().replace(/@lge\.com$/i, '').trim();
+              if (cleanEmail === 'youngsoo.lee') {
+                pos = '운영총괄';
+              } else {
+                const roster = (window.HVAC && window.HVAC.read && window.HVAC.read('hvac_roster_list'))
+                  || JSON.parse(localStorage.getItem('hvac_roster_list') || '[]');
+                const matched = roster.find(r => String(r.email || '').toLowerCase().replace(/@lge\.com$/i, '').trim() === cleanEmail);
+                if (matched && matched.position) pos = matched.position.trim();
+              }
+            } catch (err) {}
+          }
+          if (!pos && parsed.isOperator) pos = '운영총괄';
+
+          const seqStr = parsed.seq ? ` (No.${String(parsed.seq).padStart(2, '0')})` : '';
           const authorInput = document.getElementById('askAuthor');
           if (authorInput) {
-            authorInput.value = pos ? `${parsed.name} ${pos}` : parsed.name;
+            authorInput.value = pos ? `${parsed.name} ${pos}${seqStr}` : `${parsed.name}${seqStr}`;
             authorInput.readOnly = true;
             authorInput.style.background = 'rgba(16, 185, 129, 0.1)';
             authorInput.style.borderColor = 'rgba(34, 197, 94, 0.4)';
-            authorInput.title = '체크인된 실명으로 자동 등록됩니다.';
+            authorInput.title = '체크인된 실명과 순번으로 자동 등록됩니다.';
           }
         }
       }

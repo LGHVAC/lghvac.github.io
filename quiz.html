@@ -1873,6 +1873,7 @@
           checkinSeq: user.seq || null,
           checkinId: user.checkinId || (user.seq ? 'HVAC-' + String(user.seq).padStart(3, '0') : '-'),
           name: user.name || '참석자',
+          position: user.position || '',
           email: user.email || '미체크인(현장참석자)',
           empNo: user.empNo || user.employeeId || '',
           dept: user.dept || user.org || '',

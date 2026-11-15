@@ -515,12 +515,14 @@
           const seq = (att && att.seq) || sub.seq || null;
           const checkinId = (att && att.checkinId) || sub.checkinId || (seq ? ('HVAC-' + String(seq).padStart(3, '0')) : '-');
           const name = (att && att.name) || sub.name || '참석자';
+          const position = (att && (att.position || att.title)) || sub.position || '';
           const dept = (att && (att.dept || att.org)) || sub.dept || 'ES엔지니어링담당';
           const category = (att && (att.category || att.type)) || sub.category || '사전등록';
           const email = (att && att.email) || sub.email || '';
 
           candidates.push({
             name,
+            position,
             seq,
             checkinId,
             dept,
@@ -620,11 +622,11 @@
                   <span class="rank-medal-badge">${medal}</span>
                   <div>
                     <div class="winner-name-wrap">
-                      <strong class="winner-name">${escapeHtml(w.name)}</strong>
+                      <strong class="winner-name">${escapeHtml(w.name)} ${escapeHtml(w.position || '')}</strong>
                       <span class="winner-seq-tag">(No. ${w.seq || '-'})</span>
                     </div>
                     <div class="winner-meta">
-                      ${escapeHtml(w.dept)} · <span style="color: #94a3b8;">${escapeHtml(w.category)}</span>
+                      ${escapeHtml(w.dept)} · <span style="color: #94a3b8;">${escapeHtml(w.position || w.category)}</span>
                     </div>
                   </div>
                 </div>
