@@ -527,7 +527,7 @@
 
   function syncPublished() {
     if (location.protocol === 'file:' || !window.fetch) return Promise.resolve(false);
-    return fetch(BASE + 'site-config.json')
+    return fetch(BASE + 'site-config.json?v=' + Date.now(), { cache: 'no-store' })
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(applyPublishedConfig)
       .catch(function () { return false; });
@@ -796,6 +796,54 @@
       return opClean === clean;
     });
   }
+
+  // -------------------------------------------------------------
+  // 앱 빌드 버전 검증 및 구버전 로컬 캐시 자동 무효화 / 정합성 갱신
+  // -------------------------------------------------------------
+  var HVAC_BUILD_VERSION = '261115_1720';
+
+  (function checkBuildVersion() {
+    try {
+      var lastVersion = localStorage.getItem('hvac_app_build_version');
+      if (lastVersion !== HVAC_BUILD_VERSION) {
+        localStorage.setItem('hvac_app_build_version', HVAC_BUILD_VERSION);
+
+        // 1. 구버전 로컬스토리지 명부/운영진 캐시 삭제 (최신 DEFAULT_ROSTER 즉시 반영)
+        localStorage.removeItem('hvac_roster_list');
+        localStorage.removeItem('hvac_operator_list');
+        localStorage.removeItem(APPLIED_MARKER);
+
+        // 2. 이미 체크인된 사용자 정보가 있다면, 최신 마스터 명부 기준으로 호칭/직급/소속/카테고리 자동 갱신
+        var savedUserRaw = localStorage.getItem('hvac_user_checked');
+        if (savedUserRaw) {
+          try {
+            var userObj = JSON.parse(savedUserRaw);
+            if (userObj && userObj.email) {
+              var cleanEmail = String(userObj.email).toLowerCase().replace('@lge.com', '').trim();
+              var ops = getOperatorList();
+              var isOp = ops.some(function (o) {
+                return String(o.email || '').toLowerCase().replace('@lge.com', '').trim() === cleanEmail;
+              });
+              if (isOp) {
+                userObj.isOperator = true;
+                userObj.category = 'operator';
+                var opMatch = ops.find(function (o) {
+                  return String(o.email || '').toLowerCase().replace('@lge.com', '').trim() === cleanEmail;
+                });
+                if (opMatch) {
+                  if (opMatch.position) userObj.position = opMatch.position;
+                  if (opMatch.title) userObj.title = opMatch.title;
+                  if (opMatch.dept) userObj.dept = opMatch.dept;
+                }
+                localStorage.setItem('hvac_user_checked', JSON.stringify(userObj));
+              }
+            }
+          } catch (e) {}
+        }
+        console.log('[HVAC] App updated to build version:', HVAC_BUILD_VERSION);
+      }
+    } catch (e) {}
+  })();
 
   var DEFAULT_MILESTONES = [
     // 🟢 사전 등록 대역 (1~199)
@@ -2371,6 +2419,7 @@
   // 모바일 화면 꺼짐 복귀 / 백그라운드 탭 전환 시 스트림 및 데이터 재연결 (3초 디바운스 + 정상 연결 시 폴링 생략)
   var lastResumeCheckAt = 0;
   function checkAndResumeStream() {
+    checkRemoteAppVersion();
     if (pageId() === 'index') return;
     var now = Date.now();
     if (now - lastResumeCheckAt < 3000) return;
@@ -2383,6 +2432,42 @@
     if (!cloudEventSource || cloudEventSource.readyState === 2 /* EventSource.CLOSED */) {
       initCloudStream();
     }
+  }
+
+  // BFCache (Back-Forward Cache) 복원 감지 시 페이지 새로고침
+  window.addEventListener('pageshow', function (e) {
+    if (e.persisted) {
+      window.location.reload();
+    }
+  });
+
+  var lastVersionCheckAt = 0;
+  function checkRemoteAppVersion() {
+    if (location.protocol === 'file:' || !window.fetch) return;
+    var now = Date.now();
+    if (now - lastVersionCheckAt < 15000) return;
+    lastVersionCheckAt = now;
+
+    fetch(BASE + 'version.json?v=' + now, { cache: 'no-store' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (info) {
+        if (info && info.version && info.version !== HVAC_BUILD_VERSION) {
+          showVersionUpdateToast(info.version);
+        }
+      })
+      .catch(function () {});
+  }
+
+  function showVersionUpdateToast(newVer) {
+    if (document.getElementById('hvac-version-update-banner')) return;
+    var banner = document.createElement('div');
+    banner.id = 'hvac-version-update-banner';
+    banner.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:2147483647;background:linear-gradient(135deg,#059669,#10b981);color:#ffffff;padding:12px 22px;border-radius:99px;font-family:Pretendard,-apple-system,sans-serif;font-size:13.5px;font-weight:750;box-shadow:0 8px 30px rgba(0,0,0,0.5),0 0 20px rgba(16,185,129,0.4);display:flex;align-items:center;gap:12px;cursor:pointer;';
+    banner.innerHTML = '<span>✨ 웹사이트 최신 업데이트가 적용되었습니다.</span><span style="background:rgba(0,0,0,0.25);padding:4px 10px;border-radius:20px;font-size:12px;font-weight:800;">새로고침 ↻</span>';
+    banner.addEventListener('click', function () {
+      window.location.reload(true);
+    });
+    document.body.appendChild(banner);
   }
 
   document.addEventListener('visibilitychange', function () {

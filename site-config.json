@@ -1,7 +1,7 @@
 {
-  "version": 2,
-  "publishedAt": "2026-11-13T06:31:16.742Z",
-  "metaConfigTs": 1794549913058,
+  "version": 3,
+  "publishedAt": "2026-11-15T08:20:00.000Z",
+  "metaConfigTs": 1794730800000,
   "note": "2026 HVAC Engineering Expert Seminar - 정적 스케줄/퀴즈/설문 설정 사전 번들링 (Firebase RTDB 초기 다운로드 트래픽 0B 최적화)",
   "data": {
     "hvac_cloud_config": {

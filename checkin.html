@@ -2,6 +2,9 @@
 <html lang="ko">
 <head>
   <meta charset="utf-8">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, interactive-widget=resizes-content">
   <title>2026 HVAC Engineering Expert Seminar - 현장 체크인</title>
   
@@ -21,7 +24,7 @@
   <meta name="theme-color" content="#040906">
 
   <!-- 공통 코어: 테마·링크·공지 배너·배포 설정(site-config.json) 동기화 -->
-  <script src="./assets/hvac-core.js"></script>
+  <script src="./assets/hvac-core.js?v=261115_1720"></script>
 
   <style>
     :root {
@@ -3062,7 +3065,7 @@
       try {
         const live = (window.HVAC && window.HVAC.read && window.HVAC.read('hvac_roster_list'))
           || JSON.parse(localStorage.getItem('hvac_roster_list') || 'null');
-        if (Array.isArray(live) && live.length > 0) return live;
+        if (Array.isArray(live) && live.length >= DEFAULT_ROSTER.length) return live;
       } catch (e) {}
       return DEFAULT_ROSTER;
     }
@@ -5946,6 +5949,39 @@
               renderSession(autoIdx);
               return;
             }
+
+            // 마스터 명부와 대조하여 직급/소속/호칭/카테고리 실시간 최신화
+            try {
+              const roster = getMasterRoster();
+              const cleanEmail = String(parsed.email || '').toLowerCase().replace('@lge.com', '').trim();
+              const matched = roster.find(r => String(r.email || '').toLowerCase().replace('@lge.com', '').trim() === cleanEmail);
+              if (matched) {
+                let updated = false;
+                if (matched.position && parsed.position !== matched.position) {
+                  parsed.position = matched.position;
+                  updated = true;
+                }
+                if (matched.title && parsed.title !== matched.title) {
+                  parsed.title = matched.title;
+                  updated = true;
+                }
+                if (matched.dept && parsed.dept !== matched.dept) {
+                  parsed.dept = matched.dept;
+                  updated = true;
+                }
+                if (matched.category && parsed.category !== matched.category) {
+                  parsed.category = matched.category;
+                  updated = true;
+                }
+                if (matched.regMethod && parsed.regMethod !== matched.regMethod) {
+                  parsed.regMethod = matched.regMethod;
+                  updated = true;
+                }
+                if (updated) {
+                  localStorage.setItem('hvac_user_checked', JSON.stringify(parsed));
+                }
+              }
+            } catch (e) {}
 
             document.getElementById('menuUserName').textContent = formatUserNameWithTitle(parsed);
             document.getElementById('menuUserEmail').textContent = parsed.email.includes('@') ? parsed.email : parsed.email + '@lge.com';
