@@ -24,7 +24,7 @@
   <meta name="theme-color" content="#040906">
 
   <!-- 공통 코어: 테마·링크·공지 배너·배포 설정(site-config.json) 동기화 -->
-  <script src="./assets/hvac-core.js?v=261116_0006"></script>
+  <script src="./assets/hvac-core.js?v=261116_0013"></script>
 
   <style>
     :root {
@@ -4778,27 +4778,17 @@
         }
 
         const defaultMilestones = [
-          // 🟢 사전 등록 대역 (1~199)
-          { seq: 1, prize: '스타벅스 커피 쿠폰 (사전 1호 체크인)' },
-          { seq: 7, prize: '스타벅스 커피 쿠폰 (사전 럭키 7)' },
-          { seq: 10, prize: '스타벅스 커피 쿠폰 (사전 10번째 체크인)' },
-          { seq: 77, prize: '스타벅스 커피 쿠폰 (행운의 77번째)' },
-          { seq: 100, prize: '스타벅스 커피 쿠폰 (센추리 100번째)' },
-          // 🟡 현장 추가 등록 대역 (201~299)
-          { seq: 201, prize: '스타벅스 커피 쿠폰 (현장 1호 등록)' },
-          { seq: 207, prize: '스타벅스 커피 쿠폰 (현장 럭키 7)' },
-          { seq: 210, prize: '스타벅스 커피 쿠폰 (현장 10번째 등록)' },
-          // 👑 VIP 초대 대역 (701~799)
-          { seq: 701, prize: '스타벅스 커피 쿠폰 (VIP 1호 체크인)' },
-          { seq: 707, prize: '스타벅스 커피 쿠폰 (VIP 럭키 7)' },
-          // 🏢 하이엠 대역 (901~999)
-          { seq: 901, prize: '스타벅스 커피 쿠폰 (하이엠 1호 체크인)' },
-          { seq: 907, prize: '스타벅스 커피 쿠폰 (하이엠 럭키 7)' }
+          { seq: 1, prize: '커피 쿠폰 증정' },
+          { seq: 10, prize: '커피 쿠폰 증정' },
+          { seq: 100, prize: '커피 쿠폰 증정' }
         ];
         let milestones = defaultMilestones;
         try {
           const mSaved = localStorage.getItem('hvac_milestone_events');
-          if (mSaved) milestones = JSON.parse(mSaved);
+          if (mSaved !== null && mSaved !== undefined && mSaved !== 'null' && mSaved !== 'undefined') {
+            const parsed = JSON.parse(mSaved);
+            if (Array.isArray(parsed)) milestones = parsed;
+          }
         } catch (e) {}
 
         const matchedMilestone = milestones.find(m => parseInt(m.seq, 10) === seq);

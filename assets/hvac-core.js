@@ -747,7 +747,7 @@
     }
     var bodyStr = JSON.stringify(payloadVal);
     var now = Date.now();
-    var isCriticalRealtimeKey = (key === 'hvac_luckydraw_state' || key === 'hvac_luckydraw_config');
+    var isCriticalRealtimeKey = (key === 'hvac_luckydraw_state' || key === 'hvac_luckydraw_config' || key === 'hvac_milestone_events');
     var prev = lastPushedConfigMap[key];
     if (!isCriticalRealtimeKey && prev && prev.body === bodyStr && (now - prev.ts < 1500)) {
       return Promise.resolve(true);
@@ -1291,7 +1291,7 @@
   // -------------------------------------------------------------
   // 앱 빌드 버전 검증 및 구버전 로컬 캐시 자동 무효화 / 정합성 갱신
   // -------------------------------------------------------------
-  var HVAC_BUILD_VERSION = '261116_0006';
+  var HVAC_BUILD_VERSION = '261116_0013';
 
   // 캐시 무효화용 일회성 _hv 쿼리 파라미터가 있으면 URL 깔끔하게 정리 (기존 쿼리/해시 보존)
   try {
@@ -1344,22 +1344,9 @@
   })();
 
   var DEFAULT_MILESTONES = [
-    // 🟢 사전 등록 대역 (1~199)
-    { seq: 1, prize: '스타벅스 커피 쿠폰 (사전 1호 체크인)' },
-    { seq: 7, prize: '스타벅스 커피 쿠폰 (사전 럭키 7)' },
-    { seq: 10, prize: '스타벅스 커피 쿠폰 (사전 10번째 체크인)' },
-    { seq: 77, prize: '스타벅스 커피 쿠폰 (행운의 77번째)' },
-    { seq: 100, prize: '스타벅스 커피 쿠폰 (센추리 100번째)' },
-    // 🟡 현장 추가 등록 대역 (201~299)
-    { seq: 201, prize: '스타벅스 커피 쿠폰 (현장 1호 등록)' },
-    { seq: 207, prize: '스타벅스 커피 쿠폰 (현장 럭키 7)' },
-    { seq: 210, prize: '스타벅스 커피 쿠폰 (현장 10번째 등록)' },
-    // 👑 VIP 초대 대역 (701~799)
-    { seq: 701, prize: '스타벅스 커피 쿠폰 (VIP 1호 체크인)' },
-    { seq: 707, prize: '스타벅스 커피 쿠폰 (VIP 럭키 7)' },
-    // 🏢 하이엠 대역 (901~999)
-    { seq: 901, prize: '스타벅스 커피 쿠폰 (하이엠 1호 체크인)' },
-    { seq: 907, prize: '스타벅스 커피 쿠폰 (하이엠 럭키 7)' }
+    { seq: 1, prize: '커피 쿠폰 증정' },
+    { seq: 10, prize: '커피 쿠폰 증정' },
+    { seq: 100, prize: '커피 쿠폰 증정' }
   ];
 
 
@@ -1934,7 +1921,8 @@
         }
 
         return allocateSeq(0).then(function (seq) {
-          var milestones = read('hvac_milestone_events') || DEFAULT_MILESTONES;
+          var savedM = read('hvac_milestone_events');
+          var milestones = Array.isArray(savedM) ? savedM : DEFAULT_MILESTONES;
           var deferredUrl = cloudPath('checkins/deferredMilestones');
 
           return fetch(deferredUrl, { cache: 'no-store' })
@@ -2698,6 +2686,8 @@
         if (val === null) {
           if (key === 'hvac_luckydraw_state') {
             val = { drawnTiers: {}, confirmedTiers: {}, deliveredMilestones: {}, updatedAt: Date.now() };
+          } else if (key === 'hvac_milestone_events') {
+            val = [];
           } else {
             return false;
           }
