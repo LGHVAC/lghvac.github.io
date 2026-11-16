@@ -9,7 +9,7 @@
   <title>럭키드로우 | 제10회 2026 HVAC 전문가 세미나</title>
   <link rel="icon" href="./assets/favicon.ico">
   <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
-  <script src="./assets/hvac-core.js?v=261116_1607"></script>
+  <script src="./assets/hvac-core.js?v=261116_1618"></script>
   <style>
     :root {
       --bg: #030805;
@@ -784,6 +784,9 @@
         <span class="stage-seed-badge" id="stageSeedBadge" title="공정성 검증 시드">
           🔒 Seed: <span id="stageSeedText">2026_HVAC_10TH...</span>
         </span>
+        <button type="button" class="btn-stage" id="btnDrawLogicInfo" onclick="openDrawLogicModal()" style="padding: 6px 12px; font-size: 12.5px; background: rgba(243, 196, 72, 0.12); border-color: rgba(243, 196, 72, 0.42); color: #fde047;" title="럭키드로우 공정 추첨 기준 및 알고리즘 안내">
+          ℹ️ 추첨 로직
+        </button>
       </div>
 
       <div class="header-right">
@@ -948,6 +951,69 @@
       <div class="extra-modal-footer">
         <button type="button" class="btn-modal-cancel" onclick="closeExtraDrawModal()">취소</button>
         <button type="button" class="btn-modal-confirm" onclick="confirmCreateExtraTier()">🎲 추가 추첨 무대 등록 및 이동</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ℹ️ 추첨 로직 안내 팝업 모달 (읽기 전용 / 기존 로직 무영향) -->
+  <div id="drawLogicModal" class="extra-modal-overlay" style="display: none;" onclick="handleDrawLogicModalBackdrop(event)">
+    <div class="extra-modal-card" style="max-width: 650px; max-height: 88vh; display: flex; flex-direction: column;" onclick="event.stopPropagation()">
+      <div class="extra-modal-header">
+        <div class="extra-modal-title">
+          <span style="font-size: 24px;">⚖️</span>
+          <div>
+            <div class="extra-modal-title-text">럭키드로우 공정 추첨 로직 안내</div>
+            <div class="extra-modal-subtitle">현장 체크인 데이터를 기반으로 한 투명하고 검증 가능한 무작위 추첨 방식입니다.</div>
+          </div>
+        </div>
+        <button type="button" class="extra-modal-close" id="btnCloseDrawLogicTop" onclick="closeDrawLogicModal()" title="닫기">✕</button>
+      </div>
+
+      <div class="extra-modal-body" style="overflow-y: auto; gap: 14px; font-size: 13.5px; line-height: 1.65; color: rgba(255, 255, 255, 0.9);">
+        <div style="background: rgba(243, 196, 72, 0.08); border: 1px solid rgba(243, 196, 72, 0.28); border-radius: 12px; padding: 12px 15px; display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; justify-content: space-between;">
+          <div>
+            <div style="font-size: 11.5px; color: rgba(255,255,255,0.62); font-weight: 700;">현재 기준 시드 (Seed)</div>
+            <div id="logicModalSeedVal" style="font-family: monospace; font-size: 13px; font-weight: 800; color: #fde047;">-</div>
+          </div>
+          <div>
+            <div style="font-size: 11.5px; color: rgba(255,255,255,0.62); font-weight: 700;">추첨 적격 대상자 풀</div>
+            <div id="logicModalPoolVal" style="font-size: 13px; font-weight: 800; color: #6ee7b7;">-</div>
+          </div>
+          <div>
+            <div style="font-size: 11.5px; color: rgba(255,255,255,0.62); font-weight: 700;">적용 옵션</div>
+            <div id="logicModalOptionsVal" style="font-size: 12.5px; font-weight: 750; color: #e2e8f0;">-</div>
+          </div>
+        </div>
+
+        <div style="background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 14px 16px;">
+          <div style="font-size: 14.5px; font-weight: 850; color: #fde047; margin-bottom: 6px;">1️⃣ 추첨 대상자 자동 필터링 (자격 기준)</div>
+          <ul style="margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px;">
+            <li><strong>포함 대상</strong>: 현장 체크인(QR 등록)을 완료한 <strong>사전 등록 임직원</strong> 및 <strong>현장 등록 임직원</strong></li>
+            <li><strong>원천 제외</strong>: 외부 초청 인원, VIP 초대 인원, 하이엠솔루텍 인원, 관리자 차단(블록) 인원은 추첨 풀에서 자동 제외됩니다.</li>
+            <li>설정 옵션에 따라 마일스톤(N번째 순번) 경품 당첨자 제외 및 만족도 설문 완료자 제한이 반영됩니다.</li>
+          </ul>
+        </div>
+
+        <div style="background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 14px 16px;">
+          <div style="font-size: 14.5px; font-weight: 850; color: #fde047; margin-bottom: 6px;">2️⃣ 이전 등수 중복 당첨 원천 배제</div>
+          <ul style="margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px;">
+            <li>하위 등수부터 상위 등수(예: 3등 → 2등 → 1등)로 순차 진행되며, 이전 등수에서 이미 당첨된 참가자는 <strong>이메일 · 체크인 ID · 순번</strong> 3중 대조로 다음 등수 후보에서 즉시 제외됩니다.</li>
+            <li>상단 <strong>추첨 대상 인원</strong>은 최초 추첨 대상 풀(166명 기준)에서 이전 당첨자 수를 실시간 차감하여 표시됩니다.</li>
+          </ul>
+        </div>
+
+        <div style="background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 14px 16px;">
+          <div style="font-size: 14.5px; font-weight: 850; color: #fde047; margin-bottom: 6px;">3️⃣ 암호학적 해시 시드 &amp; Fisher-Yates 무작위 셔플</div>
+          <ul style="margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px;">
+            <li><strong>동적 시드 생성</strong>: 추첨 버튼을 누르는 순간의 <code>Seed Prefix</code> + <code>정확한 밀리초 시각(Timestamp)</code> + <code>현재 등수</code> + <code>대상자 목록 해시</code>를 결합해 <code>hashString53</code>으로 고유 32-bit 시드(<code>SEED-...</code>)를 생성합니다.</li>
+            <li><strong>균등 난수 셔플</strong>: 생성된 시드를 <strong>Mulberry32 의사난수 생성기(PRNG)</strong>에 주입한 뒤, 수학적으로 편향이 없는 <strong>Fisher-Yates 알고리즘</strong>으로 전체 후보자를 무작위 셔플하여 상위 N명을 선정합니다.</li>
+            <li><strong>추가 추첨 / 부재자 재추첨</strong>: 기당첨자를 제외한 잔여 적격 풀을 대상으로 동일한 시드·셔플 방식을 다시 적용해 공정하게 1명을 추가 선정합니다.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="extra-modal-footer">
+        <button type="button" class="btn-modal-confirm" onclick="closeDrawLogicModal()">확인 (닫기)</button>
       </div>
     </div>
   </div>
@@ -1485,9 +1551,64 @@
       });
     }
 
+    // 추첨 로직 설명 모달 열기/닫기 (읽기 전용 - 다른 상태 변경 없음)
+    function openDrawLogicModal() {
+      const modal = document.getElementById('drawLogicModal');
+      if (!modal) return;
+
+      const sortedTiers = getSortedStageTiers();
+      const currentTier = sortedTiers[stageTierIdx];
+      const tierId = currentTier ? currentTier.id : null;
+      const basePool = getEligibleCandidates(null, false).length;
+      const currentPool = tierId ? getEligibleCandidates(tierId, true).length : basePool;
+
+      const seedEl = document.getElementById('logicModalSeedVal');
+      const poolEl = document.getElementById('logicModalPoolVal');
+      const optEl = document.getElementById('logicModalOptionsVal');
+
+      if (seedEl) {
+        const prefix = (drawConfig && drawConfig.seedPrefix) ? drawConfig.seedPrefix : '2026_HVAC_10TH';
+        seedEl.textContent = currentTier ? `${prefix}_TIER${currentTier.rank}` : prefix;
+      }
+      if (poolEl) {
+        poolEl.textContent = (currentPool < basePool)
+          ? `현재 ${currentPool}명 (최초 ${basePool}명 중 기당첨 ${basePool - currentPool}명 제외)`
+          : `총 ${basePool}명 (임직원 체크인 기준)`;
+      }
+      if (optEl) {
+        const flags = ['중복 당첨 제외'];
+        if (drawConfig && drawConfig.excludeMilestones) flags.push('순번 당첨 제외');
+        if (drawConfig && drawConfig.requireSurvey) flags.push('설문 완료 제한');
+        optEl.textContent = flags.join(' · ');
+      }
+
+      modal.style.display = 'flex';
+      const closeBtn = document.getElementById('btnCloseDrawLogicTop');
+      if (closeBtn) closeBtn.focus();
+    }
+
+    function closeDrawLogicModal() {
+      const modal = document.getElementById('drawLogicModal');
+      if (modal) modal.style.display = 'none';
+      if (document.activeElement && typeof document.activeElement.blur === 'function') {
+        document.activeElement.blur();
+      }
+    }
+
+    function handleDrawLogicModalBackdrop(e) {
+      if (e.target && e.target.id === 'drawLogicModal') {
+        closeDrawLogicModal();
+      }
+    }
+
     // ESC 키 입력 시 모달 닫기
     window.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
+        const lModal = document.getElementById('drawLogicModal');
+        if (lModal && lModal.style.display !== 'none') {
+          closeDrawLogicModal();
+          return;
+        }
         const sModal = document.getElementById('superAdminAuthModal');
         if (sModal && sModal.style.display !== 'none') {
           closeSuperAdminAuthModal();
@@ -2621,6 +2742,12 @@
 
     // 키보드 단축키
     window.addEventListener('keydown', (e) => {
+      const hasOpenModal = ['drawLogicModal', 'extraDrawModal', 'superAdminAuthModal'].some((id) => {
+        const el = document.getElementById(id);
+        return el && el.style.display !== 'none';
+      });
+      if (hasOpenModal) return;
+
       if (e.code === 'Space' && e.target === document.body) {
         e.preventDefault();
         startCurrentTierDraw();
