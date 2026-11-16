@@ -9,7 +9,7 @@
   <title>세션별 퀴즈 당첨자 발표 (사회자용) | 제10회 2026 HVAC 전문가 세미나</title>
   <link rel="icon" href="./assets/favicon.ico">
   <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
-  <script src="./assets/hvac-core.js?v=261116_1618"></script>
+  <script src="./assets/hvac-core.js?v=261116_1632"></script>
   <style>
     :root {
       --bg: #040c07;
@@ -434,6 +434,14 @@
       const email = String((att && att.email) || (sub && sub.email) || '').toLowerCase().replace('@lge.com', '').trim();
       const cat = String((att && (att.category || att.type)) || (sub && sub.category) || '').trim();
 
+      // 차단/제외(테스트) 인원 제외
+      try {
+        const blocked = JSON.parse(localStorage.getItem('hvac_blocked_users') || '[]');
+        if (Array.isArray(blocked) && email && blocked.some(b => String(b).toLowerCase().replace('@lge.com', '').trim() === email)) {
+          return false;
+        }
+      } catch (e) {}
+
       // 사외 인원 제외
       if (cat.includes('사외') || cat.includes('외부') || cat.includes('강사') || cat.includes('교수') || cat.includes('학생')) return false;
 
@@ -541,7 +549,8 @@
 
           // 세션별 최초 응시 완료 시각 우선 사용 (후속 세션 풀이로 인한 타임스탬프 오염 방지)
           let ts = 0;
-          if (sub.sessionTimestamps && sub.sessionTimestamps[sNum]) {
+          const hasSessTs = !!(sub.sessionTimestamps && sub.sessionTimestamps[sNum]);
+          if (hasSessTs) {
             ts = Number(sub.sessionTimestamps[sNum]);
           } else {
             ts = sub.timestamp || 0;
@@ -563,6 +572,9 @@
           const dept = (att && (att.dept || att.org)) || sub.dept || 'ES엔지니어링담당';
           const category = (att && (att.category || att.type)) || sub.category || '사전등록';
           const email = (att && att.email) || sub.email || '';
+          const timeText = (hasSessTs && ts < 9999999999999)
+            ? new Date(ts).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+            : (sub.updatedAt || (ts && ts < 9999999999999 ? new Date(ts).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '-'));
 
           candidates.push({
             name,
@@ -574,7 +586,7 @@
             email,
             score,
             timestamp: ts,
-            timeText: sub.updatedAt || new Date(ts).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
+            timeText
           });
         });
 
@@ -620,6 +632,16 @@
 
           if (result.bySession[sNum].length >= 2) {
             break;
+          }
+        }
+
+        // 초 단위까지 표시 시각이 동일한 경우 밀리초(.ms) 보조 표기로 선후 구분 명확화
+        if (result.bySession[sNum].length >= 2) {
+          const w0 = result.bySession[sNum][0];
+          const w1 = result.bySession[sNum][1];
+          if (w0 && w1 && w0.timeText === w1.timeText && w0.timestamp && w1.timestamp && w0.timestamp !== w1.timestamp) {
+            w0.timeText = `${w0.timeText}.${String(w0.timestamp % 1000).padStart(3, '0')}`;
+            w1.timeText = `${w1.timeText}.${String(w1.timestamp % 1000).padStart(3, '0')}`;
           }
         }
       });
@@ -869,14 +891,12 @@
 
     window.addEventListener('DOMContentLoaded', () => {
       loadQuizWinners();
-      if (localStorage.getItem('hvac_quiz_submissions') === null) {
-        syncAndRefreshQuizWinners(false);
-      }
+      syncAndRefreshQuizWinners(false);
       updateSocketStatusUi(true);
     });
 
     window.addEventListener('storage', (e) => {
-      if (e.key === 'hvac_quiz_submissions' || e.key === 'hvac_checkin_list') loadQuizWinners();
+      if (e.key === 'hvac_quiz_submissions' || e.key === 'hvac_checkin_list' || e.key === 'hvac_quiz_locked_winners' || e.key === 'hvac_blocked_users') loadQuizWinners();
     });
 
     window.addEventListener('hvac:quiz-submissions-updated', () => {
