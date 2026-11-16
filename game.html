@@ -11,7 +11,7 @@
   <meta name="theme-color" content="#060e09">
 
   <!-- Core Scripts & Cloud Sync -->
-  <script src="./assets/hvac-core.js?v=261116_1503"></script>
+  <script src="./assets/hvac-core.js?v=261116_1522"></script>
 
   <style>
     :root {
@@ -1054,27 +1054,133 @@
       try {
         const savedRec = localStorage.getItem(STORAGE_KEY_RECORDS);
         if (savedRec) {
-          userRecords = Object.assign(userRecords, JSON.parse(savedRec));
+          const parsedRec = JSON.parse(savedRec);
+          if (parsedRec && typeof parsedRec === 'object') {
+            userRecords = Object.assign(userRecords, parsedRec);
+          }
         }
       } catch (e) {}
 
-      // 관리자에 의한 전역 기록 초기화 여부 확인
+      // 관리자에 의한 전역 기록 초기화 여부 확인 (resetAt 이전 기록만 안전하게 리셋)
       checkAdminResetStatus();
 
       updateUserHeader();
       renderRecordsUI();
+      // 새로고침/재접속 시에도 클라우드에 저장된 본인 기존 1~3차 기록을 즉시 복원하여 화면에 표시하고 3회 초과 시도 원천 차단
+      syncMyGameRecordFromCloud();
       if (!hasCheckinAccess()) {
         openCheckinGate();
       }
     }
 
-    // 🔄 관리자에 의한 전역 기록 초기화 감지 시 모든 참가자의 로컬 도전 기회 및 기록 리셋
+    let isGameCloudSynced = false;
+    let myGameCloudSyncPromise = null;
+
+    function parseKrGameTimeMsLocal(str) {
+      if (!str || typeof str !== 'string') return 0;
+      const m = str.match(/(오전|오후)\s*(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+      if (!m) return 0;
+      let h = parseInt(m[2], 10);
+      const min = parseInt(m[3], 10);
+      const sec = parseInt(m[4] || '0', 10);
+      if (m[1] === '오후' && h < 12) h += 12;
+      if (m[1] === '오전' && h === 12) h = 0;
+      const d = new Date();
+      d.setHours(h, min, sec, 0);
+      return d.getTime();
+    }
+
+    function getRecordsLatestPlayedMs(rec) {
+      if (!rec) return 0;
+      let latest = Number(rec.updatedAtMs) || 0;
+      ['game10s', 'game26c'].forEach(f => {
+        const g = rec[f];
+        if (!g) return;
+        if (Number(g.achievedAt) > latest) latest = Number(g.achievedAt);
+        if (Array.isArray(g.tries)) {
+          g.tries.forEach(t => {
+            if (!t) return;
+            const ms = Number(t.timestampMs) || parseKrGameTimeMsLocal(t.timestamp) || 0;
+            if (ms > latest) latest = ms;
+          });
+        }
+      });
+      return latest;
+    }
+
+    function applyCloudRecordToLocal(remoteRec) {
+      if (!remoteRec || typeof remoteRec !== 'object') return;
+      const cfg = (window.HVAC && window.HVAC.getGameConfig) ? window.HVAC.getGameConfig() : {};
+      const remoteResetAt = Number(cfg.resetAt) || 0;
+      const maxTries = Number(cfg.maxTries) || 3;
+      const remoteLatestMs = getRecordsLatestPlayedMs(remoteRec);
+
+      // 클라우드 기록이 관리자 초기화(resetAt) 이전의 구버전 기록이라면 복원하지 않음
+      if (remoteResetAt > 0 && remoteLatestMs > 0 && remoteLatestMs < remoteResetAt) {
+        return;
+      }
+
+      let changed = false;
+      ['game10s', 'game26c'].forEach(field => {
+        const rField = remoteRec[field];
+        const lField = userRecords[field] || { tries: [] };
+        const rTries = (rField && Array.isArray(rField.tries)) ? rField.tries.slice(0, maxTries) : [];
+        const lTries = Array.isArray(lField.tries) ? lField.tries.slice(0, maxTries) : [];
+
+        if (rTries.length > lTries.length) {
+          userRecords[field] = Object.assign({}, rField, { tries: rTries });
+          changed = true;
+        } else if (rTries.length >= maxTries && lTries.length < maxTries) {
+          userRecords[field] = Object.assign({}, rField, { tries: rTries });
+          changed = true;
+        }
+      });
+
+      if (remoteResetAt > (Number(userRecords.resetAt) || 0)) {
+        userRecords.resetAt = remoteResetAt;
+        changed = true;
+      }
+
+      if (changed) {
+        saveRecordsLocal();
+        renderRecordsUI();
+      }
+    }
+
+    function syncMyGameRecordFromCloud() {
+      if (!hasCheckinAccess() || !window.HVAC || !window.HVAC.cloud || typeof window.HVAC.cloud.fetchMyGameRecord !== 'function') {
+        isGameCloudSynced = true;
+        return Promise.resolve(null);
+      }
+      if (myGameCloudSyncPromise) return myGameCloudSyncPromise;
+      myGameCloudSyncPromise = Promise.race([
+        window.HVAC.cloud.fetchMyGameRecord().then(rec => {
+          applyCloudRecordToLocal(rec);
+          isGameCloudSynced = true;
+          return rec;
+        }),
+        new Promise(resolve => setTimeout(() => { isGameCloudSynced = true; resolve(null); }, 1500))
+      ]).finally(() => {
+        isGameCloudSynced = true;
+      });
+      return myGameCloudSyncPromise;
+    }
+
+    // 🔄 관리자에 의한 전역 기록 초기화 감지 시 (주의: resetAt 이전 기록만 안전하게 리셋, 이후 기록은 절대 지우지 않음!)
     function checkAdminResetStatus() {
       try {
         const cfg = (window.HVAC && window.HVAC.getGameConfig) ? window.HVAC.getGameConfig() : {};
-        const remoteResetAt = cfg.resetAt || 0;
-        const localResetAt = userRecords.resetAt || 0;
+        const remoteResetAt = Number(cfg.resetAt) || 0;
+        const localResetAt = Number(userRecords.resetAt) || 0;
         if (remoteResetAt > 0 && remoteResetAt > localResetAt) {
+          const latestPlayedMs = getRecordsLatestPlayedMs(userRecords);
+          const hasAnyTries = ((userRecords.game10s && userRecords.game10s.tries && userRecords.game10s.tries.length > 0) || (userRecords.game26c && userRecords.game26c.tries && userRecords.game26c.tries.length > 0));
+          // 실제로 사용자가 마지막으로 플레이한 시각이 resetAt 이후라면 이미 리셋 이후의 정당한 기록이므로 지우지 않고 resetAt 마커만 동기화!
+          if (hasAnyTries && latestPlayedMs >= remoteResetAt) {
+            userRecords.resetAt = remoteResetAt;
+            localStorage.setItem(STORAGE_KEY_RECORDS, JSON.stringify(userRecords));
+            return;
+          }
           userRecords = {
             resetAt: remoteResetAt,
             game10s: { tries: [], bestTime: null, bestDiff: null, isPerfect: false },
@@ -1306,7 +1412,7 @@
     let animId10s = null;
     const TARGET_10S = 10.00;
 
-    function handleAction10s() {
+    async function handleAction10s() {
       const cfg = (window.HVAC && window.HVAC.getGameConfig) ? window.HVAC.getGameConfig() : { enabled: false };
       if (!cfg.enabled) {
         checkGameLockStatus();
@@ -1316,9 +1422,13 @@
         openCheckinGate();
         return;
       }
+      if (!isGameCloudSynced && !isRunning10s) {
+        await syncMyGameRecordFromCloud();
+      }
       const rules = getGameRules();
       const tries = userRecords.game10s.tries || [];
       if (tries.length >= rules.maxTries && !isRunning10s) {
+        renderRecordsUI();
         alert(`10초 맞추기 도전 기회(${rules.maxTries}회)를 모두 사용하셨습니다!\n최종 기록이 전광판에 등록되었습니다.`);
         return;
       }
@@ -1417,6 +1527,10 @@
       }
 
       // 기록 저장
+      if ((userRecords.game10s.tries || []).length >= rules.maxTries) {
+        renderRecordsUI();
+        return;
+      }
       userRecords.game10s.tries.push({
         attempt: userRecords.game10s.tries.length + 1,
         time: elapsedSec,
@@ -1452,7 +1566,7 @@
     let animId26c = null;
     let currentTemp = 20.0;
 
-    function handleAction26c() {
+    async function handleAction26c() {
       const cfg = (window.HVAC && window.HVAC.getGameConfig) ? window.HVAC.getGameConfig() : { enabled: false };
       if (!cfg.enabled) {
         checkGameLockStatus();
@@ -1462,9 +1576,13 @@
         openCheckinGate();
         return;
       }
+      if (!isGameCloudSynced && !isRunning26c) {
+        await syncMyGameRecordFromCloud();
+      }
       const rules = getGameRules();
       const tries = userRecords.game26c.tries || [];
       if (tries.length >= rules.maxTries && !isRunning26c) {
+        renderRecordsUI();
         alert(`${rules.targetTemp.toFixed(1)}℃ 맞추기 도전 기회(${rules.maxTries}회)를 모두 사용하셨습니다!\n최종 기록이 전광판에 등록되었습니다.`);
         return;
       }
@@ -1566,6 +1684,10 @@
         playBeep(320, 'sine', 0.15);
       }
 
+      if ((userRecords.game26c.tries || []).length >= rules.maxTries) {
+        renderRecordsUI();
+        return;
+      }
       userRecords.game26c.tries.push({
         attempt: userRecords.game26c.tries.length + 1,
         temp: finalTemp,
@@ -1619,8 +1741,10 @@
         btn10s.innerHTML = `⏱️ ${count10s + 1}차 시도 도전하기 (남은 기회 ${remain10s}회)`;
       } else {
         btn10s.className = 'btn-game-action finished';
-        btn10s.innerHTML = `✅ ${maxTries}회 도전 완료 (전광판 반영됨)`;
+        btn10s.disabled = true;
+        btn10s.innerHTML = `🔒 ${maxTries}회 도전 완료 (추가 시도 불가)`;
       }
+      if (count10s < maxTries || !isChecked) btn10s.disabled = false;
 
       for (let i = 1; i <= 3; i++) {
         const item = tries10s[i - 1];
@@ -1652,8 +1776,10 @@
         btn26c.innerHTML = `🌡️ ${count26c + 1}차 시도 도전하기 (남은 기회 ${remain26c}회)`;
       } else {
         btn26c.className = 'btn-game-action finished';
-        btn26c.innerHTML = `✅ ${maxTries}회 도전 완료 (전광판 반영됨)`;
+        btn26c.disabled = true;
+        btn26c.innerHTML = `🔒 ${maxTries}회 도전 완료 (추가 시도 불가)`;
       }
+      if (count26c < maxTries || !isChecked) btn26c.disabled = false;
 
       for (let i = 1; i <= 3; i++) {
         const item = tries26c[i - 1];
@@ -1712,7 +1838,10 @@
         seq: currentUser.seq,
         game10s: userRecords.game10s,
         game26c: userRecords.game26c
-      }).then(() => {
+      }).then((res) => {
+        if (res && res.record) {
+          applyCloudRecordToLocal(res.record);
+        }
         loadMiniLeaderboard(false);
       }).finally(() => {
         isPushingGameRecord = false;

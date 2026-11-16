@@ -1193,7 +1193,7 @@
   // -------------------------------------------------------------
   // 앱 빌드 버전 검증 및 구버전 로컬 캐시 자동 무효화 / 정합성 갱신
   // -------------------------------------------------------------
-  var HVAC_BUILD_VERSION = '261116_1503';
+  var HVAC_BUILD_VERSION = '261116_1522';
 
   function getCurrentAppVersion() {
     try {
@@ -2464,30 +2464,84 @@
     return fetch(subUrl, { cache: 'no-store' })
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (existing) {
+        var gameCfg = getGameConfig() || {};
+        var maxTries = Number(gameCfg.maxTries) || 3;
+        var cfgResetAt = Number(gameCfg.resetAt) || 0;
+        var existingUpdatedMs = existing ? (Number(existing.updatedAtMs) || parseKrGameTimeMs(existing.updatedAt) || 0) : 0;
+        var isExistingCurrentSession = !!(existing && (existingUpdatedMs === 0 || existingUpdatedMs >= cfgResetAt));
+        if (!isExistingCurrentSession) existing = null;
+
         var isNew10s = (!existing || !existing.game10s || existing.game10s.bestDiff === null || existing.game10s.bestDiff === undefined) && (gameData.game10s && gameData.game10s.bestDiff !== null && gameData.game10s.bestDiff !== undefined);
         var isNew26c = (!existing || !existing.game26c || existing.game26c.bestDiff === null || existing.game26c.bestDiff === undefined) && (gameData.game26c && gameData.game26c.bestDiff !== null && gameData.game26c.bestDiff !== undefined);
         existing = existing || {};
+        var lockedMaxTries = false;
 
-        var next10s = gameData.game10s !== undefined ? Object.assign({}, gameData.game10s) : (existing.game10s || { tries: [], bestTime: null, bestDiff: null, isPerfect: false });
-        if (next10s && next10s.bestDiff !== null && next10s.bestDiff !== undefined) {
-          var prevDiff10 = (existing.game10s && existing.game10s.bestDiff !== null && existing.game10s.bestDiff !== undefined) ? Number(existing.game10s.bestDiff) : Infinity;
-          if (Number(next10s.bestDiff) < prevDiff10) {
-            next10s.achievedAt = Number(next10s.achievedAt) > 0 ? Number(next10s.achievedAt) : nowMs;
-          } else {
-            var oldAch10 = getGameAchievedMs(existing, 'game10s');
-            next10s.achievedAt = oldAch10 < 9999999999999 ? oldAch10 : nowMs;
+        function mergeGameFieldProtected(field, valKey) {
+          var exField = existing[field];
+          var inField = gameData[field];
+          var exTries = (exField && Array.isArray(exField.tries)) ? exField.tries : [];
+          var inTries = (inField && Array.isArray(inField.tries)) ? inField.tries : [];
+
+          // 이미 기존 클라우드 기록이 maxTries(3회) 이상 완료된 상태라면 최초 3회 기록을 절대 덮어쓰지 않고 영구 보존!
+          if (exTries.length >= maxTries) {
+            lockedMaxTries = true;
+            return Object.assign({}, exField);
           }
+
+          var finalField;
+          if (inField !== undefined && inTries.length >= exTries.length) {
+            finalField = Object.assign({}, inField);
+          } else if (exTries.length > 0 && inTries.length > 0 && inTries.length < exTries.length) {
+            // 로컬이 초기화된 상태에서 추가 시도한 경우 기존 시도에 이어붙여 maxTries(3회) 이내로 병합
+            var combined = exTries.slice();
+            inTries.forEach(function (nt) {
+              if (combined.length < maxTries && nt) {
+                var dup = combined.some(function (ot) { return ot && ot.timestamp === nt.timestamp && ot[valKey] === nt[valKey]; });
+                if (!dup) {
+                  var copyNt = Object.assign({}, nt, { attempt: combined.length + 1 });
+                  combined.push(copyNt);
+                }
+              }
+            });
+            var bestT = combined[0];
+            combined.forEach(function (t) { if (t && Number(t.diff) < Number(bestT.diff)) bestT = t; });
+            finalField = {
+              tries: combined,
+              bestDiff: bestT ? bestT.diff : null,
+              isPerfect: !!(bestT && Number(bestT.diff) === 0),
+              achievedAt: (bestT && Number(bestT.timestampMs)) || getGameAchievedMs(existing, field) || nowMs
+            };
+            finalField[valKey] = bestT ? bestT[valKey] : null;
+          } else {
+            finalField = inField !== undefined ? Object.assign({}, inField) : (exField ? Object.assign({}, exField) : { tries: [], bestDiff: null, isPerfect: false });
+          }
+
+          if (finalField && Array.isArray(finalField.tries) && finalField.tries.length > maxTries) {
+            finalField.tries = finalField.tries.slice(0, maxTries);
+          }
+          if (finalField && finalField.bestDiff !== null && finalField.bestDiff !== undefined) {
+            var prevDiff = (exField && exField.bestDiff !== null && exField.bestDiff !== undefined) ? Number(exField.bestDiff) : Infinity;
+            if (Number(finalField.bestDiff) < prevDiff) {
+              finalField.achievedAt = Number(finalField.achievedAt) > 0 ? Number(finalField.achievedAt) : nowMs;
+            } else {
+              var oldAch = getGameAchievedMs(existing, field);
+              finalField.achievedAt = oldAch < 9999999999999 ? oldAch : (Number(finalField.achievedAt) || nowMs);
+            }
+          }
+          return finalField;
         }
 
-        var next26c = gameData.game26c !== undefined ? Object.assign({}, gameData.game26c) : (existing.game26c || { tries: [], bestTemp: null, bestDiff: null, isPerfect: false });
-        if (next26c && next26c.bestDiff !== null && next26c.bestDiff !== undefined) {
-          var prevDiff26 = (existing.game26c && existing.game26c.bestDiff !== null && existing.game26c.bestDiff !== undefined) ? Number(existing.game26c.bestDiff) : Infinity;
-          if (Number(next26c.bestDiff) < prevDiff26) {
-            next26c.achievedAt = Number(next26c.achievedAt) > 0 ? Number(next26c.achievedAt) : nowMs;
-          } else {
-            var oldAch26 = getGameAchievedMs(existing, 'game26c');
-            next26c.achievedAt = oldAch26 < 9999999999999 ? oldAch26 : nowMs;
-          }
+        var next10s = mergeGameFieldProtected('game10s', 'bestTime');
+        if (next10s && next10s.tries && next10s.tries.length > 0 && next10s.bestTime === undefined) {
+          var b10 = next10s.tries[0];
+          next10s.tries.forEach(function (t) { if (Number(t.diff) < Number(b10.diff)) b10 = t; });
+          next10s.bestTime = b10.time;
+        }
+        var next26c = mergeGameFieldProtected('game26c', 'bestTemp');
+        if (next26c && next26c.tries && next26c.tries.length > 0 && next26c.bestTemp === undefined) {
+          var b26 = next26c.tries[0];
+          next26c.tries.forEach(function (t) { if (Number(t.diff) < Number(b26.diff)) b26 = t; });
+          next26c.bestTemp = b26.temp;
         }
 
         var merged = {
@@ -2571,7 +2625,7 @@
 
                 if (prevJson === nextJson) {
                   // Top 3 변동이 없어도 관리자 콘솔이 2·3차 도전 기록을 실시간 수신할 수 있도록 meta/games는 반드시 갱신
-                  return touchCloudMeta('games').then(function () { return { success: true, record: merged, summary: nextSummary }; });
+                  return touchCloudMeta('games').then(function () { return { success: true, lockedMaxTries: lockedMaxTries, record: merged, summary: nextSummary }; });
                 }
 
                 var putHeaders = { 'Content-Type': 'application/json' };
@@ -2596,6 +2650,19 @@
         });
       })
       .catch(function () { return { success: false }; });
+  }
+
+  // 참가자 본인 미니게임 기존 제출 이력 단건 조회 (~400B, 새로고침/타 기기 복원 및 3회 초과 방지용)
+  function fetchMyGameRecordFromCloud() {
+    var c = getCloudConfig();
+    if (!c || !window.fetch) return Promise.resolve(null);
+    var user = read('hvac_user_checked') || read('hvac_checkin_user') || {};
+    if (!user.email && !user.name) return Promise.resolve(null);
+    var rawKey = user.email || ('anon_' + user.name + '_' + (user.phoneLast4 || '0000'));
+    var key = String(rawKey).toLowerCase().replace('@lge.com', '').replace(/[.#$\[\]\/]/g, '_');
+    return fetch(cloudPath('games/submissions/' + key), { cache: 'no-store' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .catch(function () { return null; });
   }
 
   // 전광판(game-leaderboard.html) 및 모바일 게임(game.html) 전용 초경량 Top 3 조회 (~450B)
@@ -3939,6 +4006,7 @@
       pushSurvey: pushSurveyResponseToCloud,
       pushGameRecord: pushGameRecordToCloud,
       fetchGames: fetchGameSubmissionsFromCloud,
+      fetchMyGameRecord: fetchMyGameRecordFromCloud,
       fetchGameTop3: fetchGameTop3FromCloud,
       resetGames: resetGameSubmissionsOnCloud,
       saveLuckyDraw: function (state) { return pushConfigToCloud('hvac_luckydraw_state', state); },
