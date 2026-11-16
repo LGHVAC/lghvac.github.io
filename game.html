@@ -11,7 +11,7 @@
   <meta name="theme-color" content="#060e09">
 
   <!-- Core Scripts & Cloud Sync -->
-  <script src="./assets/hvac-core.js?v=261116_1447"></script>
+  <script src="./assets/hvac-core.js?v=261116_1503"></script>
 
   <style>
     :root {
@@ -1442,6 +1442,7 @@
       userRecords.game10s.bestTime = best.time;
       userRecords.game10s.bestDiff = best.diff;
       userRecords.game10s.isPerfect = best.diff === 0;
+      userRecords.game10s.achievedAt = best.timestampMs || userRecords.game10s.achievedAt || Date.now();
     }
 
     /* =========================================================
@@ -1589,6 +1590,7 @@
       userRecords.game26c.bestTemp = best.temp;
       userRecords.game26c.bestDiff = best.diff;
       userRecords.game26c.isPerfect = best.diff === 0;
+      userRecords.game26c.achievedAt = best.timestampMs || userRecords.game26c.achievedAt || Date.now();
     }
 
     /* =========================================================
