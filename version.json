@@ -1,7 +1,7 @@
 {
-  "version": "261116_1655",
+  "version": "261116_1718",
   "buildTime": "2026-11-16T09:55:00+09:00",
   "note": "2026 HVAC Expert Seminar - Fix checkin roster name matching and auto takeover for manually registered attendees (Kang Hyunseok)",
-  "updatedAt": "2026-11-16T07:55:45.098Z",
+  "updatedAt": "2026-11-16T08:18:35.729Z",
   "description": "Restore all category classifications in roster and checkins and prevent accidental category overwrite"
 }
