@@ -1,7 +1,7 @@
 {
-  "version": "261116_1359",
-  "publishedAt": "2026-11-16T04:59:52.403Z",
-  "metaConfigTs": 1794805192403,
+  "version": "261116_1425",
+  "publishedAt": "2026-11-16T05:29:35.643Z",
+  "metaConfigTs": 1794806975643,
   "note": "2026 HVAC Expert Seminar - Prevent duplicate & looping update toast banner",
   "data": {
     "hvac_cloud_config": {
@@ -492,7 +492,9 @@
     },
     "hvac_quiz_unlocked_sessions": [
       0,
-      1
+      1,
+      2,
+      3
     ],
     "hvac_survey_config": {
       "pages": [
@@ -656,7 +658,7 @@
       "maxTries": 3,
       "openedAt": "2026-11-16T04:59:23.776Z",
       "resetAt": 1794490526756,
-      "stopwatchBlindSec": 3,
+      "stopwatchBlindSec": 5,
       "tempSeason": "winter",
       "tempTarget": 20
     }

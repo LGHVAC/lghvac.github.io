@@ -510,12 +510,18 @@
     'hvac_survey_config'
   ];
 
+  var DYNAMIC_RUNTIME_KEYS = [
+    'hvac_quiz_unlocked_sessions',
+    'hvac_game_config',
+    'hvac_notice_banner',
+    'hvac_luckydraw_state',
+    'hvac_luckydraw_config',
+    'hvac_milestone_events'
+  ];
+
   function applyPublishedConfig(cfg) {
     if (!cfg || !cfg.publishedAt || !cfg.data || typeof cfg.data !== 'object') return false;
-    if (cfg.metaConfigTs && (!lastSeenMeta.config || lastSeenMeta.config < cfg.metaConfigTs)) {
-      lastSeenMeta.config = cfg.metaConfigTs;
-    }
-    // site-config.json에 포함된 정적 설정 키는 metaConfigTs 시점까지 최신으로 간주 (불필요한 재다운로드 방지)
+    // site-config.json에 포함된 정적 설정 키만 metaConfigTs 시점까지 최신으로 간주 (동적 실시간 키는 항상 클라우드 우선)
     if (cfg.metaConfigTs) {
       var seenChanged = false;
       Object.keys(cfg.data).forEach(function (k) {
@@ -534,6 +540,8 @@
     var changed = [];
     Object.keys(cfg.data).forEach(function (k) {
       if (CONFIG_KEYS.indexOf(k) < 0 && k !== CLOUD_CFG_KEY) return;
+      // 실시간 동적 제어 키(게임 오픈, 퀴즈 오픈, 공지 배너, 럭키드로우 등)는 이미 로컬에 클라우드 값이 있으면 정적 배포 파일로 덮어쓰지 않음!
+      if (DYNAMIC_RUNTIME_KEYS.indexOf(k) >= 0 && read(k) !== null) return;
       try {
         if (cfg.data[k] === null) localStorage.removeItem(k);
         else writeLocalSilent(k, cfg.data[k]);
@@ -728,12 +736,18 @@
       return true;
     }
     if (sec === 'quiz') {
-      if (pId === 'admin' || pId === 'quiz-winners') return read('hvac_quiz_submissions') !== null;
+      if (pId === 'admin' || pId === 'quiz-winners') {
+        var qSub = read('hvac_quiz_submissions');
+        return Array.isArray(qSub) && qSub.length > 1;
+      }
       return true;
     }
     if (sec === 'games') {
       if (pId === 'lunch-screen' || pId === 'game-leaderboard') return read('hvac_game_top3') !== null;
-      if (pId === 'admin') return read('hvac_game_submissions') !== null;
+      if (pId === 'admin') {
+        var gSub = read('hvac_game_submissions');
+        return Array.isArray(gSub) && gSub.length > 0;
+      }
       return true;
     }
     if (sec === 'surveys') {
@@ -849,7 +863,7 @@
     }
     var bodyStr = JSON.stringify(payloadVal);
     var now = Date.now();
-    var isCriticalRealtimeKey = (key === 'hvac_luckydraw_state' || key === 'hvac_luckydraw_config' || key === 'hvac_milestone_events' || key === 'hvac_schedule_settings');
+    var isCriticalRealtimeKey = (key === 'hvac_luckydraw_state' || key === 'hvac_luckydraw_config' || key === 'hvac_milestone_events' || key === 'hvac_schedule_settings' || key === 'hvac_game_config' || key === 'hvac_quiz_unlocked_sessions' || key === 'hvac_notice_banner');
     var prev = lastPushedConfigMap[key];
     if (!isCriticalRealtimeKey && prev && prev.body === bodyStr && (now - prev.ts < 1500)) {
       return Promise.resolve(true);
@@ -1178,7 +1192,7 @@
   // -------------------------------------------------------------
   // 앱 빌드 버전 검증 및 구버전 로컬 캐시 자동 무효화 / 정합성 갱신
   // -------------------------------------------------------------
-  var HVAC_BUILD_VERSION = '261116_1359';
+  var HVAC_BUILD_VERSION = '261116_1425';
 
   function getCurrentAppVersion() {
     try {
@@ -1427,22 +1441,15 @@
   }
 
   function saveGameConfig(newCfg) {
-    if (!newCfg || typeof newCfg !== 'object') return;
+    if (!newCfg || typeof newCfg !== 'object') return Promise.resolve(null);
     var current = getGameConfig();
-    var merged = Object.assign({}, current, newCfg);
+    var merged = Object.assign({}, current, newCfg, { updatedAt: Date.now() });
     writeLocalSilent('hvac_game_config', merged);
-    var c = getCloudConfig();
-    if (c && window.fetch) {
-      fetch(cloudPath('config/hvac_game_config'), {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(merged)
-      }).then(function () {
-        touchCloudMeta('config');
-      }).catch(function () {});
-    }
     notifyUpdated(['hvac_game_config']);
-    return merged;
+    try { window.dispatchEvent(new StorageEvent('storage', { key: 'hvac_game_config' })); } catch (e) {}
+    return pushConfigToCloud('hvac_game_config', merged).then(function () {
+      return merged;
+    });
   }
 
   function pushSurveyResponseToCloud(surveyData) {
@@ -2608,23 +2615,22 @@
             .then(function (mySub) {
               if (mySub === undefined) return false;
               withCloudSyncLock(function () {
-                if (mySub === null) {
-                  if (!isPushingQuizScore) {
-                    var localAns = read('hvac_quiz_answers');
-                    if (localAns && typeof localAns === 'object' && Object.keys(localAns).length > 0) {
-                      try { localStorage.removeItem('hvac_quiz_answers'); } catch (e) {}
-                      writeLocalSilent('hvac_quiz_score', '0');
-                      try { window.dispatchEvent(new CustomEvent('hvac:quiz-reset', { detail: { resetAt: Date.now() } })); } catch (e) {}
-                    }
-                  }
-                } else if (mySub && typeof mySub === 'object' && mySub.answers && typeof mySub.answers === 'object') {
+                if (mySub && typeof mySub === 'object' && mySub.answers && typeof mySub.answers === 'object') {
                   var localAnsCur = read('hvac_quiz_answers') || {};
+                  var mergedAns = Object.assign({}, mySub.answers, localAnsCur);
                   var remoteKeys = Object.keys(mySub.answers);
                   var localKeys = Object.keys(localAnsCur);
-                  if (remoteKeys.length > localKeys.length) {
-                    writeLocalSilent('hvac_quiz_answers', mySub.answers);
-                    writeLocalSilent('hvac_quiz_score', String(mySub.score || 0));
-                    try { window.dispatchEvent(new CustomEvent('hvac:quiz-my-submission-updated', { detail: { submission: mySub } })); } catch (e) {}
+                  var mergedKeys = Object.keys(mergedAns);
+                  if (mergedKeys.length > localKeys.length || remoteKeys.length > 0) {
+                    writeLocalSilent('hvac_quiz_answers', mergedAns);
+                    if (mySub.score !== undefined && localKeys.length === 0) {
+                      writeLocalSilent('hvac_quiz_score', String(mySub.score || 0));
+                    }
+                    if (mySub.sessionTimestamps && typeof mySub.sessionTimestamps === 'object') {
+                      var localSt = read('hvac_quiz_session_timestamps') || {};
+                      writeLocalSilent('hvac_quiz_session_timestamps', Object.assign({}, mySub.sessionTimestamps, localSt));
+                    }
+                    try { window.dispatchEvent(new CustomEvent('hvac:quiz-my-submission-updated', { detail: { submission: mySub, mergedAnswers: mergedAns } })); } catch (e) {}
                   }
                 }
               });
@@ -3266,6 +3272,20 @@
       syncSingleConfigKey('hvac_luckydraw_config');
       syncSingleConfigKey('hvac_luckydraw_state');
     }
+    if (pId === 'admin') {
+      syncSingleConfigKey('hvac_game_config');
+      syncSingleConfigKey('hvac_quiz_unlocked_sessions');
+      syncSingleConfigKey('hvac_notice_banner');
+      syncSpecificSection('quiz', true);
+      syncSpecificSection('games', true);
+    }
+    if (pId === 'quiz' || pId === 'quiz-winners') {
+      syncSingleConfigKey('hvac_quiz_unlocked_sessions');
+      syncSpecificSection('quiz', true);
+    }
+    if (pId === 'game' || pId === 'game-leaderboard') {
+      syncSingleConfigKey('hvac_game_config');
+    }
 
     // 1. 200명 전원 실시간 SSE 소켓 스트림 연결 (초기 put 이벤트로 변경된 섹션만 차등 동기화)
     initCloudStream();
@@ -3740,7 +3760,8 @@
           games: 'hvac_game_submissions'
         };
         var seenKey = getSectionSeenKey(sec, 'admin');
-        var hasCache = read(cacheKeyMap[sec]) !== null;
+        var cachedVal = read(cacheKeyMap[sec]);
+        var hasCache = cachedVal !== null && (!Array.isArray(cachedVal) || cachedVal.length > 1);
         var rTs = Number(latestRemoteMeta[sec]) || 0;
         var needSync = !hasCache || !lastSeenMeta[seenKey] || (rTs && rTs !== lastSeenMeta[seenKey]);
         if (!needSync) return Promise.resolve(false);

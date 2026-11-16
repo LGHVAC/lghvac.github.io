@@ -24,7 +24,7 @@
   <meta name="theme-color" content="#040906">
 
   <!-- 공통 코어: 테마·링크·공지 배너·배포 설정(site-config.json) 동기화 -->
-  <script src="./assets/hvac-core.js?v=261116_1359"></script>
+  <script src="./assets/hvac-core.js?v=261116_1425"></script>
 
   <style>
     :root {
@@ -1886,11 +1886,15 @@
         
         let subList = JSON.parse(localStorage.getItem('hvac_quiz_submissions') || '[]');
         if (!Array.isArray(subList)) subList = Object.values(subList).filter(Boolean);
-        
+        const myCheckinId = user.checkinId || (user.seq ? 'HVAC-' + String(user.seq).padStart(3, '0') : '-');
+        const existingIdx = subList.findIndex(item => item && ((item.email && item.email === user.email) || (item.checkinId && item.checkinId === myCheckinId && item.checkinId !== '-')));
+        const existingItem = existingIdx >= 0 ? subList[existingIdx] : null;
+        const mergedSessionTimestamps = Object.assign({}, (existingItem && existingItem.sessionTimestamps) ? existingItem.sessionTimestamps : {}, localSessionTimestamps);
+
         const subRecord = {
           seq: user.seq || null,
           checkinSeq: user.seq || null,
-          checkinId: user.checkinId || (user.seq ? 'HVAC-' + String(user.seq).padStart(3, '0') : '-'),
+          checkinId: myCheckinId,
           name: user.name || '참석자',
           position: user.position || '',
           email: user.email || '미체크인(현장참석자)',
@@ -1903,18 +1907,23 @@
           score: currentScore,
           sessionScores: sessionScores,
           sessionAnswered: sessionAnswered,
-          sessionTimestamps: Object.assign({}, (existingIdx >= 0 ? subList[existingIdx].sessionTimestamps : {}), localSessionTimestamps),
+          sessionTimestamps: mergedSessionTimestamps,
           firstTryCount: firstTryCount,
           retryCount: retryCount,
           updatedAt: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-          timestamp: (existingIdx >= 0 && subList[existingIdx].timestamp) ? subList[existingIdx].timestamp : now,
+          timestamp: (existingItem && existingItem.timestamp) ? existingItem.timestamp : now,
           lastModifiedAt: now
         };
 
-        const existingIdx = subList.findIndex(item => (item.email && item.email === user.email) || (item.checkinId && item.checkinId === subRecord.checkinId && item.checkinId !== '-'));
-        if (existingIdx >= 0) subList[existingIdx] = subRecord;
-        else subList.push(subRecord);
-        localStorage.setItem('hvac_quiz_submissions', JSON.stringify(subList));
+        if (answeredCount > 0 && user.email) {
+          if (existingIdx >= 0) subList[existingIdx] = subRecord;
+          else subList.push(subRecord);
+          if (window.HVAC && typeof window.HVAC.writeLocalSilent === 'function') {
+            window.HVAC.writeLocalSilent('hvac_quiz_submissions', subList);
+          } else {
+            localStorage.setItem('hvac_quiz_submissions', JSON.stringify(subList));
+          }
+        }
 
         // 클라우드 연동 전송 (중복 제출 / 타 기기 동시 제출 잠금 검증)
         if (shouldPushCloud && window.HVAC && HVAC.cloud && answeredCount > 0) {
@@ -1926,7 +1935,7 @@
             total: totalQuizzes,
             sessionScores: sessionScores,
             sessionAnswered: sessionAnswered,
-            sessionTimestamps: Object.assign({}, (existingIdx >= 0 ? subList[existingIdx].sessionTimestamps : {}), localSessionTimestamps),
+            sessionTimestamps: mergedSessionTimestamps,
             answers: userAnswers
           }).then(function (res) {
             if (res && res.locked && res.duplicate) {
@@ -2082,7 +2091,9 @@
         const isMatch = (sess === 'all' || sess === sNum);
         card.style.display = isMatch ? 'block' : 'none';
 
-        const isUnlocked = isChecked && unlocked.includes(sNum);
+        const qid = card.getAttribute('data-quiz-id');
+        const isAlreadyAnswered = !!(qid && userAnswers[qid] && userAnswers[qid].isDone);
+        const isUnlocked = isChecked && (unlocked.includes(sNum) || isAlreadyAnswered);
         card.classList.toggle('card-locked', !isUnlocked);
 
         // 잠금 플레이스홀더 및 헤더 상태 필드 처리
@@ -2432,7 +2443,28 @@
     }
 
     // 다른 기기 로그인 감지 시 세션 종료 안내
-    window.addEventListener('hvac:quiz-reset', function () { userAnswers = {}; if (!renderQuizCardsFromConfig()) { location.reload(); return; } initQuizCards(); bindAntiCopyGuards(); applySessionFilter(currentFilterSession); }); window.addEventListener('hvac:quiz-my-submission-updated', function () { try { const saved = JSON.parse(localStorage.getItem('hvac_quiz_answers') || '{}'); if (saved && typeof saved === 'object') { userAnswers = saved; if (renderQuizCardsFromConfig()) { initQuizCards(); bindAntiCopyGuards(); } applySessionFilter(currentFilterSession); } } catch (err) {} }); window.addEventListener('hvac:session-terminated', function () {
+    window.addEventListener('hvac:quiz-reset', function () { userAnswers = {}; if (!renderQuizCardsFromConfig()) { location.reload(); return; } initQuizCards(); bindAntiCopyGuards(); applySessionFilter(currentFilterSession); });
+    window.addEventListener('hvac:quiz-my-submission-updated', function () {
+      try {
+        const saved = JSON.parse(localStorage.getItem('hvac_quiz_answers') || '{}');
+        if (saved && typeof saved === 'object') {
+          userAnswers = saved;
+          if (renderQuizCardsFromConfig()) {
+            initQuizCards();
+            bindAntiCopyGuards();
+          } else {
+            initQuizCards();
+          }
+          applySessionFilter(currentFilterSession);
+        }
+      } catch (err) {}
+    });
+    // 페이지 진입 시 로컬에 이미 풀었던 답안이 있으면 클라우드와 자동 백업 동기화 보장
+    setTimeout(function () {
+      if (userAnswers && Object.keys(userAnswers).length > 0 && hasCheckinAccess()) {
+        updateQuizSummary(true);
+      }
+    }, 1200); window.addEventListener('hvac:session-terminated', function () {
       alert('🔒 다른 기기에서 동일 계정으로 새로 로그인되어\n1인 1기기 보안 정책에 따라 현재 기기의 연결이 종료되었습니다.');
       window.location.href = './checkin.html';
     });
