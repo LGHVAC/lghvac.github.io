@@ -24,7 +24,7 @@
   <meta name="theme-color" content="#040906">
 
   <!-- 공통 코어: 테마·링크·공지 배너·배포 설정(site-config.json) 동기화 -->
-  <script src="./assets/hvac-core.js?v=261116_0955"></script>
+  <script src="./assets/hvac-core.js?v=261116_1220"></script>
 
   <style>
     :root {
@@ -1863,6 +1863,22 @@
         localStorage.setItem('hvac_quiz_score', String(currentScore));
         localStorage.setItem('hvac_quiz_answers', JSON.stringify(userAnswers));
 
+        // 세션별 최초 응시 완료 시각 추적 (이후 세션을 풀어도 이전 세션 시각 불변 보존)
+        let localSessionTimestamps = {};
+        try {
+          localSessionTimestamps = JSON.parse(localStorage.getItem('hvac_quiz_session_timestamps') || '{}');
+        } catch (e) {}
+
+        const now = Date.now();
+        Object.keys(sessionAnswered).forEach(s => {
+          if (sessionAnswered[s] > 0 && !localSessionTimestamps[s]) {
+            localSessionTimestamps[s] = now;
+          }
+        });
+        try {
+          localStorage.setItem('hvac_quiz_session_timestamps', JSON.stringify(localSessionTimestamps));
+        } catch (e) {}
+
         // 로컬 테스트 및 실시간 어드민 현황 반영을 위해 hvac_quiz_submissions도 즉시 업데이트
         const user = (window.HVAC && window.HVAC.getUserChecked && window.HVAC.getUserChecked())
           || JSON.parse(localStorage.getItem('hvac_user_checked') || '{}');
@@ -1887,10 +1903,12 @@
           score: currentScore,
           sessionScores: sessionScores,
           sessionAnswered: sessionAnswered,
+          sessionTimestamps: Object.assign({}, (existingIdx >= 0 ? subList[existingIdx].sessionTimestamps : {}), localSessionTimestamps),
           firstTryCount: firstTryCount,
           retryCount: retryCount,
           updatedAt: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-          timestamp: Date.now()
+          timestamp: (existingIdx >= 0 && subList[existingIdx].timestamp) ? subList[existingIdx].timestamp : now,
+          lastModifiedAt: now
         };
 
         const existingIdx = subList.findIndex(item => (item.email && item.email === user.email) || (item.checkinId && item.checkinId === subRecord.checkinId && item.checkinId !== '-'));
@@ -1908,6 +1926,7 @@
             total: totalQuizzes,
             sessionScores: sessionScores,
             sessionAnswered: sessionAnswered,
+            sessionTimestamps: Object.assign({}, (existingIdx >= 0 ? subList[existingIdx].sessionTimestamps : {}), localSessionTimestamps),
             answers: userAnswers
           }).then(function (res) {
             if (res && res.locked && res.duplicate) {

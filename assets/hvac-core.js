@@ -1178,7 +1178,7 @@
   // -------------------------------------------------------------
   // 앱 빌드 버전 검증 및 구버전 로컬 캐시 자동 무효화 / 정합성 갱신
   // -------------------------------------------------------------
-  var HVAC_BUILD_VERSION = '261116_0850';
+  var HVAC_BUILD_VERSION = '261116_1220';
 
   function getCurrentAppVersion() {
     try {
@@ -2299,6 +2299,23 @@
         if (existing && existing.isLocked && existing.deviceId && existing.deviceId !== myDeviceId) {
           return { duplicate: true, locked: true, originalScore: existing.score };
         }
+
+        var now = Date.now();
+        // 세션별 최초 완료 시각 격리 보존 (이미 기록된 세션의 시각은 후속 세션을 풀어도 절대 덮어쓰지 않고 영구 보존)
+        var sTimestamps = (existing && existing.sessionTimestamps) || {};
+        if (scoreObj.sessionTimestamps && typeof scoreObj.sessionTimestamps === 'object') {
+          Object.keys(scoreObj.sessionTimestamps).forEach(function (k) {
+            if (!sTimestamps[k]) sTimestamps[k] = scoreObj.sessionTimestamps[k];
+          });
+        }
+        if (scoreObj.sessionAnswered && typeof scoreObj.sessionAnswered === 'object') {
+          Object.keys(scoreObj.sessionAnswered).forEach(function (k) {
+            if (Number(scoreObj.sessionAnswered[k]) > 0 && !sTimestamps[k]) {
+              sTimestamps[k] = now;
+            }
+          });
+        }
+
         var record = {
           email: user.email || '미체크인(현장참석자)',
           name: user.name || '미체크인 참가자',
@@ -2314,11 +2331,13 @@
           total: scoreObj.total || 6,
           sessionScores: scoreObj.sessionScores || {},
           sessionAnswered: scoreObj.sessionAnswered || {},
+          sessionTimestamps: sTimestamps,
           answers: scoreObj.answers || {},
           deviceId: myDeviceId,
           isLocked: (scoreObj.answeredCount >= (scoreObj.total || 6)),
-          updatedAt: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }),
-          timestamp: Date.now()
+          updatedAt: (existing && existing.updatedAt && !scoreObj.isNewSession) ? existing.updatedAt : new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }),
+          timestamp: (existing && existing.timestamp) ? existing.timestamp : now,
+          lastModifiedAt: now
         };
         return fetch(subUrl, {
           method: 'PUT',
@@ -2561,18 +2580,22 @@
     var pId = pageId();
     if (secName === 'quiz') {
       if (pId === 'quiz-winners' || pId === 'admin') {
-        return fetch(cloudPath('quiz/submissions'), { cache: 'no-store' })
+        return fetch(cloudPath('quiz'), { cache: 'no-store' })
           .then(function (r) { return r.ok ? r.json() : undefined; })
-          .then(function (subMap) {
-            if (subMap === undefined) return false;
+          .then(function (quizData) {
+            if (quizData === undefined) return false;
             var list = [];
+            var subMap = (quizData && quizData.submissions) || {};
             if (subMap && typeof subMap === 'object') {
               list = Object.values(subMap).filter(Boolean);
             }
+            var locked = (quizData && quizData.locked_winners) || {};
             withCloudSyncLock(function () {
               writeLocalSilent('hvac_quiz_submissions', list);
-              try { window.dispatchEvent(new CustomEvent('hvac:quiz-submissions-updated', { detail: { submissions: list } })); } catch (e) {}
+              writeLocalSilent('hvac_quiz_locked_winners', locked);
+              try { window.dispatchEvent(new CustomEvent('hvac:quiz-submissions-updated', { detail: { submissions: list, locked_winners: locked } })); } catch (e) {}
               try { window.dispatchEvent(new StorageEvent('storage', { key: 'hvac_quiz_submissions' })); } catch (e) {}
+              try { window.dispatchEvent(new StorageEvent('storage', { key: 'hvac_quiz_locked_winners' })); } catch (e) {}
             });
             return true;
           }).catch(function () { return false; });
@@ -3751,6 +3774,39 @@
       adminSetGiftStatus: cloudAdminSetGiftStatus,
       getGiftStatus: cloudGetGiftStatus,
       pushQuizScore: pushQuizScoreToCloud,
+      saveLockedQuizWinners: function (sessionNum, winnersList) {
+        var c = getCloudConfig();
+        if (!c || !window.fetch) return Promise.resolve(false);
+        var sNum = Number(sessionNum);
+        var url = cloudPath('quiz/locked_winners/' + sNum);
+        return fetch(url, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(winnersList || [])
+        }).then(function (r) {
+          if (r.ok) {
+            return touchCloudMeta('quiz').then(function () { return true; });
+          }
+          return false;
+        }).catch(function () { return false; });
+      },
+      unlockQuizWinners: function (sessionNum) {
+        var c = getCloudConfig();
+        if (!c || !window.fetch) return Promise.resolve(false);
+        var sNum = Number(sessionNum);
+        var url = cloudPath('quiz/locked_winners/' + sNum);
+        return fetch(url, {
+          method: 'DELETE'
+        }).then(function (r) {
+          if (r.ok) {
+            return touchCloudMeta('quiz').then(function () { return true; });
+          }
+          return false;
+        }).catch(function () { return false; });
+      },
+      getLockedQuizWinners: function () {
+        return read('hvac_quiz_locked_winners') || {};
+      },
       pushSurvey: pushSurveyResponseToCloud,
       pushGameRecord: pushGameRecordToCloud,
       fetchGames: fetchGameSubmissionsFromCloud,

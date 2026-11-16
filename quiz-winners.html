@@ -9,7 +9,7 @@
   <title>세션별 퀴즈 당첨자 발표 (사회자용) | 제10회 2026 HVAC 전문가 세미나</title>
   <link rel="icon" href="./assets/favicon.ico">
   <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
-  <script src="./assets/hvac-core.js?v=261116_0955"></script>
+  <script src="./assets/hvac-core.js?v=261116_1220"></script>
   <style>
     :root {
       --bg: #040c07;
@@ -448,16 +448,26 @@
     // 전체 세션 퀴즈 Top 3 산정 (이전 세션 당첨자 중복 제외 및 차순위 자동 배정)
     // ※ 세션 0(오프닝)은 몸풀기 연습 퀴즈로 경품 미제공, 세션 1부터 정식 집계
     // ---------------------------------------------------------
+    function getLockedQuizWinners() {
+      try {
+        return JSON.parse(localStorage.getItem('hvac_quiz_locked_winners') || '{}');
+      } catch (e) {
+        return {};
+      }
+    }
+
     function computeAllSessionQuizTop3() {
       const subs = getQuizSubmissions();
       const quizList = getQuizConfig();
+      const lockedMap = getLockedQuizWinners();
 
       // 세션 0(오프닝)은 연습 퀴즈이므로 경품 집계 세션은 1~5만 해당
       const sessionNums = [1, 2, 3, 4, 5];
       const result = {
         bySession: { 0: [] },
         skippedBySession: { 0: [] },
-        winnersEmailMap: {}
+        winnersEmailMap: {},
+        isLockedBySession: { 0: false }
       };
 
       const wonEmailSet = new Set();
@@ -466,6 +476,31 @@
       sessionNums.forEach(sNum => {
         result.bySession[sNum] = [];
         result.skippedBySession[sNum] = [];
+        result.isLockedBySession[sNum] = false;
+
+        // 1. 해당 세션이 관리자에 의해 당첨자 확정(Lock)되어 있는 경우: 고정된 명단 즉시 반환
+        if (lockedMap && lockedMap[sNum] && Array.isArray(lockedMap[sNum]) && lockedMap[sNum].length > 0) {
+          result.isLockedBySession[sNum] = true;
+          lockedMap[sNum].forEach((w, rankIdx) => {
+            const cleanEmail = (w.email || '').toLowerCase().trim().replace('@lge.com', '');
+            const cId = (w.checkinId || '').trim();
+            if (cleanEmail) wonEmailSet.add(cleanEmail);
+            if (cId && cId !== '-') wonCheckinIdSet.add(cId);
+            if (cleanEmail) {
+              result.winnersEmailMap[cleanEmail] = {
+                sessionNum: sNum,
+                rank: rankIdx + 1,
+                name: w.name,
+                score: w.score
+              };
+            }
+            result.bySession[sNum].push({
+              ...w,
+              isLocked: true
+            });
+          });
+          return;
+        }
 
         const candidates = [];
         subs.forEach(sub => {
@@ -504,7 +539,13 @@
 
           if (score <= 0 && answered === 0) return;
 
-          let ts = sub.timestamp || 0;
+          // 세션별 최초 응시 완료 시각 우선 사용 (후속 세션 풀이로 인한 타임스탬프 오염 방지)
+          let ts = 0;
+          if (sub.sessionTimestamps && sub.sessionTimestamps[sNum]) {
+            ts = Number(sub.sessionTimestamps[sNum]);
+          } else {
+            ts = sub.timestamp || 0;
+          }
           if (!ts && sub.updatedAt) {
             try {
               const todayStr = new Date().toISOString().slice(0, 10);
@@ -652,9 +693,12 @@
           }
         }
 
+        const isLocked = !!(allData.isLockedBySession && allData.isLockedBySession[sess.num]);
         const badgeHtml = isPractice
           ? `<span class="top3-pill" style="background: rgba(56,189,248,0.15); color: #38bdf8; border-color: rgba(56,189,248,0.35);">🎯 연습 퀴즈 (경품 미제공)</span>`
-          : `<span class="top3-pill">☕ 1~2위 쿠폰</span>`;
+          : (isLocked
+            ? `<span class="top3-pill" style="background: rgba(16,185,129,0.2); color: #34d399; border-color: rgba(16,185,129,0.45); font-weight: 800;">🔒 당첨자 확정</span>`
+            : `<span class="top3-pill">☕ 1~2위 쿠폰 (실시간)</span>`);
 
         return `
           <article class="session-winner-card" style="${isPractice ? 'border-color: rgba(56,189,248,0.35);' : ''}">
