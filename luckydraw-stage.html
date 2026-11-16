@@ -9,7 +9,7 @@
   <title>럭키드로우 | 제10회 2026 HVAC 전문가 세미나</title>
   <link rel="icon" href="./assets/favicon.ico">
   <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
-  <script src="./assets/hvac-core.js?v=261116_1551"></script>
+  <script src="./assets/hvac-core.js?v=261116_1607"></script>
   <style>
     :root {
       --bg: #030805;
@@ -1743,18 +1743,15 @@
       document.getElementById('stagePrizeNameTag').textContent = currentTier.prize;
       document.getElementById('stagePrizeCount').textContent = `${currentTier.count}명`;
 
-      // 후보자 풀 및 이전 당첨자 제외 계산
+      // 후보자 풀 및 이전 당첨자 제외 계산 (전체 출석자가 아닌 최초 적격 추첨 대상 풀 기준)
+      const baseEligibleCount = getEligibleCandidates(null, false).length;
       const candidates = getEligibleCandidates(tierId);
-      const drawnTiers = (drawState && drawState.drawnTiers) ? drawState.drawnTiers : {};
-      let totalOtherWinnersCount = 0;
-      for (const tId in drawnTiers) {
-        if (tId !== tierId && Array.isArray(drawnTiers[tId])) totalOtherWinnersCount += drawnTiers[tId].length;
-      }
+      const excludedByPrevWinCount = Math.max(0, baseEligibleCount - candidates.length);
 
       const countEl = document.getElementById('stageCandidatesCount');
       if (countEl) {
-        if (totalOtherWinnersCount > 0) {
-          countEl.innerHTML = `${candidates.length}명 <span style="font-size: 13px; font-weight: normal; color: rgba(255,255,255,0.7);">(전체 ${checkinList.length}명 중 이전 당첨자 ${totalOtherWinnersCount}명 제외)</span>`;
+        if (excludedByPrevWinCount > 0) {
+          countEl.innerHTML = `${candidates.length}명 <span style="font-size: 13px; font-weight: normal; color: rgba(255,255,255,0.7);">(${baseEligibleCount}명 중 이전 당첨자 ${excludedByPrevWinCount}명 제외)</span>`;
         } else {
           countEl.textContent = `${candidates.length}명`;
         }
@@ -1978,6 +1975,113 @@
       return copy;
     }
 
+    // 공통 1인 서스펜스 공개 연출 엔진 (기본 추첨 / +1명 추가 추첨 / 부재자 1명 재추첨 공용)
+    async function playSingleSlotDramaticReveal(card, theWinner, candidatesPool, isFirst = false, isSecond = false) {
+      if (!card || !theWinner || !candidatesPool || !candidatesPool.length) return;
+      const nameEl = card.querySelector('.slot-name');
+      const idEl = card.querySelector('.slot-id-tag');
+      const deptEl = card.querySelector('.slot-dept');
+
+      card.classList.remove('winner', 'heartbeat', 'revealing');
+      card.classList.add('rolling');
+
+      // 등수별 초고속 롤링 시간 차등화
+      const fastRollDuration = isFirst ? 2400 : (isSecond ? 2000 : 1800);
+
+      // [Phase 1: 초고속 롤링] 45ms 간격 회전 + 째깍 사운드
+      const fastTimer = setInterval(() => {
+        const rand = candidatesPool[Math.floor(Math.random() * candidatesPool.length)];
+        if (rand) {
+          if (nameEl) nameEl.textContent = rand.name;
+          if (idEl) idEl.textContent = rand.checkinId || ('HVAC-' + rand.seq);
+          if (deptEl) deptEl.textContent = rand.dept || rand.org || '';
+          StageSound.playTick(680 + Math.random() * 80, 0.05);
+        }
+      }, 45);
+
+      await new Promise(r => setTimeout(r, fastRollDuration));
+      clearInterval(fastTimer);
+
+      // [Phase 2: 점진적 감속 룰렛] (속도 저하 + 틱 소리 피치 하강)
+      const decelSteps = isFirst
+        ? [70, 110, 180, 290, 460, 680]
+        : [80, 140, 240, 420, 600];
+
+      for (let i = 0; i < decelSteps.length; i++) {
+        const delay = decelSteps[i];
+        const rand = candidatesPool[Math.floor(Math.random() * candidatesPool.length)];
+        if (rand) {
+          if (nameEl) nameEl.textContent = rand.name;
+          if (idEl) idEl.textContent = rand.checkinId || ('HVAC-' + rand.seq);
+          if (deptEl) deptEl.textContent = rand.dept || rand.org || '';
+          StageSound.playTick(550 - i * 45, 0.09);
+        }
+        await new Promise(r => setTimeout(r, delay));
+      }
+
+      // 룰렛 정지 찰나의 순간
+      card.classList.remove('rolling');
+
+      // [Phase 3: 🤫 숨멎 뜸들이기 & 정보 분할 공개]
+      // Step 3-1: 소속 부서 먼저 오픈!
+      if (deptEl) {
+        deptEl.innerHTML = `<span style="color:#fde047; font-weight:900; background:rgba(243,196,72,0.22); padding:4px 14px; border-radius:8px; border:1px solid rgba(243,196,72,0.55); font-size:17px; display:inline-block; animation:winnerPop 0.4s ease-out;">🏢 소속: ${escapeHtml(theWinner.dept)}</span>`;
+      }
+      if (nameEl) {
+        nameEl.innerHTML = `<span style="color:rgba(255,255,255,0.45); filter:blur(10px); letter-spacing:0.3em;">???</span>`;
+      }
+      if (idEl) idEl.textContent = 'HVAC-???';
+      StageSound.playTick(300, 0.16);
+
+      await new Promise(r => setTimeout(r, isFirst ? 1400 : 1000));
+
+      // Step 3-2: 입장 순번 & 성(姓) 실루엣 오픈!
+      const familyName = (theWinner.name || '').slice(0, 1);
+      if (idEl) {
+        const maskSeq = theWinner.seq ? ('No. ' + String(theWinner.seq).slice(0, -1) + '*') : 'No. ***';
+        idEl.innerHTML = `<span style="color:#38bdf8; font-weight:800; font-size:15px; padding:3px 10px; background:rgba(56,189,248,0.15); border:1px solid rgba(56,189,248,0.4); border-radius:6px;">🎫 ${maskSeq}</span>`;
+      }
+      if (nameEl) {
+        nameEl.innerHTML = `<span style="color:#fde047; font-weight:900; text-shadow:0 0 15px rgba(253,224,71,0.6);">${escapeHtml(familyName)} <span style="filter:blur(8px); opacity:0.4;">OO</span></span>`;
+      }
+      StageSound.playTensionRiser(isFirst ? 1.4 : 1.0);
+
+      await new Promise(r => setTimeout(r, isFirst ? 1200 : 900));
+
+      // Step 3-3: 대망의 심장 박동 펄스 카운트다운
+      card.classList.add('heartbeat');
+      const pulseCount = isFirst ? 3 : 2;
+      for (let p = 0; p < pulseCount; p++) {
+        StageSound.playHeartbeat(isFirst ? 0.45 : 0.35);
+        await new Promise(r => setTimeout(r, 650));
+      }
+
+      // [Phase 4: 💥 대망의 최종 성명 대폭발!]
+      card.classList.remove('heartbeat');
+      card.classList.add('winner');
+      document.body.classList.remove('stage-spotlight-active');
+
+      document.body.classList.add('screen-shake');
+      setTimeout(() => document.body.classList.remove('screen-shake'), 450);
+
+      if (nameEl) {
+        nameEl.innerHTML = `<span style="font-size:${isFirst ? '52px' : '44px'}; font-weight:950; color:#fde047; text-shadow:0 0 35px rgba(253,224,71,0.9), 0 0 70px rgba(245,158,11,0.6); animation:winnerPop 0.5s ease-out; letter-spacing:0.02em;">${escapeHtml(theWinner.name)}</span>`;
+      }
+      if (idEl) {
+        idEl.textContent = (theWinner.seq ? '#' + theWinner.seq + ' ' : '') + theWinner.checkinId;
+      }
+      if (deptEl) {
+        deptEl.innerHTML = `<span style="font-size:17px; color:#fff; font-weight:800;">${escapeHtml(theWinner.dept)}</span>`;
+      }
+
+      StageSound.playFanfare(isFirst);
+      runConfettiEffect();
+      if (isFirst) {
+        setTimeout(runConfettiEffect, 700);
+        setTimeout(runConfettiEffect, 1500);
+      }
+    }
+
     // 추첨 시작 애니메이션
     async function startCurrentTierDraw() {
       if (isDrawRolling) return;
@@ -2047,111 +2151,7 @@
       if (isSingleWinner && winners.length === 1) {
         const theWinner = winners[0];
         const card = slotCards[0] || document.querySelector('.slot-card');
-        const nameEl = card ? card.querySelector('.slot-name') : null;
-        const idEl = card ? card.querySelector('.slot-id-tag') : null;
-        const deptEl = card ? card.querySelector('.slot-dept') : null;
-
-        // 등수별 초고속 롤링 시간 차등화 (1등: 2.4s, 2등: 2.0s, 3등: 1.8s)
-        const fastRollDuration = isFirst ? 2400 : (isSecond ? 2000 : 1800);
-
-        // [Phase 1: 초고속 롤링] 45ms 간격 회전 + 째깍 사운드
-        let fastTimer = setInterval(() => {
-          const rand = candidates[Math.floor(Math.random() * candidates.length)];
-          if (rand) {
-            if (nameEl) nameEl.textContent = rand.name;
-            if (idEl) idEl.textContent = rand.checkinId || ('HVAC-' + rand.seq);
-            if (deptEl) deptEl.textContent = rand.dept || rand.org || '';
-            StageSound.playTick(680 + Math.random() * 80, 0.05);
-          }
-        }, 45);
-
-        await new Promise(r => setTimeout(r, fastRollDuration));
-        clearInterval(fastTimer);
-
-        // [Phase 2: 점진적 감속 룰렛] (속도 저하 + 틱 소리 피치 하강)
-        const decelSteps = isFirst 
-          ? [70, 110, 180, 290, 460, 680]
-          : [80, 140, 240, 420, 600];
-
-        for (let i = 0; i < decelSteps.length; i++) {
-          const delay = decelSteps[i];
-          const rand = candidates[Math.floor(Math.random() * candidates.length)];
-          if (rand) {
-            if (nameEl) nameEl.textContent = rand.name;
-            if (idEl) idEl.textContent = rand.checkinId || ('HVAC-' + rand.seq);
-            if (deptEl) deptEl.textContent = rand.dept || rand.org || '';
-            StageSound.playTick(550 - i * 45, 0.09);
-          }
-          await new Promise(r => setTimeout(r, delay));
-        }
-
-        // 룰렛 정지 찰나의 순간
-        if (card) card.classList.remove('rolling');
-
-        // [Phase 3: 🤫 숨멎 뜸들이기 & 정보 분할 공개]
-        // Step 3-1: 소속 부서 먼저 오픈!
-        if (deptEl) {
-          deptEl.innerHTML = `<span style="color:#fde047; font-weight:900; background:rgba(243,196,72,0.22); padding:4px 14px; border-radius:8px; border:1px solid rgba(243,196,72,0.55); font-size:17px; display:inline-block; animation:winnerPop 0.4s ease-out;">🏢 소속: ${escapeHtml(theWinner.dept)}</span>`;
-        }
-        if (nameEl) {
-          nameEl.innerHTML = `<span style="color:rgba(255,255,255,0.45); filter:blur(10px); letter-spacing:0.3em;">???</span>`;
-        }
-        if (idEl) idEl.textContent = 'HVAC-???';
-        StageSound.playTick(300, 0.16); // 덜컥 멈춤 락 사운드
-
-        // 부서 공개 후 정적 (사회자 멘트 타임: "당첨자의 소속은... [OO팀]!")
-        await new Promise(r => setTimeout(r, isFirst ? 1400 : 1000));
-
-        // Step 3-2: 입장 순번 & 성(姓) 실루엣 오픈!
-        const familyName = (theWinner.name || '').slice(0, 1);
-        if (idEl) {
-          const maskSeq = theWinner.seq ? ('No. ' + String(theWinner.seq).slice(0, -1) + '*') : 'No. ***';
-          idEl.innerHTML = `<span style="color:#38bdf8; font-weight:800; font-size:15px; padding:3px 10px; background:rgba(56,189,248,0.15); border:1px solid rgba(56,189,248,0.4); border-radius:6px;">🎫 ${maskSeq}</span>`;
-        }
-        if (nameEl) {
-          nameEl.innerHTML = `<span style="color:#fde047; font-weight:900; text-shadow:0 0 15px rgba(253,224,71,0.6);">${escapeHtml(familyName)} <span style="filter:blur(8px); opacity:0.4;">OO</span></span>`;
-        }
-        StageSound.playTensionRiser(isFirst ? 1.4 : 1.0); // 앰비언트 긴장감 고조음
-
-        await new Promise(r => setTimeout(r, isFirst ? 1200 : 900));
-
-        // Step 3-3: 대망의 심장 박동 펄스 카운트다운 (두근... 두근...)
-        if (card) card.classList.add('heartbeat');
-        const pulseCount = isFirst ? 3 : 2;
-        for (let p = 0; p < pulseCount; p++) {
-          StageSound.playHeartbeat(isFirst ? 0.45 : 0.35);
-          await new Promise(r => setTimeout(r, 650));
-        }
-
-        // [Phase 4: 💥 대망의 최종 성명 대폭발!]
-        if (card) {
-          card.classList.remove('heartbeat');
-          card.classList.add('winner');
-        }
-        document.body.classList.remove('stage-spotlight-active');
-
-        // 화면 진동(Screen Shake) 타격감 효과
-        document.body.classList.add('screen-shake');
-        setTimeout(() => document.body.classList.remove('screen-shake'), 450);
-
-        // 성명 풀네임 대형 골드 네온 표출
-        if (nameEl) {
-          nameEl.innerHTML = `<span style="font-size:${isFirst ? '52px' : '44px'}; font-weight:950; color:#fde047; text-shadow:0 0 35px rgba(253,224,71,0.9), 0 0 70px rgba(245,158,11,0.6); animation:winnerPop 0.5s ease-out; letter-spacing:0.02em;">${escapeHtml(theWinner.name)}</span>`;
-        }
-        if (idEl) {
-          idEl.textContent = (theWinner.seq ? '#' + theWinner.seq + ' ' : '') + theWinner.checkinId;
-        }
-        if (deptEl) {
-          deptEl.innerHTML = `<span style="font-size:17px; color:#fff; font-weight:800;">${escapeHtml(theWinner.dept)}</span>`;
-        }
-
-        // 팡파르 및 축하 폭죽 연쇄 발사
-        StageSound.playFanfare(isFirst);
-        runConfettiEffect();
-        if (isFirst) {
-          setTimeout(runConfettiEffect, 700);
-          setTimeout(runConfettiEffect, 1500);
-        }
+        await playSingleSlotDramaticReveal(card, theWinner, candidates, isFirst, isSecond);
 
         // 상태 저장 및 완료 렌더링
         if (!drawState.drawnTiers) drawState.drawnTiers = {};
@@ -2328,16 +2328,33 @@
         seedCode: `REDRAW-${subSeed.toString(16).toUpperCase()}`
       };
 
+      isDrawRolling = true;
+      StageSound.getCtx();
+      const isFirst = (Number(currentTier.rank) === 1);
+      const isSecond = (Number(currentTier.rank) === 2);
+      if (isFirst) document.body.classList.add('stage-spotlight-active');
+
+      const actionBox = document.getElementById('drawActionArea');
+      if (actionBox) actionBox.style.display = 'none';
+
+      const targetCard = document.querySelectorAll('.slot-card')[slotIdx];
+      if (targetCard) {
+        await playSingleSlotDramaticReveal(targetCard, newWinner, available, isFirst, isSecond);
+      }
+
       existingWinners[slotIdx] = newWinner;
       drawState.drawnTiers[tierId] = existingWinners;
       persistDrawState();
 
-      runConfettiEffect();
-      renderStageView();
+      isDrawRolling = false;
+      setTimeout(() => {
+        if (pendingStageSync) initStageSystem();
+        else renderStageView();
+      }, 1000);
     }
 
-    // +1명 추가 추첨 (인원수 증원)
-    function addSingleWinner() {
+    // +1명 추가 추첨 (인원수 증원 + 풀 서스펜스 시각/사운드 연출)
+    async function addSingleWinner() {
       if (isDrawRolling) return;
       const sortedTiers = getSortedStageTiers();
       const currentTier = sortedTiers[stageTierIdx];
@@ -2355,6 +2372,12 @@
 
       if (!confirm(`🎁 [${currentTier.title}] 현장 즉석 1명 추가 추첨\n현재 ${existingWinners.length}명 유지 + 1명 신규 추첨하시겠습니까?`)) return;
 
+      isDrawRolling = true;
+      StageSound.getCtx();
+      const isFirst = (Number(currentTier.rank) === 1);
+      const isSecond = (Number(currentTier.rank) === 2);
+      if (isFirst) document.body.classList.add('stage-spotlight-active');
+
       // 최초 기준 인원수 보존 (환원 시 필요)
       if (!currentTier.initialCount) {
         currentTier.initialCount = existingWinners.length || Number(currentTier.count) || 1;
@@ -2369,7 +2392,7 @@
       const shuffled = seededShuffle(available, rng);
       const newCand = shuffled[0];
 
-      existingWinners.push({
+      const newExtraWinner = {
         name: newCand.name,
         email: newCand.email,
         seq: newCand.seq,
@@ -2381,8 +2404,35 @@
         time: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }),
         seedCode: `EXTRA-${subSeed.toString(16).toUpperCase()}`,
         isExtraAdded: true
-      });
+      };
 
+      // 기존 당첨자 카드는 유지한 채, 우측/하단에 신규 추가 추첨 슬롯을 생성하여 4단계 서스펜스 연출 실행!
+      const actionBox = document.getElementById('drawActionArea');
+      if (actionBox) actionBox.style.display = 'none';
+
+      const slotsContainer = document.getElementById('slotsContainer');
+      let newSlotCard = null;
+      if (slotsContainer) {
+        slotsContainer.classList.remove('single-slot');
+        newSlotCard = document.createElement('div');
+        newSlotCard.className = 'slot-card';
+        newSlotCard.innerHTML = `
+          <div style="margin-bottom:8px; display:flex; justify-content:center; gap:6px; align-items:center;">
+            <span style="display:inline-block; font-size:10.5px; font-weight:850; padding:2px 8px; border-radius:5px; background:rgba(236,72,153,0.22); color:#f472b6; border:1px solid rgba(236,72,153,0.45);">➕ 추가 추첨 #${existingWinners.length + 1}</span>
+          </div>
+          <div class="slot-name" style="color: var(--gold-light);">? ? ?</div>
+          <div><span class="slot-id-tag">추첨 중...</span></div>
+          <div class="slot-dept"></div>
+        `;
+        slotsContainer.appendChild(newSlotCard);
+        try { newSlotCard.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {}
+      }
+
+      if (newSlotCard) {
+        await playSingleSlotDramaticReveal(newSlotCard, newExtraWinner, available, isFirst, isSecond);
+      }
+
+      existingWinners.push(newExtraWinner);
       drawState.drawnTiers[tierId] = existingWinners;
       if (!drawState.confirmedTiers) drawState.confirmedTiers = {};
       drawState.confirmedTiers[tierId] = false;
@@ -2395,8 +2445,11 @@
       }
       persistDrawState();
 
-      runConfettiEffect();
-      renderStageView();
+      isDrawRolling = false;
+      setTimeout(() => {
+        if (pendingStageSync) initStageSystem();
+        else renderStageView();
+      }, 1000);
     }
 
     // 추가 추첨 취소 (특정 당첨자 취소 및 당첨자 수 1명 줄이기)

@@ -1,7 +1,7 @@
 {
-  "version": "261116_1551",
-  "publishedAt": "2026-11-16T06:51:34.805Z",
-  "metaConfigTs": 1794811894805,
+  "version": "261116_1607",
+  "publishedAt": "2026-11-16T07:07:15.800Z",
+  "metaConfigTs": 1794812835800,
   "note": "2026 HVAC Expert Seminar - Prevent duplicate & looping update toast banner",
   "data": {
     "hvac_cloud_config": {
