@@ -10,7 +10,7 @@
   <title>미니게임 실시간 리더보드 전광판 | 2026 HVAC Expert Seminar</title>
   <meta name="theme-color" content="#030805">
 
-  <script src="./assets/hvac-core.js?v=261116_1441"></script>
+  <script src="./assets/hvac-core.js?v=261116_1447"></script>
 
   <style>
     :root {
@@ -691,6 +691,9 @@
         if (a.game10s.bestDiff !== b.game10s.bestDiff) {
           return a.game10s.bestDiff - b.game10s.bestDiff;
         }
+        const ta = Number(a.game10s.achievedAt) || 9999999999999;
+        const tb = Number(b.game10s.achievedAt) || 9999999999999;
+        if (ta !== tb) return ta - tb;
         return (a.game10s.bestTime || 0) - (b.game10s.bestTime || 0);
       });
 
@@ -754,6 +757,9 @@
         if (a.game26c.bestDiff !== b.game26c.bestDiff) {
           return a.game26c.bestDiff - b.game26c.bestDiff;
         }
+        const ta = Number(a.game26c.achievedAt) || 9999999999999;
+        const tb = Number(b.game26c.achievedAt) || 9999999999999;
+        if (ta !== tb) return ta - tb;
         return (a.game26c.bestTemp || 0) - (b.game26c.bestTemp || 0);
       });
 

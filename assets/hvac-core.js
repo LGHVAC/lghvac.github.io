@@ -1193,7 +1193,7 @@
   // -------------------------------------------------------------
   // 앱 빌드 버전 검증 및 구버전 로컬 캐시 자동 무효화 / 정합성 갱신
   // -------------------------------------------------------------
-  var HVAC_BUILD_VERSION = '261116_1441';
+  var HVAC_BUILD_VERSION = '261116_1447';
 
   function getCurrentAppVersion() {
     try {
@@ -2360,17 +2360,23 @@
       .finally(function () { isPushingQuizScore = false; });
   }
 
-  // 미니게임 초경량 Top 3 요약 데이터(~450B) 생성 헬퍼
+  // 미니게임 초경량 Top 3 요약 데이터(~450B) 생성 헬퍼 (동점 시 최초 달성 시각 선착순 정렬)
   function buildGameTop3SummaryFromList(list) {
     var arr = Array.isArray(list) ? list : [];
     var valid10s = arr.filter(function (it) { return it && it.game10s && it.game10s.bestDiff !== null && it.game10s.bestDiff !== undefined; });
     valid10s.sort(function (a, b) {
       if (a.game10s.bestDiff !== b.game10s.bestDiff) return a.game10s.bestDiff - b.game10s.bestDiff;
+      var ta = Number(a.game10s.achievedAt) || Number(a.updatedAtMs) || 9999999999999;
+      var tb = Number(b.game10s.achievedAt) || Number(b.updatedAtMs) || 9999999999999;
+      if (ta !== tb) return ta - tb;
       return (a.game10s.bestTime || 0) - (b.game10s.bestTime || 0);
     });
     var valid26c = arr.filter(function (it) { return it && it.game26c && it.game26c.bestDiff !== null && it.game26c.bestDiff !== undefined; });
     valid26c.sort(function (a, b) {
       if (a.game26c.bestDiff !== b.game26c.bestDiff) return a.game26c.bestDiff - b.game26c.bestDiff;
+      var ta = Number(a.game26c.achievedAt) || Number(a.updatedAtMs) || 9999999999999;
+      var tb = Number(b.game26c.achievedAt) || Number(b.updatedAtMs) || 9999999999999;
+      if (ta !== tb) return ta - tb;
       return (a.game26c.bestTemp || 0) - (b.game26c.bestTemp || 0);
     });
     return {
@@ -2379,7 +2385,7 @@
           key: it.key,
           name: it.name || '참가자',
           dept: it.dept || '',
-          game10s: { bestTime: it.game10s.bestTime, bestDiff: it.game10s.bestDiff, isPerfect: !!it.game10s.isPerfect }
+          game10s: { bestTime: it.game10s.bestTime, bestDiff: it.game10s.bestDiff, isPerfect: !!it.game10s.isPerfect, achievedAt: Number(it.game10s.achievedAt) || Number(it.updatedAtMs) || 0 }
         };
       }),
       top26c: valid26c.slice(0, 3).map(function (it) {
@@ -2387,7 +2393,7 @@
           key: it.key,
           name: it.name || '참가자',
           dept: it.dept || '',
-          game26c: { bestTemp: it.game26c.bestTemp, bestDiff: it.game26c.bestDiff, isPerfect: !!it.game26c.isPerfect }
+          game26c: { bestTemp: it.game26c.bestTemp, bestDiff: it.game26c.bestDiff, isPerfect: !!it.game26c.isPerfect, achievedAt: Number(it.game26c.achievedAt) || Number(it.updatedAtMs) || 0 }
         };
       }),
       count10s: valid10s.length,
@@ -2411,7 +2417,7 @@
     return Object.values(map);
   }
 
-  // 점심 미니게임 (10초 / 20℃) 결과 클라우드 전송 + 초경량 Top 3(games/top3) 갱신
+  // 점심 미니게임 (10초 / 20℃) 결과 클라우드 전송 + ETag 원자적 트랜잭션 기반 Top 3(games/top3) 갱신
   function pushGameRecordToCloud(gameData) {
     var c = getCloudConfig();
     if (!c || !window.fetch || !gameData) return Promise.resolve({ success: false });
@@ -2419,6 +2425,7 @@
     var rawKey = user.email || gameData.email || gameData.deviceId || ('anon_' + (gameData.name || 'player') + '_' + (gameData.phoneLast4 || '0000'));
     var key = String(rawKey).toLowerCase().replace('@lge.com', '').replace(/[.#$\[\]\/]/g, '_');
     var subUrl = cloudPath('games/submissions/' + key);
+    var nowMs = Date.now();
 
     return fetch(subUrl, { cache: 'no-store' })
       .then(function (r) { return r.ok ? r.json() : null; })
@@ -2426,6 +2433,27 @@
         var isNew10s = (!existing || !existing.game10s || existing.game10s.bestDiff === null || existing.game10s.bestDiff === undefined) && (gameData.game10s && gameData.game10s.bestDiff !== null && gameData.game10s.bestDiff !== undefined);
         var isNew26c = (!existing || !existing.game26c || existing.game26c.bestDiff === null || existing.game26c.bestDiff === undefined) && (gameData.game26c && gameData.game26c.bestDiff !== null && gameData.game26c.bestDiff !== undefined);
         existing = existing || {};
+
+        var next10s = gameData.game10s !== undefined ? Object.assign({}, gameData.game10s) : (existing.game10s || { tries: [], bestTime: null, bestDiff: null, isPerfect: false });
+        if (next10s && next10s.bestDiff !== null && next10s.bestDiff !== undefined) {
+          var prevDiff10 = (existing.game10s && existing.game10s.bestDiff !== null && existing.game10s.bestDiff !== undefined) ? Number(existing.game10s.bestDiff) : Infinity;
+          if (Number(next10s.bestDiff) < prevDiff10) {
+            next10s.achievedAt = nowMs;
+          } else {
+            next10s.achievedAt = (existing.game10s && existing.game10s.achievedAt) || existing.updatedAtMs || nowMs;
+          }
+        }
+
+        var next26c = gameData.game26c !== undefined ? Object.assign({}, gameData.game26c) : (existing.game26c || { tries: [], bestTemp: null, bestDiff: null, isPerfect: false });
+        if (next26c && next26c.bestDiff !== null && next26c.bestDiff !== undefined) {
+          var prevDiff26 = (existing.game26c && existing.game26c.bestDiff !== null && existing.game26c.bestDiff !== undefined) ? Number(existing.game26c.bestDiff) : Infinity;
+          if (Number(next26c.bestDiff) < prevDiff26) {
+            next26c.achievedAt = nowMs;
+          } else {
+            next26c.achievedAt = (existing.game26c && existing.game26c.achievedAt) || existing.updatedAtMs || nowMs;
+          }
+        }
+
         var merged = {
           key: key,
           email: user.email || gameData.email || '미체크인',
@@ -2434,72 +2462,101 @@
           phoneLast4: gameData.phoneLast4 || user.phoneLast4 || '',
           checkinId: user.checkinId || '-',
           seq: user.seq || null,
-          game10s: gameData.game10s !== undefined ? gameData.game10s : (existing.game10s || { tries: [], bestTime: null, bestDiff: null, isPerfect: false }),
-          game26c: gameData.game26c !== undefined ? gameData.game26c : (existing.game26c || { tries: [], bestTemp: null, bestDiff: null, isPerfect: false }),
+          game10s: next10s,
+          game26c: next26c,
+          updatedAtMs: nowMs,
           updatedAt: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
         };
+
         return fetch(subUrl, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(merged)
         }).then(function (r) {
           if (!r.ok) return { success: false };
-          // 초경량 Top 3 노드(~450B)만 읽어서 Top 3 변동 또는 참여자수 증감 시 갱신
-          return fetch(cloudPath('games/top3'), { cache: 'no-store' })
-            .then(function (tr) { return tr.ok ? tr.json() : null; })
-            .then(function (top3Obj) {
-              if (!top3Obj || typeof top3Obj !== 'object') {
-                top3Obj = { top10s: [], top26c: [], count10s: 0, count26c: 0, updatedAt: Date.now() };
-              }
-              var top10s = Array.isArray(top3Obj.top10s) ? top3Obj.top10s.filter(function (x) { return x && x.key !== key; }) : [];
-              var top26c = Array.isArray(top3Obj.top26c) ? top3Obj.top26c.filter(function (x) { return x && x.key !== key; }) : [];
-              if (merged.game10s && merged.game10s.bestDiff !== null && merged.game10s.bestDiff !== undefined) {
-                top10s.push({
-                  key: key,
-                  name: merged.name,
-                  dept: merged.dept,
-                  game10s: { bestTime: merged.game10s.bestTime, bestDiff: merged.game10s.bestDiff, isPerfect: !!merged.game10s.isPerfect }
+
+          // 200명 동시 제출 시 Lost Update 원천 차단: Firebase ETag(If-Match) 낙관적 잠금 + 재시도 루프
+          var top3Url = cloudPath('games/top3');
+          function attemptUpdateTop3(attempt) {
+            return fetch(top3Url, { headers: { 'X-Firebase-ETag': 'true' }, cache: 'no-store' })
+              .then(function (tr) {
+                var etag = tr.headers.get('ETag');
+                return tr.json().then(function (top3Obj) { return { etag: etag, top3Obj: top3Obj }; });
+              })
+              .then(function (res) {
+                var top3Obj = (res.top3Obj && typeof res.top3Obj === 'object') ? res.top3Obj : { top10s: [], top26c: [], count10s: 0, count26c: 0, updatedAt: nowMs };
+                var top10s = Array.isArray(top3Obj.top10s) ? top3Obj.top10s.filter(function (x) { return x && x.key !== key; }) : [];
+                var top26c = Array.isArray(top3Obj.top26c) ? top3Obj.top26c.filter(function (x) { return x && x.key !== key; }) : [];
+
+                if (merged.game10s && merged.game10s.bestDiff !== null && merged.game10s.bestDiff !== undefined) {
+                  top10s.push({
+                    key: key,
+                    name: merged.name,
+                    dept: merged.dept,
+                    game10s: { bestTime: merged.game10s.bestTime, bestDiff: merged.game10s.bestDiff, isPerfect: !!merged.game10s.isPerfect, achievedAt: merged.game10s.achievedAt || nowMs }
+                  });
+                  top10s.sort(function (a, b) {
+                    if (a.game10s.bestDiff !== b.game10s.bestDiff) return a.game10s.bestDiff - b.game10s.bestDiff;
+                    var ta = Number(a.game10s.achievedAt) || 9999999999999;
+                    var tb = Number(b.game10s.achievedAt) || 9999999999999;
+                    if (ta !== tb) return ta - tb;
+                    return (a.game10s.bestTime || 0) - (b.game10s.bestTime || 0);
+                  });
+                  top10s = top10s.slice(0, 3);
+                }
+
+                if (merged.game26c && merged.game26c.bestDiff !== null && merged.game26c.bestDiff !== undefined) {
+                  top26c.push({
+                    key: key,
+                    name: merged.name,
+                    dept: merged.dept,
+                    game26c: { bestTemp: merged.game26c.bestTemp, bestDiff: merged.game26c.bestDiff, isPerfect: !!merged.game26c.isPerfect, achievedAt: merged.game26c.achievedAt || nowMs }
+                  });
+                  top26c.sort(function (a, b) {
+                    if (a.game26c.bestDiff !== b.game26c.bestDiff) return a.game26c.bestDiff - b.game26c.bestDiff;
+                    var ta = Number(a.game26c.achievedAt) || 9999999999999;
+                    var tb = Number(b.game26c.achievedAt) || 9999999999999;
+                    if (ta !== tb) return ta - tb;
+                    return (a.game26c.bestTemp || 0) - (b.game26c.bestTemp || 0);
+                  });
+                  top26c = top26c.slice(0, 3);
+                }
+
+                var prevJson = JSON.stringify({ t10: top3Obj.top10s || [], t26: top3Obj.top26c || [], c10: top3Obj.count10s || 0, c26: top3Obj.count26c || 0 });
+                var nextSummary = {
+                  top10s: top10s,
+                  top26c: top26c,
+                  count10s: Math.max(top10s.length, (Number(top3Obj.count10s) || 0) + (isNew10s ? 1 : 0)),
+                  count26c: Math.max(top26c.length, (Number(top3Obj.count26c) || 0) + (isNew26c ? 1 : 0)),
+                  updatedAt: Date.now()
+                };
+                var nextJson = JSON.stringify({ t10: nextSummary.top10s, t26: nextSummary.top26c, c10: nextSummary.count10s, c26: nextSummary.count26c });
+                writeLocalSilent('hvac_game_top3', nextSummary);
+
+                if (prevJson === nextJson) {
+                  // Top 3 변동이 없어도 관리자 콘솔이 2·3차 도전 기록을 실시간 수신할 수 있도록 meta/games는 반드시 갱신
+                  return touchCloudMeta('games').then(function () { return { success: true, record: merged, summary: nextSummary }; });
+                }
+
+                var putHeaders = { 'Content-Type': 'application/json' };
+                if (res.etag) putHeaders['If-Match'] = res.etag;
+                return fetch(top3Url, {
+                  method: 'PUT',
+                  headers: putHeaders,
+                  body: JSON.stringify(nextSummary)
+                }).then(function (pr) {
+                  if (pr.status === 412 && attempt < 6) {
+                    var backoff = 40 + Math.floor(Math.random() * 100);
+                    return new Promise(function (resolve) { setTimeout(resolve, backoff); }).then(function () {
+                      return attemptUpdateTop3(attempt + 1);
+                    });
+                  }
+                  return touchCloudMeta('games').then(function () { return { success: true, record: merged, summary: nextSummary }; });
                 });
-                top10s.sort(function (a, b) {
-                  if (a.game10s.bestDiff !== b.game10s.bestDiff) return a.game10s.bestDiff - b.game10s.bestDiff;
-                  return (a.game10s.bestTime || 0) - (b.game10s.bestTime || 0);
-                });
-                top10s = top10s.slice(0, 3);
-              }
-              if (merged.game26c && merged.game26c.bestDiff !== null && merged.game26c.bestDiff !== undefined) {
-                top26c.push({
-                  key: key,
-                  name: merged.name,
-                  dept: merged.dept,
-                  game26c: { bestTemp: merged.game26c.bestTemp, bestDiff: merged.game26c.bestDiff, isPerfect: !!merged.game26c.isPerfect }
-                });
-                top26c.sort(function (a, b) {
-                  if (a.game26c.bestDiff !== b.game26c.bestDiff) return a.game26c.bestDiff - b.game26c.bestDiff;
-                  return (a.game26c.bestTemp || 0) - (b.game26c.bestTemp || 0);
-                });
-                top26c = top26c.slice(0, 3);
-              }
-              var prevJson = JSON.stringify({ t10: top3Obj.top10s || [], t26: top3Obj.top26c || [], c10: top3Obj.count10s || 0, c26: top3Obj.count26c || 0 });
-              var nextSummary = {
-                top10s: top10s,
-                top26c: top26c,
-                count10s: Math.max(top10s.length, (Number(top3Obj.count10s) || 0) + (isNew10s ? 1 : 0)),
-                count26c: Math.max(top26c.length, (Number(top3Obj.count26c) || 0) + (isNew26c ? 1 : 0)),
-                updatedAt: Date.now()
-              };
-              var nextJson = JSON.stringify({ t10: nextSummary.top10s, t26: nextSummary.top26c, c10: nextSummary.count10s, c26: nextSummary.count26c });
-              writeLocalSilent('hvac_game_top3', nextSummary);
-              if (prevJson === nextJson) {
-                return { success: true, record: merged, summary: nextSummary };
-              }
-              return fetch(cloudPath('games/top3'), {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(nextSummary)
-              }).then(function () {
-                return touchCloudMeta('games').then(function () { return { success: true, record: merged, summary: nextSummary }; });
               });
-            });
+          }
+
+          return attemptUpdateTop3(0);
         });
       })
       .catch(function () { return { success: false }; });
@@ -2759,6 +2816,15 @@
             if (subMap === undefined) return false;
             var list = (subMap && typeof subMap === 'object') ? Object.values(subMap).filter(Boolean) : [];
             var summary = buildGameTop3SummaryFromList(list);
+            var prevTop3 = read('hvac_game_top3');
+            if (pId === 'admin' && (!prevTop3 || prevTop3.count10s !== summary.count10s || prevTop3.count26c !== summary.count26c)) {
+              // 관리자 동기화 시 games/top3 참여자 수·순위 오차가 있으면 실제 submissions 기준으로 자동 보정
+              fetch(cloudPath('games/top3'), {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(summary)
+              }).catch(function () {});
+            }
             withCloudSyncLock(function () {
               writeLocalSilent('hvac_game_submissions', list);
               writeLocalSilent('hvac_game_top3', summary);

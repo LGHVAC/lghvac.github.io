@@ -11,7 +11,7 @@
   <meta name="theme-color" content="#060e09">
 
   <!-- Core Scripts & Cloud Sync -->
-  <script src="./assets/hvac-core.js?v=261116_1441"></script>
+  <script src="./assets/hvac-core.js?v=261116_1447"></script>
 
   <style>
     :root {
@@ -929,7 +929,7 @@
     <section class="leaderboard-preview-card">
       <div class="leaderboard-preview-head">
         <span>🏆 현재 실시간 리더보드 TOP 3</span>
-        <span style="font-size: 11px; color: var(--text-muted); cursor: pointer;" onclick="loadMiniLeaderboard()">🔄 새로고침</span>
+        <span style="font-size: 11px; color: var(--text-muted); cursor: pointer;" onclick="loadMiniLeaderboard(true)">🔄 새로고침</span>
       </div>
       <ul class="leaderboard-list" id="miniLeaderboardList">
         <li class="leaderboard-item" style="justify-content: center; color: var(--text-muted);">
@@ -1691,8 +1691,16 @@
     /* =========================================================
        7. 클라우드 전송 및 리더보드 불러오기
        ========================================================= */
+    let isPushingGameRecord = false;
+    let hasPendingGameSync = false;
     function syncRecordToCloud() {
       if (!window.HVAC || !window.HVAC.cloud || !currentUser.name || !hasCheckinAccess()) return;
+      if (isPushingGameRecord) {
+        hasPendingGameSync = true;
+        return;
+      }
+      isPushingGameRecord = true;
+      hasPendingGameSync = false;
       window.HVAC.cloud.pushGameRecord({
         name: currentUser.name,
         dept: currentUser.dept,
@@ -1704,6 +1712,11 @@
         game26c: userRecords.game26c
       }).then(() => {
         loadMiniLeaderboard(false);
+      }).finally(() => {
+        isPushingGameRecord = false;
+        if (hasPendingGameSync) {
+          setTimeout(syncRecordToCloud, 80);
+        }
       });
     }
 
@@ -1721,11 +1734,11 @@
       if (currentTab === '10s') {
         filtered = list
           .filter(item => item && item.game10s && item.game10s.bestDiff !== null && item.game10s.bestDiff !== undefined)
-          .sort((a, b) => a.game10s.bestDiff - b.game10s.bestDiff);
+          .sort((a, b) => (a.game10s.bestDiff - b.game10s.bestDiff) || ((a.game10s.achievedAt || 9999999999999) - (b.game10s.achievedAt || 9999999999999)));
       } else {
         filtered = list
           .filter(item => item && item.game26c && item.game26c.bestDiff !== null && item.game26c.bestDiff !== undefined)
-          .sort((a, b) => a.game26c.bestDiff - b.game26c.bestDiff);
+          .sort((a, b) => (a.game26c.bestDiff - b.game26c.bestDiff) || ((a.game26c.achievedAt || 9999999999999) - (b.game26c.achievedAt || 9999999999999)));
       }
 
       if (!filtered.length) {
