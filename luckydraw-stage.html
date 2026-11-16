@@ -9,7 +9,7 @@
   <title>럭키드로우 | 제10회 2026 HVAC 전문가 세미나</title>
   <link rel="icon" href="./assets/favicon.ico">
   <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
-  <script src="./assets/hvac-core.js?v=261116_1522"></script>
+  <script src="./assets/hvac-core.js?v=261116_1551"></script>
   <style>
     :root {
       --bg: #030805;
@@ -1286,7 +1286,11 @@
         lastKnownResetAt = drawState.resetAt;
       }
       try {
-        localStorage.setItem('hvac_luckydraw_state', JSON.stringify(drawState));
+        if (window.HVAC && typeof window.HVAC.writeLocalSilent === 'function') {
+          window.HVAC.writeLocalSilent('hvac_luckydraw_state', drawState);
+        } else {
+          localStorage.setItem('hvac_luckydraw_state', JSON.stringify(drawState));
+        }
       } catch (e) {}
       if (window.HVAC && window.HVAC.cloud && typeof window.HVAC.cloud.pushConfig === 'function') {
         try { window.HVAC.cloud.pushConfig('hvac_luckydraw_state', drawState); } catch (e) {}
@@ -1297,7 +1301,11 @@
       if (!drawConfig || typeof drawConfig !== 'object') return;
       drawConfig.updatedAt = Date.now();
       try {
-        localStorage.setItem('hvac_luckydraw_config', JSON.stringify(drawConfig));
+        if (window.HVAC && typeof window.HVAC.writeLocalSilent === 'function') {
+          window.HVAC.writeLocalSilent('hvac_luckydraw_config', drawConfig);
+        } else {
+          localStorage.setItem('hvac_luckydraw_config', JSON.stringify(drawConfig));
+        }
       } catch (e) {}
       if (window.HVAC && window.HVAC.cloud && typeof window.HVAC.cloud.pushConfig === 'function') {
         try { window.HVAC.cloud.pushConfig('hvac_luckydraw_config', drawConfig); } catch (e) {}
@@ -1975,7 +1983,11 @@
       if (isDrawRolling) return;
       const sortedTiers = getSortedStageTiers();
       const currentTier = sortedTiers[stageTierIdx];
+      if (!currentTier) return;
       const tierId = currentTier.id;
+      if (drawState && drawState.drawnTiers && Array.isArray(drawState.drawnTiers[tierId]) && drawState.drawnTiers[tierId].length > 0) {
+        return; // 이미 추첨된 등수는 스페이스바 등으로 덮어쓰기 방지 (전체 재추첨 버튼 + 슈퍼관리자 인증 필수)
+      }
       const isFirst = (Number(currentTier.rank) === 1);
       const isSecond = (Number(currentTier.rank) === 2);
       const isSingleWinner = (Number(currentTier.count) === 1);
