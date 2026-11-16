@@ -1,5 +1,5 @@
 {
-  "version": "261116_0850",
+  "version": "261116_0955",
   "publishedAt": "2026-11-15T22:27:23.811Z",
   "metaConfigTs": 1794781643811,
   "note": "2026 HVAC Expert Seminar - Prevent duplicate & looping update toast banner",
@@ -660,5 +660,6 @@
       "tempSeason": "winter",
       "tempTarget": 20
     }
-  }
+  },
+  "updatedAt": "2026-11-16T00:55:18.897Z"
 }

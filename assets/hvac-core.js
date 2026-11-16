@@ -3729,18 +3729,18 @@
       cloudPath: cloudPath,
       lookupRosterEntry: function (email, name) {
         if (!email && !name) return Promise.resolve(null);
-        var found = findRosterEntry(email, name);
-        if (found) return Promise.resolve(found);
         var cleanEmail = String(email || '').toLowerCase().replace('@lge.com', '').trim();
         var cleanKey = cleanEmail.replace(/[.#$\[\]\/]/g, '_');
-        if (!window.fetch || !getCloudConfig() || !cleanKey) return Promise.resolve(null);
-        return fetch(cloudPath('roster_map/' + cleanKey), { cache: 'no-store' })
-          .then(function (r) { return r.ok ? r.json() : null; })
-          .then(function (entry) {
-            if (entry && entry.name) return entry;
-            return null;
-          })
-          .catch(function () { return null; });
+        if (window.fetch && getCloudConfig() && cleanKey) {
+          return fetch(cloudPath('roster_map/' + cleanKey), { cache: 'no-store' })
+            .then(function (r) { return r.ok ? r.json() : null; })
+            .then(function (entry) {
+              if (entry && entry.name) return entry;
+              return findRosterEntry(email, name);
+            })
+            .catch(function () { return findRosterEntry(email, name); });
+        }
+        return Promise.resolve(findRosterEntry(email, name));
       },
       pushCheckinList: pushCheckinListToCloud,
       pushQnaList: pushQnaListToCloud,

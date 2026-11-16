@@ -1,7 +1,7 @@
 {
-  "version": "261116_0850",
-  "buildTime": "2026-11-16T08:50:00+09:00",
-  "note": "2026 HVAC Expert Seminar - Restore and safeguard operator, VIP, HIM and external categories in roster",
-  "updatedAt": "2026-11-15T23:50:00.000Z",
+  "version": "261116_0955",
+  "buildTime": "2026-11-16T09:55:00+09:00",
+  "note": "2026 HVAC Expert Seminar - Fix checkin roster name matching and auto takeover for manually registered attendees (Kang Hyunseok)",
+  "updatedAt": "2026-11-16T00:55:18.895Z",
   "description": "Restore all category classifications in roster and checkins and prevent accidental category overwrite"
 }
