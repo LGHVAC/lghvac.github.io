@@ -11,7 +11,7 @@
   <meta name="theme-color" content="#060e09">
 
   <!-- Core Scripts & Cloud Sync -->
-  <script src="./assets/hvac-core.js?v=261116_1220"></script>
+  <script src="./assets/hvac-core.js?v=261116_1225"></script>
 
   <style>
     :root {
@@ -837,9 +837,9 @@
       <div class="game-card">
         <div class="try-indicator-wrap">
           <span class="try-badge" id="tryBadge10s">도전 기회: 3회 남음</span>
-          <label class="mode-toggle">
-            <input type="checkbox" id="chkHiddenMode10s" checked>
-            <span id="lblHiddenMode10s">3초 블라인드 모드 🙈</span>
+          <label class="mode-toggle" style="cursor: default;" title="공정한 순위 경쟁을 위해 블라인드 모드가 필수로 고정 적용됩니다.">
+            <input type="checkbox" id="chkHiddenMode10s" checked disabled style="cursor: not-allowed; accent-color: #10b981;">
+            <span id="lblHiddenMode10s">3초 블라인드 모드 (고정 🔒)</span>
           </label>
         </div>
 
@@ -1109,7 +1109,12 @@
 
       const lblBlind = document.getElementById('lblHiddenMode10s');
       if (lblBlind) {
-        lblBlind.textContent = rules.blindSec > 0 ? `${rules.blindSec}초 블라인드 모드 🙈` : '블라인드 없음 (전체 노출)';
+        lblBlind.textContent = rules.blindSec > 0 ? `${rules.blindSec}초 블라인드 모드 (고정 🔒)` : '블라인드 없음 (전체 노출)';
+      }
+      const chkBlind = document.getElementById('chkHiddenMode10s');
+      if (chkBlind) {
+        chkBlind.checked = true;
+        chkBlind.disabled = true;
       }
 
       const seasonSub = document.getElementById('tempSeasonSubtitle');
@@ -1329,7 +1334,10 @@
       isRunning10s = true;
       startTime10s = performance.now();
       const rules = getGameRules();
-      const isHidden = document.getElementById('chkHiddenMode10s').checked;
+      // 블라인드 모드 필수 강제 적용 (일반 사용자 해제 불가)
+      const chkBlindEl = document.getElementById('chkHiddenMode10s');
+      if (chkBlindEl) { chkBlindEl.checked = true; chkBlindEl.disabled = true; }
+      const isHidden = true;
       const display = document.getElementById('timerDisplay10s');
       const diffStatus = document.getElementById('diffStatus10s');
       const btn = document.getElementById('btnAction10s');
@@ -1858,6 +1866,18 @@
        ========================================================= */
     document.addEventListener('DOMContentLoaded', () => {
       initUser();
+      // 10초 스톱워치 블라인드 모드 해제 방지 리스너
+      const chkHidden = document.getElementById('chkHiddenMode10s');
+      if (chkHidden) {
+        chkHidden.checked = true;
+        chkHidden.disabled = true;
+        chkHidden.addEventListener('click', (e) => { e.preventDefault(); chkHidden.checked = true; });
+        chkHidden.addEventListener('change', () => { chkHidden.checked = true; });
+      }
+      const toggleLabel = document.querySelector('.mode-toggle');
+      if (toggleLabel) {
+        toggleLabel.addEventListener('click', (e) => { e.preventDefault(); if (chkHidden) chkHidden.checked = true; });
+      }
       checkGameLockStatus();
       setTimeout(() => loadMiniLeaderboard(false), 300);
       setInterval(() => {
