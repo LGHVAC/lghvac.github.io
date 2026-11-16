@@ -511,6 +511,7 @@
   ];
 
   var DYNAMIC_RUNTIME_KEYS = [
+    'hvac_schedule_settings',
     'hvac_quiz_unlocked_sessions',
     'hvac_game_config',
     'hvac_notice_banner',
@@ -1192,7 +1193,7 @@
   // -------------------------------------------------------------
   // 앱 빌드 버전 검증 및 구버전 로컬 캐시 자동 무효화 / 정합성 갱신
   // -------------------------------------------------------------
-  var HVAC_BUILD_VERSION = '261116_1425';
+  var HVAC_BUILD_VERSION = '261116_1441';
 
   function getCurrentAppVersion() {
     try {
@@ -3273,6 +3274,7 @@
       syncSingleConfigKey('hvac_luckydraw_state');
     }
     if (pId === 'admin') {
+      syncSingleConfigKey('hvac_schedule_settings');
       syncSingleConfigKey('hvac_game_config');
       syncSingleConfigKey('hvac_quiz_unlocked_sessions');
       syncSingleConfigKey('hvac_notice_banner');
