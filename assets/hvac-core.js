@@ -116,19 +116,18 @@
   function pageId() {
     var explicit = document.documentElement.getAttribute('data-hvac-page');
     if (explicit) {
-      if (explicit === 'mc-qna') return 'qna';
       return explicit;
     }
     var p = location.pathname.toLowerCase();
     if (/\/qr(\/|$)/.test(p)) return 'qr';
     if (/admin(\.html)?$/.test(p)) return 'admin';
     if (/checkin(\.html)?$/.test(p)) return 'checkin';
+    if (/mc-qna(\.html)?$/.test(p)) return 'mc-qna';
     if (/qna(\.html)?$/.test(p) && !/mc-qna/.test(p)) return 'qna';
     if (/quiz(\.html)?$/.test(p) && !/quiz-winners/.test(p)) return 'quiz';
     if (/game(\.html)?$/.test(p) && !/game-leaderboard/.test(p)) return 'game';
     if (/game-leaderboard(\.html)?$/.test(p) || /lunch-screen(\.html)?$/.test(p)) return 'game-leaderboard';
     if (/attendance-dashboard(\.html)?$/.test(p)) return 'attendance-dashboard';
-    if (/mc-qna(\.html)?$/.test(p)) return 'qna';
     if (/quiz-winners(\.html)?$/.test(p)) return 'quiz-winners';
     if (/luckydraw-stage(\.html)?$/.test(p)) return 'luckydraw-stage';
     return 'index';
@@ -604,24 +603,36 @@
     return c.dbUrl + '/' + c.roomKey + '/' + subpath.replace(/^\/+/, '') + '.json';
   }
 
-  // 핵심: 실시간 데이터 섹션(checkins, qna, quiz, surveys, games)의 확인 시각은
-  // 페이지 진입/새로고침마다 인메모리(0)로 시작하여 타 페이지(checkin.html 등) 방문으로 인한
-  // localStorage 메타 오염 때문에 새로고침 시 업데이트가 누락되는 현상을 원천 차단!
-  // 단, 강제 로그아웃(session_reset_at) 및 퀴즈 리셋(quiz_reset_at) 시그널만 localStorage에 영속화.
+  // 핵심: 역할별 분리 키(checkins_full vs checkins_self, quiz_full vs quiz_self, games_full vs games_top3) 및
+  // 사용자 이메일/룸키 검증을 포함하여 lastSeenMeta와 config_keys를 localStorage에 영속화.
+  // 새로고침이나 탭 전환 시 meta 타임스탬프가 동일하면 0B 다운로드(중복 트래픽 완전 차단).
   var LAST_META_KEY = 'hvac_last_seen_meta';
+  var curRoomKey = (DEFAULT_CLOUD_CONFIG && DEFAULT_CLOUD_CONFIG.roomKey) || 'hvac2026';
+  try {
+    var curCloudCfgForMeta = read(CLOUD_CFG_KEY);
+    if (curCloudCfgForMeta && curCloudCfgForMeta.roomKey) curRoomKey = String(curCloudCfgForMeta.roomKey);
+  } catch (e) {}
+  var curUserForMeta = read('hvac_user_checked') || read('hvac_checkin_user') || {};
+  var curSelfEmail = String(curUserForMeta.email || '').toLowerCase().replace('@lge.com', '').trim();
   var savedMeta = read(LAST_META_KEY);
+  if (!savedMeta || typeof savedMeta !== 'object' || (savedMeta.roomKey && savedMeta.roomKey !== curRoomKey)) {
+    savedMeta = {};
+  }
+  var isSameSelfUser = !!(curSelfEmail && savedMeta.selfEmail && savedMeta.selfEmail === curSelfEmail);
   var lastSeenMeta = {
-    config: 0,
-    checkins_full: 0,
-    checkins_self: 0,
-    qna: 0,
-    quiz_full: 0,
-    quiz_self: 0,
-    surveys: 0,
-    games_full: 0,
-    games_top3: 0,
-    session_reset_at: (savedMeta && Number(savedMeta.session_reset_at)) || 0,
-    quiz_reset_at: (savedMeta && Number(savedMeta.quiz_reset_at)) || 0
+    roomKey: curRoomKey,
+    selfEmail: curSelfEmail,
+    config: Number(savedMeta.config) || 0,
+    checkins_full: Number(savedMeta.checkins_full) || 0,
+    checkins_self: isSameSelfUser ? (Number(savedMeta.checkins_self) || 0) : 0,
+    qna: Number(savedMeta.qna) || 0,
+    quiz_full: Number(savedMeta.quiz_full) || 0,
+    quiz_self: isSameSelfUser ? (Number(savedMeta.quiz_self) || 0) : 0,
+    surveys: Number(savedMeta.surveys) || 0,
+    games_full: Number(savedMeta.games_full) || 0,
+    games_top3: Number(savedMeta.games_top3) || 0,
+    session_reset_at: Number(savedMeta.session_reset_at) || 0,
+    quiz_reset_at: Number(savedMeta.quiz_reset_at) || 0
   };
   var latestRemoteMeta = {
     config: 0,
@@ -635,38 +646,39 @@
   };
   var isSyncingCloud = false;
   var inFlightSectionPromises = {};
+  var lastHeavyDownloadAt = {};
+  var heavySyncTimers = {};
+  var HEAVY_SYNC_COOLDOWN_MS = 8000;
 
-  // 정적 배포 설정 키(11.5KB)는 localStorage에, 동적 실시간 제어 키는 페이지 세션 인메모리에 추적
+  // 정적·동적 설정 키 모두 roomKey 기준으로 localStorage에 영속 추적 (로컬 값 유실 시 자동 재동기화)
   var CFG_KEYS_SEEN = 'hvac_last_seen_cfgkeys';
   var savedCfgSeen = read(CFG_KEYS_SEEN);
-  var lastSeenCfgKeys = (savedCfgSeen && typeof savedCfgSeen === 'object') ? savedCfgSeen : {};
-  var sessionSeenCfgKeys = {};
+  if (!savedCfgSeen || typeof savedCfgSeen !== 'object' || (savedCfgSeen.__roomKey && savedCfgSeen.__roomKey !== curRoomKey)) {
+    savedCfgSeen = { __roomKey: curRoomKey };
+  }
+  var lastSeenCfgKeys = savedCfgSeen;
 
   function getCfgKeySeenTs(k) {
-    if (STATIC_PUBLISHED_KEYS.indexOf(k) >= 0) {
-      return Number(lastSeenCfgKeys[k]) || 0;
-    }
-    return Number(sessionSeenCfgKeys[k]) || 0;
+    if (read(k) === null) return 0;
+    return Number(lastSeenCfgKeys[k]) || 0;
   }
 
   function setCfgKeySeenTs(k, ts) {
     var numTs = Number(ts) || 0;
-    if (STATIC_PUBLISHED_KEYS.indexOf(k) >= 0) {
-      lastSeenCfgKeys[k] = numTs;
-    } else {
-      sessionSeenCfgKeys[k] = numTs;
-    }
+    lastSeenCfgKeys[k] = numTs;
   }
 
   function saveSeenCfgKeys() {
+    lastSeenCfgKeys.__roomKey = (getCloudConfig() || DEFAULT_CLOUD_CONFIG).roomKey;
     writeLocalSilent(CFG_KEYS_SEEN, lastSeenCfgKeys);
   }
 
   function saveLastSeenMeta() {
-    writeLocalSilent(LAST_META_KEY, {
-      session_reset_at: lastSeenMeta.session_reset_at || 0,
-      quiz_reset_at: lastSeenMeta.quiz_reset_at || 0
-    });
+    var activeUser = read('hvac_user_checked') || read('hvac_checkin_user') || {};
+    var activeEmail = String(activeUser.email || '').toLowerCase().replace('@lge.com', '').trim();
+    if (activeEmail) lastSeenMeta.selfEmail = activeEmail;
+    lastSeenMeta.roomKey = (getCloudConfig() || DEFAULT_CLOUD_CONFIG).roomKey;
+    writeLocalSilent(LAST_META_KEY, lastSeenMeta);
   }
 
   function getSectionSeenKey(sec, pId) {
@@ -688,8 +700,19 @@
     var curPid = pId || pageId();
     if (curPid === 'index') return false;
     if (sec === 'config') return true;
-    // 관리자 콘솔(admin)은 상단 배지(Q&A, 출석부, 퀴즈 등)와 탭 전환 시 100% 정확한 실시간 현황 유지를 위해 모든 섹션 변경 감지 활성화
-    if (curPid === 'admin') return true;
+    // 관리자 콘솔(admin): config·qna는 상단 배지용 실시간 유지, 대용량 섹션(checkins·quiz·games)은
+    // 로컬 캐시가 없거나 현재 보고 있는 탭에 해당할 때만 자동 동기화 (타 탭 전환 시 syncAdminTab이 즉시 동기화)
+    if (curPid === 'admin') {
+      if (sec === 'surveys') return false;
+      if (sec === 'qna') return true;
+      if (!hasLocalSectionCache(sec)) return true;
+      var activeAdminTab = (typeof window !== 'undefined' && window._hvacAdminActiveTab) || '';
+      if (!activeAdminTab) return true;
+      if (sec === 'checkins') return activeAdminTab === 'tabCheckin' || activeAdminTab === 'tabDraw';
+      if (sec === 'quiz') return activeAdminTab === 'tabQuiz';
+      if (sec === 'games') return activeAdminTab === 'tabGames';
+      return false;
+    }
     if (sec === 'checkins') {
       var fullCheckinPages = ['attendance-dashboard', 'luckydraw-stage', 'quiz-winners'];
       if (fullCheckinPages.indexOf(curPid) >= 0) return true;
@@ -697,13 +720,11 @@
       return !!(myUser && myUser.email);
     }
     if (sec === 'qna') {
-      return curPid === 'qna';
+      return curPid === 'qna' || curPid === 'mc-qna';
     }
     if (sec === 'quiz') {
       if (curPid === 'quiz-winners') return true;
       if (curPid === 'quiz') {
-        // quiz.html은 페이지 진입/새로고침 시 1회만 본인 제출 데이터(250B) 검증 (이후 리셋은 quiz_reset_at 시그널로 0B 즉시 감지)
-        if (lastSeenMeta.quiz_self !== 0) return false;
         var myQuizUser = read('hvac_user_checked');
         return !!(myQuizUser && myQuizUser.email);
       }
@@ -713,7 +734,7 @@
       return curPid === 'lunch-screen' || curPid === 'game-leaderboard';
     }
     if (sec === 'surveys') {
-      return curPid === 'luckydraw-stage';
+      return false;
     }
     return false;
   }
@@ -733,26 +754,26 @@
       return true;
     }
     if (sec === 'qna') {
-      if (pId === 'admin' || pId === 'qna') return read('hvac_qna_list') !== null;
+      if (pId === 'admin' || pId === 'qna' || pId === 'mc-qna') return read('hvac_qna_list') !== null;
       return true;
     }
     if (sec === 'quiz') {
       if (pId === 'admin' || pId === 'quiz-winners') {
-        var qSub = read('hvac_quiz_submissions');
-        return Array.isArray(qSub) && qSub.length > 1;
+        return read('hvac_quiz_submissions') !== null;
+      }
+      if (pId === 'quiz') {
+        return read('hvac_quiz_answers') !== null;
       }
       return true;
     }
     if (sec === 'games') {
       if (pId === 'lunch-screen' || pId === 'game-leaderboard') return read('hvac_game_top3') !== null;
       if (pId === 'admin') {
-        var gSub = read('hvac_game_submissions');
-        return Array.isArray(gSub) && gSub.length > 0;
+        return read('hvac_game_submissions') !== null;
       }
       return true;
     }
     if (sec === 'surveys') {
-      if (pId === 'admin' || pId === 'luckydraw-stage') return read('hvac_survey_responses') !== null;
       return true;
     }
     return true;
@@ -1193,7 +1214,7 @@
   // -------------------------------------------------------------
   // 앱 빌드 버전 검증 및 구버전 로컬 캐시 자동 무효화 / 정합성 갱신
   // -------------------------------------------------------------
-  var HVAC_BUILD_VERSION = '261116_1750';
+  var HVAC_BUILD_VERSION = '261117_0930';
 
   function getCurrentAppVersion() {
     try {
@@ -2882,7 +2903,7 @@
         return Promise.resolve(true);
       }
     } else if (secName === 'qna') {
-      if (forceAdminSync || pId === 'qna' || pId === 'admin') {
+      if (forceAdminSync || pId === 'qna' || pId === 'mc-qna' || pId === 'admin') {
         return fetch(cloudPath('qna/list'), { cache: 'no-store' })
           .then(function (r) { return r.ok ? r.json() : undefined; })
           .then(function (remoteQna) {
@@ -2961,7 +2982,7 @@
     return Promise.resolve(false);
   }
 
-  // 진행 중인 섹션 네트워크 요청 중복 차단 및 성공 시점에 lastSeenMeta 확정
+  // 진행 중인 섹션 네트워크 요청 중복 차단, 대용량 전체 목록 8초 스로틀/디바운스, 성공 시 lastSeenMeta 영속화
   function requestSectionSync(sec, remoteTsVal, forceAdminSync) {
     var curPid = pageId();
     if (!forceAdminSync && !doesPageUseSection(sec, curPid)) return Promise.resolve(false);
@@ -2970,10 +2991,33 @@
     if (inFlightSectionPromises[seenKey]) {
       return inFlightSectionPromises[seenKey];
     }
+
+    var isHeavyFull = (seenKey === 'quiz_full' || seenKey === 'checkins_full' || seenKey === 'games_full');
+    if (!forceAdminSync && isHeavyFull && hasLocalSectionCache(sec)) {
+      var nowMs = Date.now();
+      var lastDl = Number(lastHeavyDownloadAt[seenKey]) || 0;
+      var elapsed = nowMs - lastDl;
+      if (lastDl > 0 && elapsed < HEAVY_SYNC_COOLDOWN_MS) {
+        if (!heavySyncTimers[seenKey]) {
+          heavySyncTimers[seenKey] = setTimeout(function () {
+            delete heavySyncTimers[seenKey];
+            var latestTs = Number(latestRemoteMeta[sec]) || targetTs;
+            if (latestTs !== lastSeenMeta[seenKey]) {
+              requestSectionSync(sec, latestTs, false);
+            }
+          }, HEAVY_SYNC_COOLDOWN_MS - elapsed + 150);
+        }
+        return Promise.resolve(false);
+      }
+    }
+
     var p = syncSpecificSection(sec, !!forceAdminSync)
       .then(function (ok) {
         if (ok) {
-          lastSeenMeta[seenKey] = targetTs;
+          if (targetTs > 0) lastSeenMeta[seenKey] = targetTs;
+          else if (latestRemoteMeta[sec] > 0) lastSeenMeta[seenKey] = Number(latestRemoteMeta[sec]);
+          if (isHeavyFull) lastHeavyDownloadAt[seenKey] = Date.now();
+          saveLastSeenMeta();
         }
         return ok;
       })
@@ -3130,26 +3174,30 @@
         return syncConfigSmart(null, true);
       }
       var targets = [];
-      var staticChanged = false;
+      var seenUpdated = false;
       mapKeys.forEach(function (k) {
         if (k === 'all' || CONFIG_KEYS.indexOf(k) < 0) return;
         var ts = Number(cfgMap[k]) || 0;
         if (ts <= 0) return;
         if (!isConfigKeyNeededOnPage(k, pId)) return;
         var seenTs = getCfgKeySeenTs(k);
-        // 정적 배포 키는 site-config.json의 metaConfigTs보다 클 때만 동기화하고,
-        // 동적 실시간 키는 세션 인메모리 seenTs와 다르면(페이지 로드 시 0이므로 1회 검증 포함) 즉시 동기화!
         if (STATIC_PUBLISHED_KEYS.indexOf(k) >= 0) {
-          if (ts <= seenTs) return;
-          staticChanged = true;
+          if (seenTs > 0 && ts <= seenTs) return;
         } else {
-          if (ts === seenTs) return;
+          if (seenTs > 0 && ts === seenTs) return;
         }
         setCfgKeySeenTs(k, ts);
+        seenUpdated = true;
         targets.push(k);
       });
-      if (staticChanged) saveSeenCfgKeys();
-      return Promise.all(targets.map(syncSingleConfigKey)).then(function () { return true; });
+      if (seenUpdated) saveSeenCfgKeys();
+      return Promise.all(targets.map(syncSingleConfigKey)).then(function () {
+        if (d && d.config && Number(d.config) > 0) {
+          lastSeenMeta.config = Number(d.config);
+          saveLastSeenMeta();
+        }
+        return true;
+      });
     }
 
     // 구버전 meta (config_keys 없음): 마지막 변경 키 힌트로 동기화
@@ -3200,11 +3248,14 @@
     }
   }
 
+  var initialStreamSnapshotDone = false;
+
   function initCloudStream() {
     if (typeof window === 'undefined' || !window.EventSource) return;
     var c = getCloudConfig();
     if (!c || !c.enabled || !c.dbUrl) return;
 
+    initialStreamSnapshotDone = false;
     if (window.__hvacCloudEventSource) {
       try { window.__hvacCloudEventSource.close(); } catch (e) {}
       window.__hvacCloudEventSource = null;
@@ -3226,6 +3277,7 @@
         var curPid = pageId();
 
         if (p === '/' || p === '') {
+          initialStreamSnapshotDone = true;
           if (d && typeof d === 'object') {
             var metaChanged = false;
             if (d.session_reset_at && d.session_reset_at !== lastSeenMeta.session_reset_at) {
@@ -3252,14 +3304,14 @@
               if (d[sec]) latestRemoteMeta[sec] = d[sec];
               if (!doesPageUseSection(sec, curPid)) return;
               if (sec === 'config') {
-                if (streamHasChangedCfg || (d.config && d.config !== lastSeenMeta.config) || !hasLocalSectionCache('config')) {
-                  if (d.config) lastSeenMeta.config = d.config;
+                if (streamHasChangedCfg || (d.config && Number(d.config) !== lastSeenMeta.config) || !hasLocalSectionCache('config')) {
                   syncConfigFromMeta(d, false);
                 }
                 return;
               }
               var seenKey = getSectionSeenKey(sec, curPid);
-              var rTs = Number(d[sec]) || -1;
+              var rTs = Number(d[sec]) || 0;
+              if (rTs <= 0) return;
               if (rTs !== lastSeenMeta[seenKey] || !hasLocalSectionCache(sec)) {
                 requestSectionSync(sec, rTs, false);
               }
@@ -3368,16 +3420,16 @@
           }
         }
 
-        if (forceAll || !hasLocalSectionCache('config') || hasChangedCfgKey || (meta.config && meta.config !== lastSeenMeta.config)) {
-          lastSeenMeta.config = meta.config || Date.now();
+        if (forceAll || !hasLocalSectionCache('config') || hasChangedCfgKey || (meta.config && Number(meta.config) !== lastSeenMeta.config)) {
           tasks.push(syncConfigFromMeta(meta, !!forceAll));
         }
 
         // 2) 페이지별 필요 섹션(checkins, qna, quiz, surveys, games) 차등 동기화
         ['checkins', 'qna', 'quiz', 'surveys', 'games'].forEach(function (sec) {
-          if (!doesPageUseSection(sec, pId)) return;
+          if (!forceAll && !doesPageUseSection(sec, pId)) return;
           var seenKey = getSectionSeenKey(sec, pId);
-          var rTs = Number(meta[sec]) || -1;
+          var rTs = Number(meta[sec]) || 0;
+          if (rTs <= 0 && !forceAll) return;
           if (forceAll || !hasLocalSectionCache(sec) || rTs !== lastSeenMeta[seenKey]) {
             tasks.push(requestSectionSync(sec, rTs, !!forceAll));
           }
@@ -3423,6 +3475,7 @@
 
   // 주기적 스마트 폴링 및 SSE 소켓 스트림 가동
   var pollTimer = null;
+  var initialFallbackTimer = null;
   function startCloudLoop() {
     if (window.__hvacPollTimer) {
       clearInterval(window.__hvacPollTimer);
@@ -3431,6 +3484,10 @@
     if (pollTimer) {
       clearInterval(pollTimer);
       pollTimer = null;
+    }
+    if (initialFallbackTimer) {
+      clearTimeout(initialFallbackTimer);
+      initialFallbackTimer = null;
     }
     if (!getCloudConfig()) return;
     var pId = pageId();
@@ -3441,43 +3498,39 @@
       syncSingleConfigKey('hvac_checkin_passcode');
     }
 
-    // 관리자 콘솔(admin) 및 사회자 무대(luckydraw-stage)는 페이지 진입 즉시 클라우드의 최신 럭키드로우 상태/설정을 강제 검증
-    if (pId === 'admin' || pId === 'luckydraw-stage') {
-      syncSingleConfigKey('hvac_luckydraw_config');
-      syncSingleConfigKey('hvac_luckydraw_state');
-    }
-    if (pId === 'admin') {
-      syncSingleConfigKey('hvac_schedule_settings');
-      syncSingleConfigKey('hvac_game_config');
-      syncSingleConfigKey('hvac_quiz_unlocked_sessions');
-      syncSingleConfigKey('hvac_notice_banner');
-      syncSpecificSection('quiz', true);
-      syncSpecificSection('games', true);
-    }
-    if (pId === 'quiz' || pId === 'quiz-winners') {
-      syncSingleConfigKey('hvac_quiz_unlocked_sessions');
-      syncSpecificSection('quiz', true);
-    }
-    if (pId === 'game' || pId === 'game-leaderboard') {
-      syncSingleConfigKey('hvac_game_config');
-    }
-
-    // 1. 200명 전원 실시간 SSE 소켓 스트림 연결 (초기 put 이벤트로 변경된 섹션만 차등 동기화)
+    // 1. 실시간 SSE 소켓 스트림 연결 (/meta.json 단일 스트림으로 초기 put 시 변경된 섹션만 차등 동기화, 중복 다운로드 0건)
     initCloudStream();
 
-    // 2. 페이지 진입/새로고침 즉시 초기 차등 동기화 1회 실행 (inFlightSectionPromises로 SSE와 중복 요청 0건 보장!)
-    pollCloudChanges(false);
+    // 2. EventSource 미지원 환경은 즉시, 지원 환경은 1.8초 내 초기 스트림 스냅샷 미도착 시에만 백업 1회 폴링
+    if (typeof window === 'undefined' || !window.EventSource) {
+      pollCloudChanges(false);
+    } else {
+      initialFallbackTimer = setTimeout(function () {
+        initialFallbackTimer = null;
+        if (!initialStreamSnapshotDone) {
+          pollCloudChanges(false);
+        }
+      }, 1800);
+    }
 
     // 3. 주기적 안전 백업 폴링
-    // - 일반 참석자 페이지: SSE 정상 연결 중에는 폴링 생략 (트래픽 0B)
-    // - 관리자(admin), 사회자 럭키드로우(luckydraw-stage), 실시간 Q&A/사회자 세션별 Q&A(qna), 출석현황/퀴즈당첨자: 4초 주기로 초경량 meta 폴링 병행 (SSE 사일런트 드롭 완벽 방어)
-    var isCriticalStagePage = (pId === 'admin' || pId === 'luckydraw-stage' || pId === 'qna' || pId === 'attendance-dashboard' || pId === 'quiz-winners');
-    var fastPages = ['admin', 'qna', 'attendance-dashboard', 'quiz-winners', 'game-leaderboard', 'lunch-screen', 'luckydraw-stage'];
-    var intervalMs = isCriticalStagePage ? 4000 : (fastPages.indexOf(pId) >= 0 ? 15000 : 30000);
+    // - 일반 참석자 페이지(checkin, qna, quiz, game 등): SSE 정상 연결 중에는 폴링 생략 (트래픽 0B)
+    // - 관리자·전광판·무대(admin, luckydraw-stage, mc-qna, attendance-dashboard, quiz-winners):
+    //   SSE 연결 중에는 30초 간격 경량 헬스체크만 수행(기존 4초 대비 87% 절감), 끊김 시에만 6초 폴백 폴링
+    var isCriticalStagePage = (pId === 'admin' || pId === 'luckydraw-stage' || pId === 'mc-qna' || pId === 'attendance-dashboard' || pId === 'quiz-winners');
+    var fastPages = ['admin', 'mc-qna', 'attendance-dashboard', 'quiz-winners', 'game-leaderboard', 'lunch-screen', 'luckydraw-stage'];
+    var disconnectedIntervalMs = isCriticalStagePage ? 6000 : (fastPages.indexOf(pId) >= 0 ? 15000 : 30000);
+    var tickMs = isCriticalStagePage ? 15000 : disconnectedIntervalMs;
+    var lastCriticalHeartbeatAt = Date.now();
     pollTimer = setInterval(function () {
-      if (!isCriticalStagePage && streamConnected && cloudEventSource && cloudEventSource.readyState === 1) return;
+      var sseAlive = !!(streamConnected && cloudEventSource && cloudEventSource.readyState === 1);
+      if (sseAlive) {
+        if (!isCriticalStagePage) return;
+        if (Date.now() - lastCriticalHeartbeatAt < 30000) return;
+        lastCriticalHeartbeatAt = Date.now();
+      }
       pollCloudChanges(false);
-    }, intervalMs);
+    }, tickMs);
     window.__hvacPollTimer = pollTimer;
   }
 
@@ -3488,20 +3541,9 @@
     var pId = pageId();
     if (pId === 'index') return;
     var now = Date.now();
-    if (now - lastResumeCheckAt < 2000) return;
+    if (now - lastResumeCheckAt < 5000) return;
     lastResumeCheckAt = now;
     if (!getCloudConfig()) return;
-    // 주요 실시간 화면은 탭 포커스 복귀 시 즉시 최신 meta 확인
-    if (pId === 'admin' || pId === 'luckydraw-stage' || pId === 'qna' || pId === 'attendance-dashboard' || pId === 'quiz-winners') {
-      pollCloudChanges(false);
-      if (pId === 'admin' || pId === 'luckydraw-stage') {
-        syncSingleConfigKey('hvac_luckydraw_state');
-      }
-      if (!cloudEventSource || cloudEventSource.readyState === 2) {
-        initCloudStream();
-      }
-      return;
-    }
     if (streamConnected && cloudEventSource && cloudEventSource.readyState === 1) {
       return;
     }
@@ -3936,11 +3978,11 @@
         };
         var seenKey = getSectionSeenKey(sec, 'admin');
         var cachedVal = read(cacheKeyMap[sec]);
-        var hasCache = cachedVal !== null && (!Array.isArray(cachedVal) || cachedVal.length > 1);
+        var hasCache = cachedVal !== null;
         var rTs = Number(latestRemoteMeta[sec]) || 0;
-        var needSync = !hasCache || !lastSeenMeta[seenKey] || (rTs && rTs !== lastSeenMeta[seenKey]);
+        var needSync = !hasCache || !lastSeenMeta[seenKey] || (rTs > 0 && rTs !== lastSeenMeta[seenKey]);
         if (!needSync) return Promise.resolve(false);
-        return requestSectionSync(sec, rTs || Date.now(), true);
+        return requestSectionSync(sec, rTs || lastSeenMeta[seenKey] || 0, true);
       },
       isActive: function () { var c = getCloudConfig(); return !!(c && c.enabled && c.dbUrl); },
       isStreamConnected: function () { return !!streamConnected; },
